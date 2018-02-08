@@ -3,8 +3,6 @@
 The following extensions for [MATSim](http://www.matsim.org/) are provided by
 the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahnen).
 
-
-
 ## SwissRailRaptor
 
 The SwissRailRaptor is a fast public transport router. It is based on the RAPTOR algorithm
