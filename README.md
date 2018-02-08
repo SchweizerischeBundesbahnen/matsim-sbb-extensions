@@ -1,7 +1,26 @@
-# MATSim-Extensions by SBB
+# MATSim-Extensions by SBB [![](https://jitpack.io/v/SchweizerischeBundesbahnen/matsim-sbb-extensions.svg)](https://jitpack.io/#SchweizerischeBundesbahnen/matsim-sbb-extensions)
 
 The following extensions for [MATSim](http://www.matsim.org/) are provided by
 the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahnen).
+
+
+ **Step 1**. Add the JitPack repository to you `pom.xml`.
+  ```$xml
+	<repositories>
+		<repository>
+		    <id>jitpack.io</id>
+		    <url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+  ```
+  **Step 2**. Add the dependency
+   ```$xml
+	<dependency>
+	    <groupId>com.github.SchweizerischeBundesbahnen</groupId>
+	    <artifactId>matsim-sbb-extensions</artifactId>
+	    <version>0.9.x</version>
+	</dependency>
+  ``` 
 
 ## SwissRailRaptor
 
@@ -52,7 +71,6 @@ simulated deterministically, but that some (e.g. buses) are still simulated on t
 and are thus able to interact with private car traffic.
 
 ### Usage
-
 To use the deterministic pt simulation, a few things need to be taken into account:
 
 - transportMode of TransitRoutes
