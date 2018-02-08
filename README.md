@@ -1,9 +1,8 @@
-# MATSim-Extensions by SBB
+# MATSim-Extensions by SBB [![](https://jitpack.io/v/SchweizerischeBundesbahnen/matsim-sbb-extensions.svg)](https://jitpack.io/#SchweizerischeBundesbahnen/matsim-sbb-extensions)
 
 The following extensions for [MATSim](http://www.matsim.org/) are provided by
 the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahnen).
 
-[![](https://jitpack.io/v/SchweizerischeBundesbahnen/matsim-sbb-extensions.svg)](https://jitpack.io/#SchweizerischeBundesbahnen/matsim-sbb-extensions)
 
  **Step 1**. Add the JitPack repository to you `pom.xml`.
   ```$xml
