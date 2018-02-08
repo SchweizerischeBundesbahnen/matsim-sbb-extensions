@@ -3,6 +3,8 @@
 The following extensions for [MATSim](http://www.matsim.org/) are provided by
 the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahnen).
 
+
+
 ## SwissRailRaptor
 
 The SwissRailRaptor is a fast public transport router. It is based on the RAPTOR algorithm
@@ -52,6 +54,27 @@ simulated deterministically, but that some (e.g. buses) are still simulated on t
 and are thus able to interact with private car traffic.
 
 ### Usage
+
+[![](https://jitpack.io/v/SchweizerischeBundesbahnen/matsim-sbb-extensions.svg)](https://jitpack.io/#SchweizerischeBundesbahnen/matsim-sbb-extensions)
+
+ **Step 1**. Add the JitPack repository to you `pom.xml`.
+  ```$xml
+	<repositories>
+		<repository>
+		    <id>jitpack.io</id>
+		    <url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+  ```
+  **Step 2**. Add the dependency
+   ```$xml
+	<dependency>
+	    <groupId>com.github.SchweizerischeBundesbahnen</groupId>
+	    <artifactId>matsim-sbb-extensions</artifactId>
+	    <version>0.9.x</version>
+	</dependency>
+  ``` 
+
 
 To use the deterministic pt simulation, a few things need to be taken into account:
 
