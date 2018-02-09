@@ -41,6 +41,8 @@ public class SwissRailRaptorCore {
     private final BitSet destinationRouteStopIndices;
     private double bestArrivalCost = Double.POSITIVE_INFINITY;
     private final PathElement[] arrivalPathPerStop;
+    private final PathElement[] tmpArrivalPathPerStop; // only used to ensure parallel update
+    private final BitSet tmpImprovedStops; // only used to ensure parallel update
 
     public SwissRailRaptorCore(SwissRailRaptorData data) {
         this.data = data;
@@ -54,6 +56,8 @@ public class SwissRailRaptorCore {
         this.destinationRouteStopIndices = new BitSet(this.data.countRouteStops);
         this.improvedStops = new BitSet(this.data.countStops);
         this.arrivalPathPerStop = new PathElement[this.data.countStops];
+        this.tmpArrivalPathPerStop = new PathElement[this.data.countStops];
+        this.tmpImprovedStops = new BitSet(this.data.countStops);
     }
 
     private void reset() {
@@ -251,7 +255,8 @@ public class SwissRailRaptorCore {
 
     private void handleTransfers() {
         this.improvedRouteStopIndices.clear();
-        for (int stopIndex = this.improvedStops.nextSetBit(0); stopIndex >= 0; stopIndex = this.improvedStops.nextSetBit(stopIndex+1)) {
+        this.tmpImprovedStops.clear();
+        for (int stopIndex = this.improvedStops.nextSetBit(0); stopIndex >= 0; stopIndex = this.improvedStops.nextSetBit(stopIndex + 1)) {
             PathElement fromPE = this.arrivalPathPerStop[stopIndex];
             double arrivalTime = fromPE.arrivalTime;
             double arrivalCost = fromPE.arrivalCost;
@@ -274,11 +279,18 @@ public class SwissRailRaptorCore {
                     this.improvedRouteStopIndices.set(toRouteStopIndex);
                     int toStopFacilityIndex = toRouteStop.stopFacilityIndex;
                     if (newArrivalCost < this.leastArrivalCostAtStop[toStopFacilityIndex]) {
+                        // store it in tmp only. We don't want that this PE is used by a stop processed later in the same round. ("parallel update")
                         this.leastArrivalCostAtStop[toStopFacilityIndex] = newArrivalCost;
-                        this.arrivalPathPerStop[toStopFacilityIndex] = pe;
+                        this.tmpArrivalPathPerStop[toStopFacilityIndex] = pe;
+                        this.tmpImprovedStops.set(toStopFacilityIndex);
                     }
                 }
             }
+        }
+        // "parallel update". now copy over the newly improved data after all transfers were handled
+        for (int stopIndex = this.tmpImprovedStops.nextSetBit(0); stopIndex >= 0; stopIndex = this.tmpImprovedStops.nextSetBit(stopIndex + 1)) {
+            PathElement pe = this.tmpArrivalPathPerStop[stopIndex];
+            this.arrivalPathPerStop[stopIndex] = pe;
         }
     }
 
