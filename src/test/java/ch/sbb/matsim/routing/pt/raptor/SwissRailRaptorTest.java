@@ -4,12 +4,6 @@
 
 package ch.sbb.matsim.routing.pt.raptor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.matsim.api.core.v01.Coord;
@@ -24,7 +18,6 @@ import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
-import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.GenericRouteImpl;
 import org.matsim.core.population.routes.LinkNetworkRouteImpl;
 import org.matsim.core.population.routes.NetworkRoute;
@@ -49,6 +42,13 @@ import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.pt.transitSchedule.api.TransitScheduleFactory;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 import org.matsim.testcases.MatsimTestCase;
+import org.matsim.testcases.MatsimTestUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Most of these tests were copied from org.matsim.pt.router.TransitRouterImplTest
@@ -58,7 +58,7 @@ import org.matsim.testcases.MatsimTestCase;
  */
 public class SwissRailRaptorTest {
 
-    private TransitRouter createTransitRouter(TransitSchedule schedule, RaptorConfig raptorConfig) {
+    private SwissRailRaptor createTransitRouter(TransitSchedule schedule, RaptorConfig raptorConfig) {
         SwissRailRaptorData data = SwissRailRaptorData.create(schedule, raptorConfig);
         SwissRailRaptor raptor = new SwissRailRaptor(data);
         return raptor;
@@ -90,6 +90,47 @@ public class SwissRailRaptorTest {
         double expectedTravelTime = 29.0 * 60 + // agent takes the *:06 course, arriving in D at *:29
                 CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
         assertEquals(expectedTravelTime, actualTravelTime, MatsimTestCase.EPSILON);
+    }
+
+    @Test
+    public void testWalkDurations() {
+        Fixture f = new Fixture();
+        f.init();
+        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        Coord fromCoord = new Coord(3800, 5100);
+        Coord toCoord = new Coord(16100, 5050);
+        List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 5.0*3600, null);
+        assertEquals(3, legs.size());
+        assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+        assertEquals(TransportMode.pt, legs.get(1).getMode());
+        assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+
+        double expectedAccessWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("0", TransitStopFacility.class)).getCoord(), fromCoord) / raptorConfig.getBeelineWalkSpeed();
+        assertEquals(legs.get(0).getTravelTime(), expectedAccessWalkTime, MatsimTestUtils.EPSILON);
+        double expectedEgressWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
+        assertEquals(legs.get(2).getTravelTime(), expectedEgressWalkTime, MatsimTestUtils.EPSILON);
+    }
+
+    @Test
+    public void testWalkDurations_range() {
+        Fixture f = new Fixture();
+        f.init();
+        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        SwissRailRaptor router = createTransitRouter(f.schedule, raptorConfig);
+        Coord fromCoord = new Coord(3800, 5100);
+        Coord toCoord = new Coord(16100, 5050);
+        double depTime = 5.0 * 3600;
+        List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime - 300, depTime, depTime + 300, null);
+        assertEquals(3, legs.size());
+        assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+        assertEquals(TransportMode.pt, legs.get(1).getMode());
+        assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+
+        double expectedAccessWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("0", TransitStopFacility.class)).getCoord(), fromCoord) / raptorConfig.getBeelineWalkSpeed();
+        assertEquals(legs.get(0).getTravelTime(), expectedAccessWalkTime, MatsimTestUtils.EPSILON);
+        double expectedEgressWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
+        assertEquals(legs.get(2).getTravelTime(), expectedEgressWalkTime, MatsimTestUtils.EPSILON);
     }
 
     @Test
@@ -533,153 +574,6 @@ public class SwissRailRaptorTest {
         assertEquals(f.stop2.getId(), ptRoute.getAccessStopId());
         assertEquals(f.stop3.getId(), ptRoute.getEgressStopId());
         assertEquals(f.lineId3, ptRoute.getLineId());
-    }
-
-    @Test
-    public void testFixLegs_noFixNeeded() {
-        Fixture f = new Fixture();
-        f.init();
-
-        List<Leg> legs = new ArrayList<>();
-        List<Leg> fixedLegs = SwissRailRaptor.fixLegs(legs);
-        Assert.assertEquals("empty legs should be returned unmodified", fixedLegs, legs);
-
-        Leg leg1 = PopulationUtils.createLeg(TransportMode.transit_walk);
-        leg1.setDepartureTime(8*3600);
-        leg1.setTravelTime(900);
-        GenericRouteImpl route1 = new GenericRouteImpl(Id.create(1, Link.class), Id.create(5, Link.class));
-        route1.setTravelTime(900);
-        route1.setDistance(800);
-        leg1.setRoute(route1);
-        legs.add(leg1);
-        fixedLegs = SwissRailRaptor.fixLegs(legs);
-        Assert.assertEquals("single walk should be returned unmodified", fixedLegs, legs);
-
-        leg1.setMode(TransportMode.access_walk);
-        Leg leg2 = PopulationUtils.createLeg(TransportMode.pt);
-        leg2.setDepartureTime(8.25*3600);
-        leg2.setTravelTime(900);
-        ExperimentalTransitRoute route2 = new ExperimentalTransitRoute(
-                f.schedule.getFacilities().get(Id.create("0", TransitStopFacility.class)),
-                f.schedule.getFacilities().get(Id.create("4", TransitStopFacility.class)),
-                Id.create("blue", TransitLine.class), Id.create("blue A>J", TransitRoute.class)
-                );
-        route2.setTravelTime(900);
-        route2.setDistance(2800);
-        leg2.setRoute(route2);
-        legs.add(leg2);
-
-        Leg leg3 = PopulationUtils.createLeg(TransportMode.egress_walk);
-        leg3.setDepartureTime(8.5*3600);
-        leg3.setTravelTime(900);
-        GenericRouteImpl route3 = new GenericRouteImpl(Id.create(2, Link.class), Id.create(6, Link.class));
-        route3.setTravelTime(900);
-        route3.setDistance(800);
-        leg3.setRoute(route3);
-        legs.add(leg3);
-
-        Assert.assertEquals("single pt should be returned unmodified", fixedLegs, legs);
-
-        leg3.setMode(TransportMode.transit_walk);
-        Leg leg4 = PopulationUtils.createLeg(TransportMode.pt);
-        leg4.setDepartureTime(8.25*3600);
-        leg4.setTravelTime(900);
-        ExperimentalTransitRoute route4 = new ExperimentalTransitRoute(
-                f.schedule.getFacilities().get(Id.create(4, TransitStopFacility.class)),
-                f.schedule.getFacilities().get(Id.create(12, TransitStopFacility.class)),
-                Id.create("red", TransitLine.class), Id.create("red C>G", TransitRoute.class)
-                );
-        route4.setTravelTime(900);
-        route4.setDistance(2800);
-        leg4.setRoute(route4);
-        legs.add(leg4);
-
-        Leg leg5 = PopulationUtils.createLeg(TransportMode.egress_walk);
-        leg5.setDepartureTime(8.5*3600);
-        leg5.setTravelTime(900);
-        GenericRouteImpl route5 = new GenericRouteImpl(Id.create(3, Link.class), Id.create(7, Link.class));
-        route5.setTravelTime(900);
-        route5.setDistance(800);
-        leg5.setRoute(route5);
-        legs.add(leg5);
-
-        Assert.assertEquals("single pt should be returned unmodified", fixedLegs, legs);
-    }
-
-    @Test
-    public void testFixLegs_fixNeeded() {
-        Fixture f = new Fixture();
-        f.init();
-
-        List<Leg> legs = new ArrayList<>();
-
-        Leg leg1 = PopulationUtils.createLeg(TransportMode.access_walk);
-        leg1.setDepartureTime(8*3600);
-        leg1.setTravelTime(900);
-        GenericRouteImpl route1 = new GenericRouteImpl(Id.create(1, Link.class), Id.create(5, Link.class));
-        route1.setTravelTime(900);
-        route1.setDistance(800);
-        leg1.setRoute(route1);
-        legs.add(leg1);
-        Leg leg2 = PopulationUtils.createLeg(TransportMode.egress_walk);
-        leg2.setDepartureTime(8.25*3600);
-        leg2.setTravelTime(900);
-        {
-            GenericRouteImpl route2 = new GenericRouteImpl(Id.create(5, Link.class), Id.create(3, Link.class));
-            route2.setTravelTime(900);
-            route2.setDistance(800);
-            leg2.setRoute(route2);
-        }
-        legs.add(leg2);
-        List<Leg> fixedLegs = SwissRailRaptor.fixLegs(legs);
-        Assert.assertNotEquals("double walk should be returned fixed", fixedLegs, legs);
-        Assert.assertEquals(1, fixedLegs.size());
-        Assert.assertEquals(TransportMode.egress_walk, fixedLegs.get(0).getMode());
-        Assert.assertNotNull(fixedLegs.get(0).getRoute());
-
-        legs.clear();
-        legs.add(leg1);
-        leg2 = PopulationUtils.createLeg(TransportMode.pt);
-        leg2.setDepartureTime(8.25*3600);
-        leg2.setTravelTime(900);
-        ExperimentalTransitRoute route2 = new ExperimentalTransitRoute(
-                f.schedule.getFacilities().get(Id.create(0, TransitStopFacility.class)),
-                f.schedule.getFacilities().get(Id.create(4, TransitStopFacility.class)),
-                Id.create("blue", TransitLine.class), Id.create("blue A>J", TransitRoute.class)
-                );
-        route2.setTravelTime(900);
-        route2.setDistance(2800);
-        leg2.setRoute(route2);
-        legs.add(leg2);
-
-        Leg leg3 = PopulationUtils.createLeg(TransportMode.transit_walk);
-        leg3.setDepartureTime(8.25*3600);
-        leg3.setTravelTime(900);
-        {
-            GenericRouteImpl route3 = new GenericRouteImpl(Id.create(5, Link.class), Id.create(3, Link.class));
-            route3.setTravelTime(900);
-            route3.setDistance(800);
-            leg3.setRoute(route3);
-        }
-        legs.add(leg3);
-
-        Leg leg4 = PopulationUtils.createLeg(TransportMode.egress_walk);
-        leg4.setDepartureTime(8.5*3600);
-        leg4.setTravelTime(900);
-        GenericRouteImpl route4 = new GenericRouteImpl(Id.create(2, Link.class), Id.create(6, Link.class));
-        route4.setTravelTime(900);
-        route4.setDistance(800);
-        leg4.setRoute(route4);
-        legs.add(leg4);
-
-        fixedLegs = SwissRailRaptor.fixLegs(legs);
-
-        Assert.assertNotEquals("double walk should be fixed. ", fixedLegs, legs);
-        Assert.assertEquals(3, fixedLegs.size());
-        Assert.assertEquals(TransportMode.access_walk, fixedLegs.get(0).getMode());
-        Assert.assertEquals(TransportMode.pt, fixedLegs.get(1).getMode());
-        Assert.assertEquals(TransportMode.egress_walk, fixedLegs.get(2).getMode());
-
     }
 
     /**

@@ -59,6 +59,20 @@ public class SwissRailRaptor implements TransitRouter {
         return legs;
     }
 
+    public List<Leg> calcRoute(Facility<?> fromFacility, Facility<?> toFacility, double earliestDepartureTime, double desiredDepartureTime, double latestDepartureTime, Person person) {
+        List<InitialStop> accessStops = findAccessStops(fromFacility, person);
+        List<InitialStop> egressStops = findEgressStops(toFacility, person);
+
+        RaptorRoute foundRoute = this.raptor.calcLeastCostRoute(earliestDepartureTime, desiredDepartureTime, latestDepartureTime, accessStops, egressStops);
+        RaptorRoute directWalk = createDirectWalk(fromFacility, toFacility, desiredDepartureTime, person);
+
+        if (foundRoute == null || directWalk.totalCosts < foundRoute.totalCosts) {
+            foundRoute = directWalk;
+        }
+        List<Leg> legs = convertRouteToLegs(foundRoute);
+        return legs;
+    }
+
     private List<InitialStop> findAccessStops(Facility<?> facility, Person person) {
         List<TransitStopFacility> stops = findNearbyStops(facility);
         List<InitialStop> initialStops = stops.stream().map(stop -> {

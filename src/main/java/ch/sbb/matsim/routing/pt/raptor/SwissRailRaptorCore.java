@@ -12,6 +12,7 @@ import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -76,6 +77,7 @@ public class SwissRailRaptorCore {
         final int maxTransfers = 20; // sensible defaults, could be made configurable if there is a need for it.
         final int maxTransfersAfterFirstArrival = 2;
 
+
         reset();
 
         Map<TransitStopFacility, InitialStop> destinationStops = new HashMap<>();
@@ -137,6 +139,128 @@ public class SwissRailRaptorCore {
 
         // create RaptorRoute based on PathElements
         PathElement leastCostPath = findLeastCostArrival(destinationStops);
+        RaptorRoute raptorRoute = createRaptorRoute(leastCostPath, depTime);
+        return raptorRoute;
+    }
+
+    public RaptorRoute calcLeastCostRoute(double earliestDepTime, double desiredDepTime, double latestDepTime, List<InitialStop> accessStops, List<InitialStop> egressStops) {
+        int maxTransfers = 20; // sensible defaults, could be made configurable if there is a need for it.
+        final int maxTransfersAfterFirstArrival = 2;
+        Map<PathElement, InitialStop> initialStopsPerStartPath = new HashMap<>();
+
+        reset();
+
+        List<DepartureAtRouteStop> departures = new ArrayList<>();
+        for (InitialStop accessStop : accessStops) {
+            double earliestTimeAtStop = earliestDepTime + accessStop.accessTime;
+            double latestTimeAtStop = latestDepTime + accessStop.accessTime;
+            TransitStopFacility stop = accessStop.stop;
+            int[] routeStopIndices = this.data.routeStopsPerStopFacility.get(stop);
+            if (routeStopIndices != null) {
+                for (int routeStopIndex : routeStopIndices) {
+                    RRouteStop routeStop = this.data.routeStops[routeStopIndex];
+                    RRoute route = this.data.routes[routeStop.transitRouteIndex];
+                    double depOffset = routeStop.departureOffset;
+                    for (int depIndex = route.indexFirstDeparture; depIndex < route.indexFirstDeparture + route.countDepartures; depIndex++) {
+                        double depTimeAtStart = this.data.departures[depIndex];
+                        double depTimeAtStop = depTimeAtStart + depOffset;
+                        if (depTimeAtStop >= earliestTimeAtStop && depTimeAtStop <= latestTimeAtStop) {
+                            departures.add(new DepartureAtRouteStop(routeStop, routeStopIndex, depIndex, depTimeAtStop, accessStop));
+                        }
+                    }
+                }
+            }
+        }
+        departures.sort((d1, d2) -> {
+            int cmp = Double.compare(d1.depTime, d2.depTime);
+            if (cmp == 0) {
+                cmp = Integer.compare(d1.departureIndex, d2.departureIndex);
+            }
+            return -cmp; // negate, we want to order from biggest to smallest
+        });
+
+        Map<TransitStopFacility, InitialStop> destinationStops = new HashMap<>();
+        for (InitialStop egressStop : egressStops) {
+            destinationStops.put(egressStop.stop, egressStop);
+            int[] routeStopIndices = this.data.routeStopsPerStopFacility.get(egressStop.stop);
+            if (routeStopIndices != null) {
+                for (int routeStopIndex : routeStopIndices) {
+                    this.destinationRouteStopIndices.set(routeStopIndex);
+                    this.egressCostsPerRouteStop[routeStopIndex] = egressStop.accessCost;
+                }
+            }
+        }
+
+        for (DepartureAtRouteStop depAtRouteStop : departures) {
+            this.improvedStops.clear();
+            this.improvedRouteStopIndices.clear();
+            { // initialization for this departure Time
+                double arrivalTime = depAtRouteStop.depTime;
+                double arrivalCost = depAtRouteStop.accessStop.accessCost;
+                RRouteStop toRouteStop = depAtRouteStop.routeStop;
+                int routeStopIndex = depAtRouteStop.routeStopIndex;
+                PathElement pe = new PathElement(null, toRouteStop, arrivalTime, arrivalCost, 0, true);
+                if (this.arrivalPathPerRouteStop[routeStopIndex] == null || this.arrivalPathPerRouteStop[routeStopIndex].arrivalCost > pe.arrivalCost) {
+                    this.arrivalPathPerRouteStop[routeStopIndex] = pe;
+                    this.leastArrivalCostAtRouteStop[routeStopIndex] = arrivalCost;
+                    if (this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] == null || this.arrivalPathPerStop[toRouteStop.stopFacilityIndex].arrivalCost > pe.arrivalCost) {
+                        this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
+                        this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = arrivalCost;
+                    }
+                    this.improvedRouteStopIndices.set(routeStopIndex);
+                    initialStopsPerStartPath.put(pe, depAtRouteStop.accessStop);
+                }
+            }
+
+            // the main loop
+            for (int k = 0; k <= maxTransfers; k++) {
+                // first stage (according to paper) is to set earliestArrivalTime_k(stop) = earliestArrivalTime_k-1(stop)
+                // but because we re-use the earliestArrivalTime-array, we don't have to do anything.
+
+                // second stage: process routes
+                exploreRoutes();
+
+                PathElement leastCostPath = findLeastCostArrival(destinationStops);
+                if (leastCostPath != null) {
+                    int optimizedTransferLimit = leastCostPath.transferCount + maxTransfersAfterFirstArrival;
+                    if (optimizedTransferLimit < maxTransfers) {
+                        maxTransfers = optimizedTransferLimit;
+                    }
+                    if (k == maxTransfers) {
+                        break; // no use to handle transfers
+                    }
+                }
+
+                if (this.improvedStops.isEmpty()) {
+                    break;
+                }
+
+                // third stage (according to paper): handle footpaths / transfers
+                handleTransfers();
+
+                // final stage: check stop criterion
+                if (this.improvedRouteStopIndices.isEmpty()) {
+                    break;
+                }
+            }
+        }
+
+        // create RaptorRoute based on PathElements
+        PathElement leastCostPath = findLeastCostArrival(destinationStops);
+        // calculate best departure time
+        PathElement firstPE = leastCostPath;
+        double depTime = desiredDepTime;
+        if (leastCostPath != null) {
+            while (firstPE.comingFrom != null) {
+                firstPE = firstPE.comingFrom;
+            }
+            // currently, firstPE.arrivalTime is exactly the time of departure at that stop
+            // let's add some time for savety reasons and to add some realism
+            firstPE.arrivalTime -= this.data.config.getMinimalTransferTime();
+            // for more realism, a (random) value from a distribution could be taken instead of a fixed value
+            InitialStop accessStop = initialStopsPerStartPath.get(firstPE);
+            depTime = firstPE.arrivalTime - accessStop.accessTime;
+        }
         RaptorRoute raptorRoute = createRaptorRoute(leastCostPath, depTime);
         return raptorRoute;
     }
@@ -380,6 +504,22 @@ public class SwissRailRaptorCore {
             this.arrivalCost = arrivalCost;
             this.transferCount = transferCount;
             this.isTransfer = isTransfer;
+        }
+    }
+
+    private static class DepartureAtRouteStop {
+        final RRouteStop routeStop;
+        final InitialStop accessStop;
+        final int departureIndex;
+        final int routeStopIndex;
+        final double depTime;
+
+        DepartureAtRouteStop(RRouteStop routeStop, int routeStopIndex, int departureIndex, double depTime, InitialStop accessStop) {
+            this.routeStop = routeStop;
+            this.routeStopIndex = routeStopIndex;
+            this.departureIndex = departureIndex;
+            this.depTime = depTime;
+            this.accessStop = accessStop;
         }
     }
 }
