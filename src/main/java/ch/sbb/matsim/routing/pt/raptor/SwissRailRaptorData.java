@@ -16,6 +16,7 @@ import org.matsim.pt.transitSchedule.api.TransitRouteStop;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,9 +43,9 @@ class SwissRailRaptorData {
     final QuadTree<TransitStopFacility> stopsQT;
 
     private SwissRailRaptorData(RaptorConfig config, int countStops,
-            RRoute[] routes, double[] departures, RRouteStop[] routeStops,
-            RTransfer[] transfers, Map<TransitStopFacility, Integer> stopFacilityIndices,
-            Map<TransitStopFacility, int[]> routeStopsPerStopFacility, QuadTree<TransitStopFacility> stopsQT) {
+                                RRoute[] routes, double[] departures, RRouteStop[] routeStops,
+                                RTransfer[] transfers, Map<TransitStopFacility, Integer> stopFacilityIndices,
+                                Map<TransitStopFacility, int[]> routeStopsPerStopFacility, QuadTree<TransitStopFacility> stopsQT) {
         this.config = config;
         this.countStops = countStops;
         this.countRouteStops = routeStops.length;
@@ -116,7 +117,9 @@ class SwissRailRaptorData {
         Map<TransitStopFacility, int[]> routeStopsPerStopFacility = new HashMap<>();
 
         for (TransitLine line : schedule.getTransitLines().values()) {
-            for (TransitRoute route : line.getRoutes().values()) {
+            List<TransitRoute> transitRoutes = new ArrayList<>(line.getRoutes().values());
+            transitRoutes.sort((tr1, tr2) -> Double.compare(getEarliestDeparture(tr1).getDepartureTime(), getEarliestDeparture(tr2).getDepartureTime())); // sort routes by earliest departure for additional performance gains
+            for (TransitRoute route : transitRoutes) {
                 int indexFirstDeparture = indexDeparture;
                 RRoute rroute = new RRoute(indexRouteStops, route.getStops().size(), indexFirstDeparture, route.getDepartures().size());
                 routes[indexRoutes] = rroute;
