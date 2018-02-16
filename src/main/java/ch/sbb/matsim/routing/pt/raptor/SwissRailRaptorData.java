@@ -6,10 +6,12 @@ package ch.sbb.matsim.routing.pt.raptor;
 
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Coord;
+import org.matsim.api.core.v01.Id;
 import org.matsim.core.utils.collections.QuadTree;
 import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.transitSchedule.api.Departure;
+import org.matsim.pt.transitSchedule.api.MinimalTransferTimes;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitRouteStop;
@@ -153,7 +155,7 @@ class SwissRailRaptorData {
             stopFacilityIndices.computeIfAbsent(stopFacility, stop -> stopFacilityIndices.size());
         }
 
-        Map<Integer, RTransfer[]> allTransfers = calculateRouteStopTransfers(stopsQT, routeStopsPerStopFacility, routeStops, config);
+        Map<Integer, RTransfer[]> allTransfers = calculateRouteStopTransfers(schedule, stopsQT, routeStopsPerStopFacility, routeStops, config);
         long countTransfers = 0;
         for (RTransfer[] transfers : allTransfers.values()) {
             countTransfers += transfers.length;
@@ -188,7 +190,7 @@ class SwissRailRaptorData {
     }
 
     // calculate possible transfers between TransitRouteStops
-    private static Map<Integer, RTransfer[]> calculateRouteStopTransfers(QuadTree<TransitStopFacility> stopsQT, Map<TransitStopFacility, int[]> routeStopsPerStopFacility, RRouteStop[] routeStops, RaptorConfig config) {
+    private static Map<Integer, RTransfer[]> calculateRouteStopTransfers(TransitSchedule schedule, QuadTree<TransitStopFacility> stopsQT, Map<TransitStopFacility, int[]> routeStopsPerStopFacility, RRouteStop[] routeStops, RaptorConfig config) {
         Map<Integer, RTransfer[]> transfers = new HashMap<>(stopsQT.size() * 5);
         double maxBeelineWalkConnectionDistance = config.getBeelineWalkConnectionDistance();
         double beelineWalkSpeed = config.getBeelineWalkSpeed();
@@ -196,10 +198,36 @@ class SwissRailRaptorData {
         double transferPenalty = config.getTransferPenaltyCost();
         double minimalTransferTime = config.getMinimalTransferTime();
 
+        Map<TransitStopFacility, List<TransitStopFacility>> stopToStopsTransfers = new HashMap<>();
+
+        // first, add transfers based on distance
         for (TransitStopFacility fromStop : routeStopsPerStopFacility.keySet()) {
             Coord fromCoord = fromStop.getCoord();
-            int[] fromRouteStopIndices = routeStopsPerStopFacility.get(fromStop);
             Collection<TransitStopFacility> nearbyStops = stopsQT.getDisk(fromCoord.getX(), fromCoord.getY(), maxBeelineWalkConnectionDistance);
+            stopToStopsTransfers.computeIfAbsent(fromStop, stop -> new ArrayList<>(5)).addAll(nearbyStops);
+        }
+
+        // take the transfers from the schedule into account
+        MinimalTransferTimes.MinimalTransferTimesIterator iter = schedule.getMinimalTransferTimes().iterator();
+        while (iter.hasNext()) {
+            iter.next();
+            Id<TransitStopFacility> fromStopId = iter.getFromStopId();
+            TransitStopFacility fromStop = schedule.getFacilities().get(fromStopId);
+            Id<TransitStopFacility> toStopId = iter.getToStopId();
+            TransitStopFacility toStop = schedule.getFacilities().get(toStopId);
+            List<TransitStopFacility> destinationStops = stopToStopsTransfers.computeIfAbsent(fromStop, stop -> new ArrayList<>(5));
+            if (!destinationStops.contains(toStop)) {
+                destinationStops.add(toStop);
+            }
+        }
+
+        // now calculate the transfers between the route stops
+        MinimalTransferTimes mtt = schedule.getMinimalTransferTimes();
+        for (Map.Entry<TransitStopFacility, List<TransitStopFacility>> e : stopToStopsTransfers.entrySet()) {
+            TransitStopFacility fromStop = e.getKey();
+            Coord fromCoord = fromStop.getCoord();
+            int[] fromRouteStopIndices = routeStopsPerStopFacility.get(fromStop);
+            Collection<TransitStopFacility> nearbyStops = e.getValue();
             for (TransitStopFacility toStop : nearbyStops) {
                 int[] toRouteStopIndices = routeStopsPerStopFacility.get(toStop);
                 double distance = CoordUtils.calcEuclideanDistance(fromCoord, toStop.getCoord());
@@ -207,6 +235,9 @@ class SwissRailRaptorData {
                 if (transferTime < minimalTransferTime) {
                     transferTime = minimalTransferTime;
                 }
+
+                transferTime = mtt.get(fromStop.getId(), toStop.getId(), transferTime);
+
                 double transferUtil = transferTime * transferUtilPerS;
                 double transferCost = -transferUtil + transferPenalty;
                 final double fixedTransferTime = transferTime; // variables must be effective final to be used in lambdas (below)
