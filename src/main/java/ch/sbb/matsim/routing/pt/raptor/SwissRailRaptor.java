@@ -37,11 +37,13 @@ public class SwissRailRaptor implements TransitRouter {
     private final SwissRailRaptorData data;
     private final SwissRailRaptorCore raptor;
     private final RaptorConfig config;
+    private final RaptorRouteSelector defaultRouteSelector;
 
-    public SwissRailRaptor(final SwissRailRaptorData data) {
+    public SwissRailRaptor(final SwissRailRaptorData data, RaptorRouteSelector routeSelector) {
         this.data = data;
         this.config = data.config;
         this.raptor = new SwissRailRaptorCore(data);
+        this.defaultRouteSelector = routeSelector;
     }
 
     @Override
@@ -60,10 +62,15 @@ public class SwissRailRaptor implements TransitRouter {
     }
 
     public List<Leg> calcRoute(Facility<?> fromFacility, Facility<?> toFacility, double earliestDepartureTime, double desiredDepartureTime, double latestDepartureTime, Person person) {
+        return calcRoute(fromFacility, toFacility, earliestDepartureTime, desiredDepartureTime, latestDepartureTime, person, this.defaultRouteSelector);
+    }
+
+    public List<Leg> calcRoute(Facility<?> fromFacility, Facility<?> toFacility, double earliestDepartureTime, double desiredDepartureTime, double latestDepartureTime, Person person, RaptorRouteSelector selector) {
         List<InitialStop> accessStops = findAccessStops(fromFacility, person);
         List<InitialStop> egressStops = findEgressStops(toFacility, person);
 
-        RaptorRoute foundRoute = this.raptor.calcLeastCostRoute(earliestDepartureTime, desiredDepartureTime, latestDepartureTime, accessStops, egressStops);
+        List<RaptorRoute> foundRoutes = this.raptor.calcRoutes(earliestDepartureTime, desiredDepartureTime, latestDepartureTime, accessStops, egressStops);
+        RaptorRoute foundRoute = selector.selectOne(foundRoutes, desiredDepartureTime);
         RaptorRoute directWalk = createDirectWalk(fromFacility, toFacility, desiredDepartureTime, person);
 
         if (foundRoute == null || directWalk.totalCosts < foundRoute.totalCosts) {
@@ -71,6 +78,19 @@ public class SwissRailRaptor implements TransitRouter {
         }
         List<Leg> legs = convertRouteToLegs(foundRoute);
         return legs;
+    }
+
+    public List<RaptorRoute> calcRoutes(Facility<?> fromFacility, Facility<?> toFacility, double earliestDepartureTime, double desiredDepartureTime, double latestDepartureTime, Person person) {
+        List<InitialStop> accessStops = findAccessStops(fromFacility, person);
+        List<InitialStop> egressStops = findEgressStops(toFacility, person);
+
+        List<RaptorRoute> foundRoutes = this.raptor.calcRoutes(earliestDepartureTime, desiredDepartureTime, latestDepartureTime, accessStops, egressStops);
+        RaptorRoute directWalk = createDirectWalk(fromFacility, toFacility, desiredDepartureTime, person);
+
+        if (foundRoutes == null || foundRoutes.isEmpty() || directWalk.totalCosts < foundRoutes.get(0).totalCosts) {
+            foundRoutes.add(directWalk); // add direct walk if it seems plausible
+        }
+        return foundRoutes;
     }
 
     private List<InitialStop> findAccessStops(Facility<?> facility, Person person) {

@@ -60,7 +60,7 @@ public class SwissRailRaptorTest {
 
     private SwissRailRaptor createTransitRouter(TransitSchedule schedule, RaptorConfig raptorConfig) {
         SwissRailRaptorData data = SwissRailRaptorData.create(schedule, raptorConfig);
-        SwissRailRaptor raptor = new SwissRailRaptor(data);
+        SwissRailRaptor raptor = new SwissRailRaptor(data, new LeastCostRaptorRouteSelector());
         return raptor;
     }
 

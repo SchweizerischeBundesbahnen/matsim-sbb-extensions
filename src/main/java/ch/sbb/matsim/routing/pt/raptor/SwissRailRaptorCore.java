@@ -143,12 +143,15 @@ public class SwissRailRaptorCore {
         return raptorRoute;
     }
 
-    public RaptorRoute calcLeastCostRoute(double earliestDepTime, double desiredDepTime, double latestDepTime, List<InitialStop> accessStops, List<InitialStop> egressStops) {
+    public List<RaptorRoute> calcRoutes(double earliestDepTime, double desiredDepTime, double latestDepTime, List<InitialStop> accessStops, List<InitialStop> egressStops) {
+        List<RaptorRoute> foundRoutes = new ArrayList<>();
         int maxTransfers = 20; // sensible defaults, could be made configurable if there is a need for it.
         final int maxTransfersAfterFirstArrival = 2;
         Map<PathElement, InitialStop> initialStopsPerStartPath = new HashMap<>();
 
         reset();
+
+        PathElement lastFoundBestPath = null;
 
         List<DepartureAtRouteStop> departures = new ArrayList<>();
         for (InitialStop accessStop : accessStops) {
@@ -221,7 +224,12 @@ public class SwissRailRaptorCore {
                 exploreRoutes();
 
                 PathElement leastCostPath = findLeastCostArrival(destinationStops);
-                if (leastCostPath != null) {
+                if (leastCostPath != null && leastCostPath != lastFoundBestPath) {
+                    lastFoundBestPath = leastCostPath;
+                    double depTime = calculateOptimalDepartureTime(leastCostPath, initialStopsPerStartPath);
+                    RaptorRoute raptorRoute = createRaptorRoute(leastCostPath, depTime);
+                    foundRoutes.add(raptorRoute);
+
                     int optimizedTransferLimit = leastCostPath.transferCount + maxTransfersAfterFirstArrival;
                     if (optimizedTransferLimit < maxTransfers) {
                         maxTransfers = optimizedTransferLimit;
@@ -245,24 +253,62 @@ public class SwissRailRaptorCore {
             }
         }
 
-        // create RaptorRoute based on PathElements
-        PathElement leastCostPath = findLeastCostArrival(destinationStops);
-        // calculate best departure time
-        PathElement firstPE = leastCostPath;
-        double depTime = desiredDepTime;
-        if (leastCostPath != null) {
-            while (firstPE.comingFrom != null) {
-                firstPE = firstPE.comingFrom;
+        List<RaptorRoute> routes = new ArrayList<>();
+        // filter found routes
+        // - first, sort them by #transfers (ascending), departureTime (descending), travelTime (ascending)
+        foundRoutes.sort((r1, r2) -> {
+            int cmp = Integer.compare(r1.getNumberOfTransfers(), r2.getNumberOfTransfers());
+            if (cmp == 0) {
+                // sort descending, thus r1 and r2 are switched in the argument list
+                cmp = Double.compare(r2.getDepartureTime(), r1.getDepartureTime());
             }
-            // currently, firstPE.arrivalTime is exactly the time of departure at that stop
-            // let's add some time for savety reasons and to add some realism
-            firstPE.arrivalTime -= this.data.config.getMinimalTransferTime();
-            // for more realism, a (random) value from a distribution could be taken instead of a fixed value
-            InitialStop accessStop = initialStopsPerStartPath.get(firstPE);
-            depTime = firstPE.arrivalTime - accessStop.accessTime;
+            if (cmp == 0) {
+                cmp = Double.compare(r1.getTravelTime(), r2.getTravelTime());
+            }
+            return cmp;
+        });
+
+        // - now filter. ignore routes that are:
+        //   - strictly worse than others (same number of transfers, depart earlier but arrive later)
+        //   - identical to the last one
+        int lastTransferCount = -1;
+        double lastDepTime = Double.NaN;
+        double lastArrTime = Double.NaN;
+        for (RaptorRoute route : foundRoutes) {
+            if (lastTransferCount != route.getNumberOfTransfers()) {
+                routes.add(route);
+                lastDepTime = route.getDepartureTime();
+                lastArrTime = lastDepTime + route.getTravelTime();
+                lastTransferCount = route.getNumberOfTransfers();
+            } else {
+                double departureTime = route.getDepartureTime();
+                double arrivalTime = departureTime + route.getTravelTime();
+                boolean ignore = departureTime <= lastDepTime && arrivalTime >= lastArrTime;
+                if (!ignore) {
+                    routes.add(route);
+                    lastDepTime = departureTime;
+                    lastArrTime = arrivalTime;
+                    lastTransferCount = route.getNumberOfTransfers();
+                }
+            }
         }
-        RaptorRoute raptorRoute = createRaptorRoute(leastCostPath, depTime);
-        return raptorRoute;
+
+        return routes;
+    }
+
+    private double calculateOptimalDepartureTime(PathElement leastCostPath, Map<PathElement, InitialStop> initialStopsPerStartPath) {
+        PathElement firstPE = leastCostPath;
+        while (firstPE.comingFrom != null) {
+            firstPE = firstPE.comingFrom;
+        }
+        double depTime = firstPE.arrivalTime;
+        // currently, firstPE.arrivalTime is exactly the time of departure at that stop
+        // let's add some time for safety reasons and to add some realism
+        depTime -= this.data.config.getMinimalTransferTime();
+        // for more realism, a (random) value from a distribution could be taken instead of a fixed value
+        InitialStop accessStop = initialStopsPerStartPath.get(firstPE);
+        depTime -= accessStop.accessTime; // take access time into account
+        return depTime;
     }
 
     private void exploreRoutes() {
