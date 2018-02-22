@@ -573,6 +573,40 @@ public class SwissRailRaptorTest {
         assertEquals(f.lineId3, ptRoute.getLineId());
     }
 
+    @Test
+    public void testRangeQuery() {
+        Fixture f = new Fixture();
+        f.init();
+        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        SwissRailRaptor raptor = createTransitRouter(f.schedule, raptorConfig);
+
+        Coord fromCoord = new Coord(3800, 5100);
+        Coord toCoord = new Coord(28100, 4950);
+        double depTime = 5.0 * 3600 + 50 * 60;
+        List<RaptorRoute> routes = raptor.calcRoutes(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime - 600, depTime, depTime + 3600, null);
+
+        for (int i = 0; i < routes.size(); i++) {
+            RaptorRoute route = routes.get(i);
+            System.out.println(i + "  depTime = " + Time.writeTime(route.getDepartureTime()) + "  arrTime = " + Time.writeTime(route.getDepartureTime() + route.getTravelTime()) + "  # transfers = " + route.getNumberOfTransfers() + "  costs = " + route.totalCosts);
+        }
+
+        Assert.assertEquals(6, routes.size());
+
+        assertRaptorRoute(routes.get(0), "06:40:12", "07:30:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(1), "06:20:12", "07:10:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(2), "06:00:12", "06:50:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(3), "05:40:12", "06:30:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(4), "06:40:12", "07:11:56", 1, 7.3466666);
+        assertRaptorRoute(routes.get(5), "05:40:12", "06:11:56", 1, 7.3466666);
+    }
+
+    private void assertRaptorRoute(RaptorRoute route, String depTime, String arrTime, int expectedTransfers, double expectedCost) {
+        Assert.assertEquals("wrong number of transfers", expectedTransfers, route.getNumberOfTransfers());
+        Assert.assertEquals("wrong departure time", Time.parseTime(depTime), route.getDepartureTime(), 0.99);
+        Assert.assertEquals("wrong arrival time", Time.parseTime(arrTime), route.getDepartureTime() + route.getTravelTime(), 0.99);
+        Assert.assertEquals("wrong cost", expectedCost, route.totalCosts, 1e-5);
+    }
+
     /**
      * Generates the following network for testing:
      * <pre>
