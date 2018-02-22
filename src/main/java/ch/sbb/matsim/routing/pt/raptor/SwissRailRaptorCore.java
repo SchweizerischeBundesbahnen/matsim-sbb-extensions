@@ -308,7 +308,7 @@ public class SwissRailRaptorCore {
         // for more realism, a (random) value from a distribution could be taken instead of a fixed value
         InitialStop accessStop = initialStopsPerStartPath.get(firstPE);
         depTime -= accessStop.accessTime; // take access time into account
-        return depTime;
+        return Math.floor(depTime);
     }
 
     private void exploreRoutes() {

@@ -91,7 +91,7 @@ public class SwissRailRaptor implements TransitRouter {
         List<TransitStopFacility> stops = findNearbyStops(facility);
         List<InitialStop> initialStops = stops.stream().map(stop -> {
             double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
-            double travelTime = beelineDistance / this.config.getBeelineWalkSpeed();
+            double travelTime = Math.ceil(beelineDistance / this.config.getBeelineWalkSpeed());
             double disutility = travelTime * this.config.getMarginalUtilityOfTravelTimeAccessWalk_utl_s();
             return new InitialStop(stop, -disutility, travelTime, TransportMode.transit_walk);
         }).collect(Collectors.toList());
@@ -102,7 +102,7 @@ public class SwissRailRaptor implements TransitRouter {
         List<TransitStopFacility> stops = findNearbyStops(facility);
         List<InitialStop> initialStops = stops.stream().map(stop -> {
             double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
-            double travelTime = beelineDistance / this.config.getBeelineWalkSpeed();
+            double travelTime = Math.ceil(beelineDistance / this.config.getBeelineWalkSpeed());
             double disutility = travelTime * this.config.getMarginalUtilityOfTravelTimeEgressWalk_utl_s();
             return new InitialStop(stop, -disutility, travelTime, TransportMode.transit_walk);
         }).collect(Collectors.toList());
