@@ -592,12 +592,12 @@ public class SwissRailRaptorTest {
 
         Assert.assertEquals(6, routes.size());
 
-        assertRaptorRoute(routes.get(0), "06:40:12", "07:30:56", 0, 10.1466666);
-        assertRaptorRoute(routes.get(1), "06:20:12", "07:10:56", 0, 10.1466666);
-        assertRaptorRoute(routes.get(2), "06:00:12", "06:50:56", 0, 10.1466666);
-        assertRaptorRoute(routes.get(3), "05:40:12", "06:30:56", 0, 10.1466666);
-        assertRaptorRoute(routes.get(4), "06:40:12", "07:11:56", 1, 7.3466666);
-        assertRaptorRoute(routes.get(5), "05:40:12", "06:11:56", 1, 7.3466666);
+        assertRaptorRoute(routes.get(0), "05:40:12", "06:30:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(1), "06:00:12", "06:50:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(2), "06:20:12", "07:10:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(3), "06:40:12", "07:30:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(4), "05:40:12", "06:11:56", 1, 7.3466666);
+        assertRaptorRoute(routes.get(5), "06:40:12", "07:11:56", 1, 7.3466666);
     }
 
     private void assertRaptorRoute(RaptorRoute route, String depTime, String arrTime, int expectedTransfers, double expectedCost) {

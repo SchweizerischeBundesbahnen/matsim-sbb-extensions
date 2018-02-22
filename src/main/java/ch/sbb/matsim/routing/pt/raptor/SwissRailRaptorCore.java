@@ -8,6 +8,7 @@ import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RRoute;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RRouteStop;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RTransfer;
 import org.matsim.api.core.v01.TransportMode;
+import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
@@ -280,46 +281,7 @@ public class SwissRailRaptorCore {
             }
         }
 
-        List<RaptorRoute> routes = new ArrayList<>();
-        // filter found routes
-        // - first, sort them by #transfers (ascending), departureTime (descending), travelTime (ascending)
-        foundRoutes.sort((r1, r2) -> {
-            int cmp = Integer.compare(r1.getNumberOfTransfers(), r2.getNumberOfTransfers());
-            if (cmp == 0) {
-                // sort descending, thus r1 and r2 are switched in the argument list
-                cmp = Double.compare(r2.getDepartureTime(), r1.getDepartureTime());
-            }
-            if (cmp == 0) {
-                cmp = Double.compare(r1.getTravelTime(), r2.getTravelTime());
-            }
-            return cmp;
-        });
-
-        // - now filter. ignore routes that are:
-        //   - strictly worse than others (same number of transfers, depart earlier but arrive later)
-        //   - identical to the last one
-        int lastTransferCount = -1;
-        double lastDepTime = Double.NaN;
-        double lastArrTime = Double.NaN;
-        for (RaptorRoute route : foundRoutes) {
-            if (lastTransferCount != route.getNumberOfTransfers()) {
-                routes.add(route);
-                lastDepTime = route.getDepartureTime();
-                lastArrTime = lastDepTime + route.getTravelTime();
-                lastTransferCount = route.getNumberOfTransfers();
-            } else {
-                double departureTime = route.getDepartureTime();
-                double arrivalTime = departureTime + route.getTravelTime();
-                boolean ignore = departureTime <= lastDepTime && arrivalTime >= lastArrTime;
-                if (!ignore) {
-                    routes.add(route);
-                    lastDepTime = departureTime;
-                    lastArrTime = arrivalTime;
-                    lastTransferCount = route.getNumberOfTransfers();
-                }
-            }
-        }
-
+        List<RaptorRoute> routes = filterRoutes(foundRoutes);
         return routes;
     }
 
@@ -336,6 +298,57 @@ public class SwissRailRaptorCore {
         InitialStop accessStop = initialStopsPerStartPath.get(firstPE);
         depTime -= accessStop.accessTime; // take access time into account
         return Math.floor(depTime);
+    }
+
+    private List<RaptorRoute> filterRoutes(List<RaptorRoute> allRoutes) {
+        // first, eliminate duplicates
+        allRoutes.sort((r1, r2) -> {
+            int cmp = Integer.compare(r1.getNumberOfTransfers(), r2.getNumberOfTransfers());
+            if (cmp == 0) {
+                cmp = Double.compare(r1.getDepartureTime(), r2.getDepartureTime());
+            }
+            if (cmp == 0) {
+                cmp = Double.compare(r1.getTravelTime(), r2.getTravelTime());
+            }
+            return cmp;
+        });
+        List<RaptorRoute> uniqueRoutes = new ArrayList<>();
+        int lastTransferCount = -1;
+        double lastDepTime = Double.NaN;
+        double lastTravelTime = Double.NaN;
+        for (RaptorRoute route : allRoutes) {
+            if (route.getNumberOfTransfers() != lastTransferCount
+                || route.getDepartureTime() != lastDepTime
+                || route.getTravelTime() != lastTravelTime) {
+                uniqueRoutes.add(route);
+                lastTransferCount = route.getNumberOfTransfers();
+                lastDepTime = route.getDepartureTime();
+                lastTravelTime = route.getTravelTime();
+            }
+        }
+
+        // now search for non-dominant routes
+        List<RaptorRoute> routesToKeep = new ArrayList<>();
+        for (RaptorRoute route1 : uniqueRoutes) {
+            boolean addRoute1 = true;
+            for (RaptorRoute route2 : uniqueRoutes) {
+                if (route1 != route2) {
+                    // check if route2 dominates route1
+                    double arrTime1 = route1.getDepartureTime() + route1.getTravelTime();
+                    double arrTime2 = route2.getDepartureTime() + route2.getTravelTime();
+                    if (route2.getNumberOfTransfers() <=route1.getNumberOfTransfers()
+                        && route2.getDepartureTime() >= route1.getDepartureTime()
+                        && arrTime2 <= arrTime1) {
+                        addRoute1 = false;
+                        break;
+                    }
+                }
+            }
+            if (addRoute1) {
+                routesToKeep.add(route1);
+            }
+        }
+        return routesToKeep;
     }
 
     private void exploreRoutes() {
