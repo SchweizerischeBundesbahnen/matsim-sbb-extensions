@@ -19,10 +19,10 @@ public class SBBTransitConfigGroup extends ReflectiveConfigGroup {
     static public final String GROUP_NAME = "SBBPt";
 
     static private final String PARAM_DETERMINISTIC_SERVICE_MODES = "deterministicServiceModes";
-    static private final String PARAM_CREATE_LINK_EVENTS = "createLinkEvents";
+    static private final String PARAM_CREATE_LINK_EVENTS_INTERVAL = "createLinkEventsInterval";
 
     private Set<String> deterministicServiceModes = new HashSet<>();
-    private boolean createLinkEvents = false;
+    private int createLinkEventsInterval = 0;
 
     public SBBTransitConfigGroup() {
         super(GROUP_NAME);
@@ -47,29 +47,22 @@ public class SBBTransitConfigGroup extends ReflectiveConfigGroup {
         this.deterministicServiceModes.addAll(modes);
     }
 
-    @StringGetter(PARAM_CREATE_LINK_EVENTS)
-    private String getCreateLinkEventsAsString() {
-        return Boolean.toString(this.createLinkEvents);
+    @StringGetter(PARAM_CREATE_LINK_EVENTS_INTERVAL)
+    public int getCreateLinkEventsInterval() {
+        return this.createLinkEventsInterval;
     }
 
-    public boolean isCreateLinkEvents() {
-        return this.createLinkEvents;
-    }
-
-    @StringSetter(PARAM_CREATE_LINK_EVENTS)
-    private void setCreateLinkEvents(String value) {
-        this.createLinkEvents = Boolean.parseBoolean(value);
-    }
-
-    public void setCreateLinkEvents(boolean value) {
-        this.createLinkEvents = value;
+    @StringSetter(PARAM_CREATE_LINK_EVENTS_INTERVAL)
+    public void setCreateLinkEventsInterval(int value) {
+        this.createLinkEventsInterval = value;
     }
 
     @Override
     public Map<String, String> getComments() {
         Map<String, String> comments = super.getComments();
         comments.put(PARAM_DETERMINISTIC_SERVICE_MODES, "Leg modes used by the created transit drivers that should be simulated strictly according to the schedule.");
-        comments.put(PARAM_CREATE_LINK_EVENTS, "Specifies whether the deterministic simulation should create linkEnter- and linkLeave-events, useful for visualization purposes. Defaults to false.");
+        comments.put(PARAM_CREATE_LINK_EVENTS_INTERVAL, "(iterationNumber % createLinkEventsInterval) == 0 defines in which iterations linkEnter- and linkLeave-events are created,\n" +
+                "\t\t\t\t\"useful for visualization or analysis purposes. Defaults to 0. `0' disables the creation of events completely.");
         return comments;
     }
 }
