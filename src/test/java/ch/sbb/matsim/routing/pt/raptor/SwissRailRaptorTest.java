@@ -635,7 +635,8 @@ public class SwissRailRaptorTest {
         Coord toCoord = new Coord(28100, 4950);
         double depTime = 5.0 * 3600 + 50 * 60;
         List<Leg> legs = raptor.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime, null);
-
+        // this test mostly checks that there are no Exceptions.
+        Assert.assertEquals(3, legs.size());
     }
 
     /**
