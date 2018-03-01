@@ -607,6 +607,37 @@ public class SwissRailRaptorTest {
         Assert.assertEquals("wrong cost", expectedCost, route.totalCosts, 1e-5);
     }
 
+    /** test for https://github.com/SchweizerischeBundesbahnen/matsim-sbb-extensions/issues/1
+     *
+     * If there are StopFacilities in the transit schedule, that are not part of any route, the Router crashes with a NPE in SwissRailRaptorData at line 213, because toRouteStopIndices == null.
+     */
+    @Test
+    public void testUnusedTransitStop() {
+        Fixture f = new Fixture();
+        f.init();
+
+        // add some unused transit stops:
+        // - one close to the start coordinate, so it gets selected as start stop
+        TransitStopFacility fooStop = f.schedule.getFactory().createTransitStopFacility(Id.create("foo", TransitStopFacility.class), new Coord(3900, 4900), true);
+        f.schedule.addStopFacility(fooStop);
+        // - one close to another stop as a potential transfer
+        TransitStopFacility barStop = f.schedule.getFactory().createTransitStopFacility(Id.create("bar", TransitStopFacility.class), new Coord(12010, 4990), true);
+        f.schedule.addStopFacility(barStop);
+        // - one close to the end coordinate as a potential arrival stop
+        TransitStopFacility bazStop = f.schedule.getFactory().createTransitStopFacility(Id.create("baz", TransitStopFacility.class), new Coord(28010, 4990), true);
+        f.schedule.addStopFacility(bazStop);
+
+
+        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        SwissRailRaptor raptor = createTransitRouter(f.schedule, raptorConfig);
+
+        Coord fromCoord = new Coord(3800, 5100);
+        Coord toCoord = new Coord(28100, 4950);
+        double depTime = 5.0 * 3600 + 50 * 60;
+        List<Leg> legs = raptor.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime, null);
+
+    }
+
     /**
      * Generates the following network for testing:
      * <pre>
