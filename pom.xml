@@ -8,7 +8,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.sbb</groupId>
 	<artifactId>matsim-sbb-extension</artifactId>
-	<version>0.9.3-SNAPSHOT</version>
+	<version>0.9.3-sbb.1-SNAPSHOT</version>
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
 
@@ -25,7 +25,7 @@
 		<dependency>
 			<groupId>org.matsim</groupId>
 			<artifactId>matsim</artifactId>
-			<version>0.9.0</version>
+			<version>0.9.1-sbb.1</version>
 		</dependency>
 
 		<dependency>
