@@ -587,7 +587,7 @@ public class SwissRailRaptorTest {
 
         for (int i = 0; i < routes.size(); i++) {
             RaptorRoute route = routes.get(i);
-            System.out.println(i + "  depTime = " + Time.writeTime(route.getDepartureTime()) + "  arrTime = " + Time.writeTime(route.getDepartureTime() + route.getTravelTime()) + "  # transfers = " + route.getNumberOfTransfers() + "  costs = " + route.totalCosts);
+            System.out.println(i + "  depTime = " + Time.writeTime(route.getDepartureTime()) + "  arrTime = " + Time.writeTime(route.getDepartureTime() + route.getTravelTime()) + "  # transfers = " + route.getNumberOfTransfers() + "  costs = " + route.getTotalCosts());
         }
 
         Assert.assertEquals(6, routes.size());
@@ -604,7 +604,7 @@ public class SwissRailRaptorTest {
         Assert.assertEquals("wrong number of transfers", expectedTransfers, route.getNumberOfTransfers());
         Assert.assertEquals("wrong departure time", Time.parseTime(depTime), route.getDepartureTime(), 0.99);
         Assert.assertEquals("wrong arrival time", Time.parseTime(arrTime), route.getDepartureTime() + route.getTravelTime(), 0.99);
-        Assert.assertEquals("wrong cost", expectedCost, route.totalCosts, 1e-5);
+        Assert.assertEquals("wrong cost", expectedCost, route.getTotalCosts(), 1e-5);
     }
 
     /** test for https://github.com/SchweizerischeBundesbahnen/matsim-sbb-extensions/issues/1

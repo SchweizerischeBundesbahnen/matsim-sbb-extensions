@@ -21,7 +21,7 @@ public class RaptorRoute {
 
     final Facility<?> fromFacility;
     final Facility<?> toFacility;
-    final double totalCosts;
+    private final double totalCosts;
     private double departureTime = Double.NaN;
     private double travelTime =  0;
     private int ptLegCount = 0;
@@ -51,15 +51,19 @@ public class RaptorRoute {
         this.ptLegCount++;
     }
 
-    double getDepartureTime() {
+    public double getTotalCosts() {
+        return this.totalCosts;
+    }
+
+    public double getDepartureTime() {
         return this.departureTime;
     }
 
-    double getTravelTime() {
+    public double getTravelTime() {
         return this.travelTime;
     }
 
-    int getNumberOfTransfers() {
+    public int getNumberOfTransfers() {
         if (this.ptLegCount > 0) {
             return this.ptLegCount - 1;
         }

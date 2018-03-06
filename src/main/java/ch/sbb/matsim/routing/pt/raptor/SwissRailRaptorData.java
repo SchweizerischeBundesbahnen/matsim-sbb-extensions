@@ -28,7 +28,7 @@ import java.util.Set;
 /**
  * @author mrieser / SBB
  */
-class SwissRailRaptorData {
+public class SwissRailRaptorData {
 
     private static final Logger log = Logger.getLogger(SwissRailRaptorData.class);
 

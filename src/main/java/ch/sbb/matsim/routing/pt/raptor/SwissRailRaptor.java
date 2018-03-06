@@ -48,7 +48,7 @@ public class SwissRailRaptor implements TransitRouter {
         RaptorRoute foundRoute = this.raptor.calcLeastCostRoute(departureTime, accessStops, egressStops);
         RaptorRoute directWalk = createDirectWalk(fromFacility, toFacility, departureTime, person);
 
-        if (foundRoute == null || directWalk.totalCosts < foundRoute.totalCosts) {
+        if (foundRoute == null || directWalk.getTotalCosts() < foundRoute.getTotalCosts()) {
             foundRoute = directWalk;
         }
         List<Leg> legs = RaptorUtils.convertRouteToLegs(foundRoute);
@@ -67,7 +67,7 @@ public class SwissRailRaptor implements TransitRouter {
         RaptorRoute foundRoute = selector.selectOne(foundRoutes, desiredDepartureTime);
         RaptorRoute directWalk = createDirectWalk(fromFacility, toFacility, desiredDepartureTime, person);
 
-        if (foundRoute == null || directWalk.totalCosts < foundRoute.totalCosts) {
+        if (foundRoute == null || directWalk.getTotalCosts() < foundRoute.getTotalCosts()) {
             foundRoute = directWalk;
         }
         List<Leg> legs = RaptorUtils.convertRouteToLegs(foundRoute);
@@ -81,7 +81,7 @@ public class SwissRailRaptor implements TransitRouter {
         List<RaptorRoute> foundRoutes = this.raptor.calcRoutes(earliestDepartureTime, desiredDepartureTime, latestDepartureTime, accessStops, egressStops);
         RaptorRoute directWalk = createDirectWalk(fromFacility, toFacility, desiredDepartureTime, person);
 
-        if (foundRoutes == null || foundRoutes.isEmpty() || directWalk.totalCosts < foundRoutes.get(0).totalCosts) {
+        if (foundRoutes == null || foundRoutes.isEmpty() || directWalk.getTotalCosts() < foundRoutes.get(0).getTotalCosts()) {
             foundRoutes.add(directWalk); // add direct walk if it seems plausible
         }
         return foundRoutes;
