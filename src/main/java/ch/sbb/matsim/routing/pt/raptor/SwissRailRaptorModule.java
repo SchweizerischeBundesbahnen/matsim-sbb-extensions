@@ -16,6 +16,7 @@ public class SwissRailRaptorModule extends AbstractModule {
     public void install() {
         if (getConfig().transit().isUseTransit()) {
             bind(TransitRouter.class).toProvider(SwissRailRaptorFactory.class);
+            bind(RaptorRouteSelector.class).to(LeastCostRaptorRouteSelector.class);
         }
     }
 

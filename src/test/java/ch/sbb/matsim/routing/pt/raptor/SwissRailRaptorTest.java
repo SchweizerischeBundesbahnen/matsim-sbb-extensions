@@ -60,7 +60,7 @@ public class SwissRailRaptorTest {
 
     private SwissRailRaptor createTransitRouter(TransitSchedule schedule, RaptorConfig raptorConfig) {
         SwissRailRaptorData data = SwissRailRaptorData.create(schedule, raptorConfig);
-        SwissRailRaptor raptor = new SwissRailRaptor(data);
+        SwissRailRaptor raptor = new SwissRailRaptor(data, new LeastCostRaptorRouteSelector());
         return raptor;
     }
 
@@ -89,7 +89,7 @@ public class SwissRailRaptorTest {
         }
         double expectedTravelTime = 29.0 * 60 + // agent takes the *:06 course, arriving in D at *:29
                 CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
-        assertEquals(expectedTravelTime, actualTravelTime, MatsimTestCase.EPSILON);
+        assertEquals(Math.ceil(expectedTravelTime), actualTravelTime, MatsimTestCase.EPSILON);
     }
 
     @Test
@@ -107,9 +107,9 @@ public class SwissRailRaptorTest {
         assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
 
         double expectedAccessWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("0", TransitStopFacility.class)).getCoord(), fromCoord) / raptorConfig.getBeelineWalkSpeed();
-        assertEquals(legs.get(0).getTravelTime(), expectedAccessWalkTime, MatsimTestUtils.EPSILON);
+        assertEquals(Math.ceil(expectedAccessWalkTime), legs.get(0).getTravelTime(), MatsimTestUtils.EPSILON);
         double expectedEgressWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
-        assertEquals(legs.get(2).getTravelTime(), expectedEgressWalkTime, MatsimTestUtils.EPSILON);
+        assertEquals(Math.ceil(expectedEgressWalkTime), legs.get(2).getTravelTime(), MatsimTestUtils.EPSILON);
     }
 
     @Test
@@ -128,9 +128,9 @@ public class SwissRailRaptorTest {
         assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
 
         double expectedAccessWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("0", TransitStopFacility.class)).getCoord(), fromCoord) / raptorConfig.getBeelineWalkSpeed();
-        assertEquals(legs.get(0).getTravelTime(), expectedAccessWalkTime, MatsimTestUtils.EPSILON);
+        assertEquals(Math.ceil(expectedAccessWalkTime), legs.get(0).getTravelTime(), MatsimTestUtils.EPSILON);
         double expectedEgressWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
-        assertEquals(legs.get(2).getTravelTime(), expectedEgressWalkTime, MatsimTestUtils.EPSILON);
+        assertEquals(Math.ceil(expectedEgressWalkTime), legs.get(2).getTravelTime(), MatsimTestUtils.EPSILON);
     }
 
     @Test
@@ -226,7 +226,7 @@ public class SwissRailRaptorTest {
         }
         double expectedTravelTime = 31.0 * 60 + // agent takes the *:06 course, arriving in C at *:18, departing at *:21, arriving in K at*:31
                 CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("19", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
-        assertEquals(expectedTravelTime, actualTravelTime, MatsimTestCase.EPSILON);
+        assertEquals(Math.ceil(expectedTravelTime), actualTravelTime, MatsimTestCase.EPSILON);
     }
 
     @Test
@@ -240,9 +240,6 @@ public class SwissRailRaptorTest {
         Fixture f = new Fixture();
         f.init();
         RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouterConfig trConfig = new TransitRouterConfig(f.scenario.getConfig().planCalcScore(),
-                f.scenario.getConfig().plansCalcRoute(), f.scenario.getConfig().transitRouter(),
-                f.scenario.getConfig().vspExperimental());
         TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
         Coord toCoord = new Coord(28100, 4950);
         List<Leg> legs = router.calcRoute(new FakeFacility( new Coord(3800, 5100)), new FakeFacility(toCoord), 5.0*3600 + 40.0*60, null);
@@ -268,8 +265,8 @@ public class SwissRailRaptorTest {
             actualTravelTime += leg.getTravelTime();
         }
         double expectedTravelTime = 29.0 * 60 + // agent takes the *:46 course, arriving in C at *:58, departing at *:00, arriving in G at*:09
-                CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("12", TransitStopFacility.class)).getCoord(), toCoord) / trConfig.getBeelineWalkSpeed();
-        assertEquals(expectedTravelTime, actualTravelTime, MatsimTestCase.EPSILON);
+                CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("12", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
+        assertEquals(Math.ceil(expectedTravelTime), actualTravelTime, MatsimTestCase.EPSILON);
     }
 
 
@@ -574,6 +571,72 @@ public class SwissRailRaptorTest {
         assertEquals(f.stop2.getId(), ptRoute.getAccessStopId());
         assertEquals(f.stop3.getId(), ptRoute.getEgressStopId());
         assertEquals(f.lineId3, ptRoute.getLineId());
+    }
+
+    @Test
+    public void testRangeQuery() {
+        Fixture f = new Fixture();
+        f.init();
+        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        SwissRailRaptor raptor = createTransitRouter(f.schedule, raptorConfig);
+
+        Coord fromCoord = new Coord(3800, 5100);
+        Coord toCoord = new Coord(28100, 4950);
+        double depTime = 5.0 * 3600 + 50 * 60;
+        List<RaptorRoute> routes = raptor.calcRoutes(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime - 600, depTime, depTime + 3600, null);
+
+        for (int i = 0; i < routes.size(); i++) {
+            RaptorRoute route = routes.get(i);
+            System.out.println(i + "  depTime = " + Time.writeTime(route.getDepartureTime()) + "  arrTime = " + Time.writeTime(route.getDepartureTime() + route.getTravelTime()) + "  # transfers = " + route.getNumberOfTransfers() + "  costs = " + route.totalCosts);
+        }
+
+        Assert.assertEquals(6, routes.size());
+
+        assertRaptorRoute(routes.get(0), "05:40:12", "06:30:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(1), "06:00:12", "06:50:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(2), "06:20:12", "07:10:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(3), "06:40:12", "07:30:56", 0, 10.1466666);
+        assertRaptorRoute(routes.get(4), "05:40:12", "06:11:56", 1, 7.3466666);
+        assertRaptorRoute(routes.get(5), "06:40:12", "07:11:56", 1, 7.3466666);
+    }
+
+    private void assertRaptorRoute(RaptorRoute route, String depTime, String arrTime, int expectedTransfers, double expectedCost) {
+        Assert.assertEquals("wrong number of transfers", expectedTransfers, route.getNumberOfTransfers());
+        Assert.assertEquals("wrong departure time", Time.parseTime(depTime), route.getDepartureTime(), 0.99);
+        Assert.assertEquals("wrong arrival time", Time.parseTime(arrTime), route.getDepartureTime() + route.getTravelTime(), 0.99);
+        Assert.assertEquals("wrong cost", expectedCost, route.totalCosts, 1e-5);
+    }
+
+    /** test for https://github.com/SchweizerischeBundesbahnen/matsim-sbb-extensions/issues/1
+     *
+     * If there are StopFacilities in the transit schedule, that are not part of any route, the Router crashes with a NPE in SwissRailRaptorData at line 213, because toRouteStopIndices == null.
+     */
+    @Test
+    public void testUnusedTransitStop() {
+        Fixture f = new Fixture();
+        f.init();
+
+        // add some unused transit stops:
+        // - one close to the start coordinate, so it gets selected as start stop
+        TransitStopFacility fooStop = f.schedule.getFactory().createTransitStopFacility(Id.create("foo", TransitStopFacility.class), new Coord(3900, 4900), true);
+        f.schedule.addStopFacility(fooStop);
+        // - one close to another stop as a potential transfer
+        TransitStopFacility barStop = f.schedule.getFactory().createTransitStopFacility(Id.create("bar", TransitStopFacility.class), new Coord(12010, 4990), true);
+        f.schedule.addStopFacility(barStop);
+        // - one close to the end coordinate as a potential arrival stop
+        TransitStopFacility bazStop = f.schedule.getFactory().createTransitStopFacility(Id.create("baz", TransitStopFacility.class), new Coord(28010, 4990), true);
+        f.schedule.addStopFacility(bazStop);
+
+
+        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        SwissRailRaptor raptor = createTransitRouter(f.schedule, raptorConfig);
+
+        Coord fromCoord = new Coord(3800, 5100);
+        Coord toCoord = new Coord(28100, 4950);
+        double depTime = 5.0 * 3600 + 50 * 60;
+        List<Leg> legs = raptor.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime, null);
+        // this test mostly checks that there are no Exceptions.
+        Assert.assertEquals(3, legs.size());
     }
 
     /**

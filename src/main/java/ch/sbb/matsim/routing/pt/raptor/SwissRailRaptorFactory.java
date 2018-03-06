@@ -21,17 +21,19 @@ public class SwissRailRaptorFactory implements Provider<TransitRouter> {
     private SwissRailRaptorData data = null;
     private final TransitSchedule schedule;
     private final RaptorConfig raptorConfig;
+    private final RaptorRouteSelector routeSelector;
 
     @Inject
-    public SwissRailRaptorFactory(final TransitSchedule schedule, final Config config) {
+    public SwissRailRaptorFactory(final TransitSchedule schedule, final Config config, RaptorRouteSelector routeSelector) {
         this.schedule = schedule;
         this.raptorConfig = RaptorUtils.createRaptorConfig(config);
+        this.routeSelector = routeSelector;
     }
 
     @Override
     public TransitRouter get() {
         SwissRailRaptorData data = getData();
-        return new SwissRailRaptor(data);
+        return new SwissRailRaptor(data, this.routeSelector);
     }
 
     private SwissRailRaptorData getData() {

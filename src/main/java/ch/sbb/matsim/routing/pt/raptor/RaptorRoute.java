@@ -22,6 +22,9 @@ public class RaptorRoute {
     final Facility<?> fromFacility;
     final Facility<?> toFacility;
     final double totalCosts;
+    private double departureTime = Double.NaN;
+    private double travelTime =  0;
+    private int ptLegCount = 0;
     private List<RoutePart> editableParts = new ArrayList<>();
     final List<RoutePart> parts = Collections.unmodifiableList(this.editableParts);
 
@@ -33,10 +36,34 @@ public class RaptorRoute {
 
     public void addNonPt(TransitStopFacility fromStop, TransitStopFacility toStop, double depTime, double travelTime, String mode) {
         this.editableParts.add(new RoutePart(fromStop, toStop, mode, depTime, travelTime, null, null));
+        if (Double.isNaN(this.departureTime)) {
+            this.departureTime = depTime;
+        }
+        this.travelTime += travelTime;
     }
 
     public void addPt(TransitStopFacility fromStop, TransitStopFacility toStop, TransitLine line, TransitRoute route, double depTime, double travelTime) {
         this.editableParts.add(new RoutePart(fromStop, toStop, TransportMode.pt, depTime, travelTime, line, route));
+        if (Double.isNaN(this.departureTime)) {
+            this.departureTime = depTime;
+        }
+        this.travelTime += travelTime;
+        this.ptLegCount++;
+    }
+
+    double getDepartureTime() {
+        return this.departureTime;
+    }
+
+    double getTravelTime() {
+        return this.travelTime;
+    }
+
+    int getNumberOfTransfers() {
+        if (this.ptLegCount > 0) {
+            return this.ptLegCount - 1;
+        }
+        return 0;
     }
 
     static final class RoutePart {
