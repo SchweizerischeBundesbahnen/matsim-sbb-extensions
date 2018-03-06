@@ -16,12 +16,14 @@ import org.matsim.pt.transitSchedule.api.TransitRouteStop;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author mrieser / SBB
@@ -42,9 +44,9 @@ class SwissRailRaptorData {
     final QuadTree<TransitStopFacility> stopsQT;
 
     private SwissRailRaptorData(RaptorConfig config, int countStops,
-            RRoute[] routes, double[] departures, RRouteStop[] routeStops,
-            RTransfer[] transfers, Map<TransitStopFacility, Integer> stopFacilityIndices,
-            Map<TransitStopFacility, int[]> routeStopsPerStopFacility, QuadTree<TransitStopFacility> stopsQT) {
+                                RRoute[] routes, double[] departures, RRouteStop[] routeStops,
+                                RTransfer[] transfers, Map<TransitStopFacility, Integer> stopFacilityIndices,
+                                Map<TransitStopFacility, int[]> routeStopsPerStopFacility, QuadTree<TransitStopFacility> stopsQT) {
         this.config = config;
         this.countStops = countStops;
         this.countRouteStops = routeStops.length;
@@ -60,28 +62,6 @@ class SwissRailRaptorData {
     public static SwissRailRaptorData create(TransitSchedule schedule, RaptorConfig config) {
         log.info("Preparing data for SwissRailRaptor...");
         long startMillis = System.currentTimeMillis();
-
-        int countStopFacilities = schedule.getFacilities().size();
-
-        double minX = Double.POSITIVE_INFINITY;
-        double minY = Double.POSITIVE_INFINITY;
-        double maxX = Double.NEGATIVE_INFINITY;
-        double maxY = Double.NEGATIVE_INFINITY;
-        for (TransitStopFacility stopFacility : schedule.getFacilities().values()) {
-            double x = stopFacility.getCoord().getX();
-            double y = stopFacility.getCoord().getY();
-
-            if (x < minX) minX = x;
-            if (y < minY) minY = y;
-            if (x > maxX) maxX = x;
-            if (y > maxY) maxY = y;
-        }
-        QuadTree<TransitStopFacility> stopsQT = new QuadTree<>(minX, minY, maxX, maxY);
-        for (TransitStopFacility stopFacility : schedule.getFacilities().values()) {
-            double x = stopFacility.getCoord().getX();
-            double y = stopFacility.getCoord().getY();
-            stopsQT.put(x, y, stopFacility);
-        }
 
         int countRoutes = 0;
         long countRouteStops = 0;
@@ -112,11 +92,13 @@ class SwissRailRaptorData {
 
         // enumerate TransitStopFacilities along their usage in transit routes to (hopefully) achieve a better memory locality
         // well, I'm not even sure how often we'll need the transit stop facilities, likely we'll use RouteStops more often
-        Map<TransitStopFacility, Integer> stopFacilityIndices = new HashMap<>((int) (countStopFacilities * 1.5));
+        Map<TransitStopFacility, Integer> stopFacilityIndices = new HashMap<>((int) (schedule.getFacilities().size() * 1.5));
         Map<TransitStopFacility, int[]> routeStopsPerStopFacility = new HashMap<>();
 
         for (TransitLine line : schedule.getTransitLines().values()) {
-            for (TransitRoute route : line.getRoutes().values()) {
+            List<TransitRoute> transitRoutes = new ArrayList<>(line.getRoutes().values());
+            transitRoutes.sort((tr1, tr2) -> Double.compare(getEarliestDeparture(tr1).getDepartureTime(), getEarliestDeparture(tr2).getDepartureTime())); // sort routes by earliest departure for additional performance gains
+            for (TransitRoute route : transitRoutes) {
                 int indexFirstDeparture = indexDeparture;
                 RRoute rroute = new RRoute(indexRouteStops, route.getStops().size(), indexFirstDeparture, route.getDepartures().size());
                 routes[indexRoutes] = rroute;
@@ -145,10 +127,28 @@ class SwissRailRaptorData {
             }
         }
 
-        // make sure even unused stops have an index, as they could be used during route-search
-        for (TransitStopFacility stopFacility : schedule.getFacilities().values()) {
-            stopFacilityIndices.computeIfAbsent(stopFacility, stop -> stopFacilityIndices.size());
+        // only put used transit stops into the quad tree
+        double minX = Double.POSITIVE_INFINITY;
+        double minY = Double.POSITIVE_INFINITY;
+        double maxX = Double.NEGATIVE_INFINITY;
+        double maxY = Double.NEGATIVE_INFINITY;
+        Set<TransitStopFacility> stops = routeStopsPerStopFacility.keySet();
+        for (TransitStopFacility stopFacility : stops) {
+            double x = stopFacility.getCoord().getX();
+            double y = stopFacility.getCoord().getY();
+
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
         }
+        QuadTree<TransitStopFacility> stopsQT = new QuadTree<>(minX, minY, maxX, maxY);
+        for (TransitStopFacility stopFacility : stops) {
+            double x = stopFacility.getCoord().getX();
+            double y = stopFacility.getCoord().getY();
+            stopsQT.put(x, y, stopFacility);
+        }
+        int countStopFacilities = stops.size();
 
         Map<Integer, RTransfer[]> allTransfers = calculateRouteStopTransfers(stopsQT, routeStopsPerStopFacility, routeStops, config);
         long countTransfers = 0;

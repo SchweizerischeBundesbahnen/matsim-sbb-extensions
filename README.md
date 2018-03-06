@@ -103,7 +103,7 @@ To use the deterministic pt simulation, a few things need to be taken into accou
   ```$xml
   <module name="SBBPt" >
     <param name="deterministicServiceModes" value="train,metro" />
-    <param name="createLinkEvents" value="true" />
+    <param name="createLinkEventsInterval" value="10" />
   </module>
   ```
   The first parameter `deterministicServiceModes` lists all transportModes of transit routes that
@@ -111,12 +111,14 @@ To use the deterministic pt simulation, a few things need to be taken into accou
   All transportModes of transit routes not specified in this list will be simulated on the queue
   network as usual.
   
-  The second parameter `createLinkEvents` specifies if LinkEnter- and LinkLeave-events should be
+  The second parameter `createLinkEventsInterval` specifies in which iteration LinkEnter- and LinkLeave-events should be
   generated for vehicles simulated by the deterministic pt engine. As pt vehicles are teleported 
   between stops by the deterministic pt simulation, they do not create any Link-events by default. 
   But for visualization or analysis purposes it might still be useful to have such events as if the 
-  vehicles were actually driving along the links. Set the parameter to `true` to make the 
-  deterministic pt simulation create appropriate Link-events.
+  vehicles were actually driving along the links. Set the parameter to `0` to disable the creation
+  of link-events. If the parameter is set to a value &gt;0, the 
+  deterministic pt simulation will create appropriate Link-events every n-th iteration, similar to
+  the controller's `writeEventsInterval`.
 
 Have a look at the class `ch.sbb.matsim.RunSBBExtension` included in the repository to see 
 how to enable the deterministic pt simulation when running MATSim. If you already have your own

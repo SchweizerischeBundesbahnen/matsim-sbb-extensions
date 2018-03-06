@@ -44,6 +44,7 @@ import org.matsim.core.mobsim.qsim.pt.TransitStopAgentTracker;
 import org.matsim.core.mobsim.qsim.pt.TransitStopHandlerFactory;
 import org.matsim.core.mobsim.qsim.pt.TransitVehicle;
 import org.matsim.core.population.routes.NetworkRoute;
+import org.matsim.core.replanning.ReplanningContext;
 import org.matsim.core.utils.collections.CollectionUtils;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.Umlauf;
@@ -71,6 +72,7 @@ public class SBBTransitQSimEngine extends TransitQSimEngine /*implements Departu
     private final SBBTransitConfigGroup config;
     private final TransitConfigGroup ptConfig;
     private final QSim qSim;
+    private final ReplanningContext context;
     private final TransitStopAgentTracker agentTracker;
     private final TransitSchedule schedule;
     private InternalInterface internalInterface;
@@ -78,20 +80,20 @@ public class SBBTransitQSimEngine extends TransitQSimEngine /*implements Departu
     private TransitDriverAgentFactory networkDriverFactory;
     private TransitStopHandlerFactory stopHandlerFactory = new SimpleTransitStopHandlerFactory();
     private final PriorityQueue<TransitEvent> eventQueue = new PriorityQueue<>();
-    private final boolean createLinkEvents;
+    private boolean createLinkEvents = false;
     private final Map<TransitRoute, List<Link[]>> linksCache;
     private final PriorityQueue<LinkEvent> linkEventQueue;
 
     @Inject
-    public SBBTransitQSimEngine(QSim qSim) {
+    public SBBTransitQSimEngine(QSim qSim, ReplanningContext context) {
         super(qSim);
         this.qSim = qSim;
+        this.context = context;
         this.config = ConfigUtils.addOrGetModule(qSim.getScenario().getConfig(), SBBTransitConfigGroup.GROUP_NAME, SBBTransitConfigGroup.class);
         this.ptConfig = qSim.getScenario().getConfig().transit();
-        this.createLinkEvents = this.config.isCreateLinkEvents();
         this.schedule = qSim.getScenario().getTransitSchedule();
         this.agentTracker = new TransitStopAgentTracker(qSim.getEventsManager());
-        if (this.createLinkEvents) {
+        if (this.config.getCreateLinkEventsInterval() > 0) {
             this.linkEventQueue = new PriorityQueue<>();
             this.linksCache = new ConcurrentHashMap<>();
         } else {
@@ -140,7 +142,14 @@ public class SBBTransitQSimEngine extends TransitQSimEngine /*implements Departu
 
     @Override
     public void onPrepareSim() {
-        // nothing to do, all pre-processing is done in insertAgentsIntoMobsim
+        // not much to do, all pre-processing is done in insertAgentsIntoMobsim
+        if (this.context != null) {
+            int iteration = this.context.getIteration();
+            int createEventsInterval = this.config.getCreateLinkEventsInterval();
+            final boolean writingEventsAtAll = createEventsInterval > 0;
+            final boolean regularWriteEvents = writingEventsAtAll && iteration % createEventsInterval == 0;
+            this.createLinkEvents = writingEventsAtAll && regularWriteEvents;
+        }
     }
 
     @Override
