@@ -7,6 +7,9 @@ package ch.sbb.matsim.routing.pt.raptor;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.network.Link;
+import org.matsim.api.core.v01.network.Network;
+import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.utils.collections.QuadTree;
 import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.misc.Time;
@@ -61,7 +64,7 @@ public class SwissRailRaptorData {
         this.stopsQT = stopsQT;
     }
 
-    public static SwissRailRaptorData create(TransitSchedule schedule, RaptorConfig config) {
+    public static SwissRailRaptorData create(TransitSchedule schedule, RaptorConfig config, Network network) {
         log.info("Preparing data for SwissRailRaptor...");
         long startMillis = System.currentTimeMillis();
 
@@ -104,9 +107,29 @@ public class SwissRailRaptorData {
                 int indexFirstDeparture = indexDeparture;
                 RRoute rroute = new RRoute(indexRouteStops, route.getStops().size(), indexFirstDeparture, route.getDepartures().size());
                 routes[indexRoutes] = rroute;
+                NetworkRoute networkRoute = route.getRoute();
+                List<Id<Link>> allLinkIds = new ArrayList<>();
+                allLinkIds.add(networkRoute.getStartLinkId());
+                allLinkIds.addAll(networkRoute.getLinkIds());
+                if (allLinkIds.size() > 1 || networkRoute.getStartLinkId() != networkRoute.getEndLinkId()) {
+                    allLinkIds.add(networkRoute.getEndLinkId());
+                }
+                Iterator<Id<Link>> linkIdIterator = allLinkIds.iterator();
+                Id<Link> currentLinkId = linkIdIterator.next();
+                double distanceAlongRoute = 0.0;
                 for (TransitRouteStop routeStop : route.getStops()) {
+                    while (!routeStop.getStopFacility().getLinkId().equals(currentLinkId)) {
+                        if (linkIdIterator.hasNext()) {
+                            currentLinkId = linkIdIterator.next();
+                            Link link = network.getLinks().get(currentLinkId);
+                            distanceAlongRoute += link.getLength();
+                        } else {
+                            distanceAlongRoute = Double.NaN;
+                            break;
+                        }
+                    }
                     int stopFacilityIndex = stopFacilityIndices.computeIfAbsent(routeStop.getStopFacility(), stop -> stopFacilityIndices.size());
-                    RRouteStop rRouteStop = new RRouteStop(routeStop, line, route, indexRoutes, stopFacilityIndex);
+                    RRouteStop rRouteStop = new RRouteStop(routeStop, line, route, indexRoutes, stopFacilityIndex, distanceAlongRoute);
                     final int thisRouteStopIndex = indexRouteStops;
                     routeStops[thisRouteStopIndex] = rRouteStop;
                     routeStopsPerStopFacility.compute(routeStop.getStopFacility(), (stop, currentRouteStops) -> {
@@ -449,15 +472,17 @@ public class SwissRailRaptorData {
         final int stopFacilityIndex;
         final double arrivalOffset;
         final double departureOffset;
+        final double distanceAlongRoute;
         int indexFirstTransfer = -1;
         int countTransfers = 0;
 
-        RRouteStop(TransitRouteStop routeStop, TransitLine line, TransitRoute route, int transitRouteIndex, int stopFacilityIndex) {
+        RRouteStop(TransitRouteStop routeStop, TransitLine line, TransitRoute route, int transitRouteIndex, int stopFacilityIndex, double distanceAlongRoute) {
             this.routeStop = routeStop;
             this.line = line;
             this.route = route;
             this.transitRouteIndex = transitRouteIndex;
             this.stopFacilityIndex = stopFacilityIndex;
+            this.distanceAlongRoute = distanceAlongRoute;
             // "normalize" the arrival and departure offsets, make sure they are always well defined.
             this.arrivalOffset = isUndefinedTime(routeStop.getArrivalOffset()) ? routeStop.getDepartureOffset() : routeStop.getArrivalOffset();
             this.departureOffset = isUndefinedTime(routeStop.getDepartureOffset()) ? routeStop.getArrivalOffset() : routeStop.getDepartureOffset();
