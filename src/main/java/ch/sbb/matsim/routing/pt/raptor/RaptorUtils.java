@@ -4,11 +4,13 @@
 
 package ch.sbb.matsim.routing.pt.raptor;
 
+import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.config.Config;
+import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.GenericRouteImpl;
 import org.matsim.pt.router.TransitRouterConfig;
@@ -26,8 +28,10 @@ public final class RaptorUtils {
     }
 
     public static RaptorConfig createRaptorConfig(Config config) {
+        SwissRailRaptorConfigGroup advancedConfig = ConfigUtils.addOrGetModule(config, SwissRailRaptorConfigGroup.class);
+
         TransitRouterConfig trConfig = new TransitRouterConfig(config);
-        RaptorConfig raptorConfig = new RaptorConfig();
+        RaptorConfig raptorConfig = new RaptorConfig(advancedConfig, config.planCalcScore());
         raptorConfig.setBeelineWalkConnectionDistance(trConfig.getBeelineWalkConnectionDistance());
         raptorConfig.setBeelineWalkSpeed(trConfig.getBeelineWalkSpeed());
 
@@ -43,6 +47,8 @@ public final class RaptorUtils {
         raptorConfig.setMarginalUtilityOfWaitingPt_utl_s(trConfig.getMarginalUtilityOfWaitingPt_utl_s());
 
         raptorConfig.setTransferPenaltyCost(-trConfig.getUtilityOfLineSwitch_utl());
+
+        raptorConfig.setSubpopulationAttribute(config.plans().getSubpopulationAttributeName());
 
         return raptorConfig;
     }

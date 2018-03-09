@@ -4,6 +4,9 @@
 
 package ch.sbb.matsim.routing.pt.raptor;
 
+import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
+import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
+
 /**
  * @author mrieser / SBB
  */
@@ -49,6 +52,19 @@ public class RaptorConfig {
 
     private double transferPenaltyCost = 0;
 
+    private String subpopulationAttribute;
+
+    private final SwissRailRaptorConfigGroup config;
+    private final PlanCalcScoreConfigGroup scoringConfig;
+
+    public RaptorConfig(SwissRailRaptorConfigGroup config, PlanCalcScoreConfigGroup scoringConfig) {
+        this.config = config;
+        this.scoringConfig = scoringConfig;
+    }
+
+    public SwissRailRaptorConfigGroup getConfig() {
+        return config;
+    }
 
     public double getSearchRadius() {
         return this.searchRadius;
@@ -136,5 +152,17 @@ public class RaptorConfig {
 
     public void setTransferPenaltyCost(double transferPenaltyCost) {
         this.transferPenaltyCost = transferPenaltyCost;
+    }
+
+    public String getSubpopulationAttribute() {
+        return subpopulationAttribute;
+    }
+
+    public void setSubpopulationAttribute(String subpopulationAttribute) {
+        this.subpopulationAttribute = subpopulationAttribute;
+    }
+
+    public double getMarginalUtilityOfTraveling_utl_sec(String mode) {
+        return this.scoringConfig.getModes().get(mode).getMarginalUtilityOfTraveling() / 3600.0;
     }
 }
