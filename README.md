@@ -1,7 +1,10 @@
 # MATSim-Extensions by SBB [![](https://jitpack.io/v/SchweizerischeBundesbahnen/matsim-sbb-extensions.svg)](https://jitpack.io/#SchweizerischeBundesbahnen/matsim-sbb-extensions)
 
 The following extensions for [MATSim](http://www.matsim.org/) are provided by
-the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahnen).
+the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahnen):
+
+- [SwissRailRaptor](#swissRailRaptor)
+- [Deterministic PT Simulation](#detPTSim)
 
 To use the extensions along your MATSim code, follow these two steps:
 
@@ -23,7 +26,7 @@ To use the extensions along your MATSim code, follow these two steps:
 	</dependency>
   ``` 
 
-## SwissRailRaptor
+## SwissRailRaptor <span id="swissRailRaptor" />
 
 The SwissRailRaptor is a fast public transport router. It is based on the RAPTOR algorithm
 (Delling et al, 2012, Round-Based Public Transit Routing), and applies several optimizations,
@@ -38,9 +41,11 @@ In smaller scenarios, SwissRailRaptor was measured to be between 20 - 30 times f
 Memory consumption of SwissRailRaptor should also be at least one magnitude lower when compared to
 MATSim's default router, as should be the pre-processing time to initialize the router.
 
-SwissRailRaptor acts as a drop-in replacement for the pt router included in MATSim by default.
-It does not require additional configuration, but re-uses the configuration parameters from the
-default `transitRouter` config group.
+SwissRailRaptor can act as a drop-in replacement for the pt router included in MATSim by default
+when it is used without further configuration, re-using the configuration parameters
+from the default `transitRouter` config group. A special config group is available that allows to 
+configure advanced features of the SwissRailRaptor not available in MATSim's default pt router (see
+below).
 
 A major difference to the default transit router in MATSim is the fact that SwissRailRaptor 
 does not repeat the transit schedule after 24 hours when searching for a route,
@@ -53,8 +58,79 @@ the next day, this should not pose any real problem.
 Have a look at the class `ch.sbb.matsim.RunSBBExtension` included in the repository to see 
 how to enable SwissRailRaptor when running MATSim.
 
+### Configuration of Advanced Features
 
-## Deterministic Public Transport Simulation
+Besides acting as a drop-in replacement for MATSim's default pt router, SwissRailRaptor provides
+additional features that need special configuration to be activated.
+
+#### Intermodal Access and Egress
+
+By default, all legs leading from the start coordinate to the first transit stop, or leading from
+the last transit stop to the destination coordinate, are assumed to be undertaken by walking.
+But SwissRailRaptor also support choosing different modes for these access and egress legs.
+
+Other modes, e.g. bike, usually have a higher speed, and thus transit stops with a larger distance
+to the start or destination coordinate should be taken into account than just those reachable
+by a sensible walking duration. In order to reduce the number of potential start and destination
+stops when increasing the search radius, SwissRailRouter allows to filter the stops based on
+stops' attributes.
+
+To use intermodal access and egress legs and configure the allowed modes and stops, add
+the following config module to your `config.xml`:
+
+  ```$xml
+  <module name="swissRailRaptor">
+    <param name="useIntermodalAccessEgress" value="true" />
+    
+    <paramset type="intermodalAccessEgress">
+      <param name="mode" value="walk" />
+      <param name="radius" value="1000" />
+      <param name="subpopulation" value="null" /> <!-- 'null' applies to every agent -->
+    </paramset>
+    <paramset type="intermodalAccessEgress">
+      <param name="mode" value="bike" />
+      <param name="radius" value="3000" />
+      <param name="subpopulation" value="cyclists" />
+      <param name="linkIdAttribute" value="accessLinkId_bike" />
+      <param name="filterAttribute" value="bikeAccessible" />
+      <param name="filterValue" value="true" />
+    </paramset>
+  </module>
+  ```
+In the above example, intermodal access and egress is enabled (`useIntermodalAccessEgress=true`)
+and two modes are configured for it: `walk` and `bike`. Walk can be used by all agents 
+(`subpopulation=null`) and uses all transit stops (no `filterAttribute` defined) within a radius 
+of 1000 around the start or destination coordinates. Bike can only be used by agents in the 
+subpopulation `cyclists`, and uses only transit stops that have an attribute named 
+`bikeAccessible` with the value `true`. If bike is routed on the network, it's possible that
+no route can be calculated from an activity's link to the transit stop links, e.g. if the transit
+stop is a train station and the assigned link refers to a "rail"-link which is not connected to 
+the bike-network. In such cases, a transit stop attribute can be specified that contains the 
+linkId to (or from) which a route with the given mode should be routed (`linkIdAttribute`).
+
+Additional modes could be configured by adding corresponding parameter sets of type `intermodalAccessEgress`.
+
+Note that when intermodal access and egress is enabled in SwissRailRaptor, `walk` must be
+configured as well, as the settings from the default `transitRouter` config group will be
+ignored.
+
+If intermodal access and egress legs are created, the default MainModeIdentifier might not 
+recognize such trips as pt trips. Therefore, an adapted MainModeIdentifier must be used.
+`RunSBBExtension` enables such an adapted one so it should work out of the box. If you combine
+the intermodal SwissRailRaptor with other MATSim extensions, also requiring custom 
+MainModeIdentifiers, make sure to combine them correctly.
+
+#### Range Queries
+
+Range queries, sometimes also named profile queries, search for possible connections within a 
+time window instead of finding only one connection that arrives with least cost based on a fixed
+departure time.
+
+TODO 
+
+Please note that range queries infer a large performance penalty.
+
+## Deterministic Public Transport Simulation <span id="detPTSim" />
 
 The deterministic pt simulation is a QSim engine, handling the movement of public transport vehicles
 in MATSim. The default `TransitQSimEngine` simulates all pt vehicles on the queue-based network. While
