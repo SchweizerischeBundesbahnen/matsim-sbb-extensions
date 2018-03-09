@@ -69,12 +69,6 @@ public class SwissRailRaptorIntermodalTest {
         bikeAccess.setLinkIdAttribute("accessLinkId_bike");
         bikeAccess.setFilterValue("true");
         f.srrConfig.addIntermodalAccessEgress(bikeAccess);
-//        IntermodalAccessEgressParameterSet taxiAccess = new IntermodalAccessEgressParameterSet();
-//        taxiAccess.setMode("taxi");
-//        taxiAccess.setRadius(2000);
-//        taxiAccess.setFilterAttribute("hub");
-//        taxiAccess.setFilterValue("true");
-//        f.srrConfig.addIntermodalAccessEgress(taxiAccess);
 
         RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
         SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
@@ -177,6 +171,51 @@ public class SwissRailRaptorIntermodalTest {
         Assert.assertEquals(0.0, ((Activity) planElements.get(3)).getMaximumDuration(), 0.0);
         Assert.assertEquals(0.0, ((Activity) planElements.get(5)).getMaximumDuration(), 0.0);
         Assert.assertEquals(0.0, ((Activity) planElements.get(7)).getMaximumDuration(), 0.0);
+    }
+
+    /**
+     * Test that if start and end are close to each other, such that the intermodal
+     * access and egress go to/from the same stop, still a direct transit_walk is returned.
+     */
+    @Test
+    public void testIntermodalTrip_withoutPt() {
+        IntermodalFixture f = new IntermodalFixture();
+
+        TripRouter tripRouter = new TripRouter();
+        tripRouter.setRoutingModule(TransportMode.walk,
+                new TeleportationRoutingModule(TransportMode.walk, f.scenario.getPopulation().getFactory(), 1.1, 1.3));
+        tripRouter.setRoutingModule(TransportMode.bike,
+                new TeleportationRoutingModule(TransportMode.bike, f.scenario.getPopulation().getFactory(), 3, 1.4));
+
+        f.srrConfig.setUseIntermodalAccessEgress(true);
+        IntermodalAccessEgressParameterSet walkAccess = new IntermodalAccessEgressParameterSet();
+        walkAccess.setMode(TransportMode.walk);
+        walkAccess.setRadius(1000);
+        f.srrConfig.addIntermodalAccessEgress(walkAccess);
+        IntermodalAccessEgressParameterSet bikeAccess = new IntermodalAccessEgressParameterSet();
+        bikeAccess.setMode(TransportMode.bike);
+        bikeAccess.setRadius(1500);
+        bikeAccess.setFilterAttribute("bikeAccessible");
+        bikeAccess.setLinkIdAttribute("accessLinkId_bike");
+        bikeAccess.setFilterValue("true");
+        f.srrConfig.addIntermodalAccessEgress(bikeAccess);
+
+        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
+        SwissRailRaptor raptor = new SwissRailRaptor(data, new LeastCostRaptorRouteSelector(), null, null, tripRouter);
+
+        Facility fromFac = new FakeFacility(new Coord(8000, 10500), Id.create("from", Link.class));
+        Facility toFac = new FakeFacility(new Coord(13000, 10500), Id.create("to", Link.class));
+
+        List<Leg> legs = raptor.calcRoute(fromFac, toFac, 7*3600, f.dummyPerson);
+        for (Leg leg : legs) {
+            System.out.println(leg);
+        }
+
+        Assert.assertEquals("wrong number of legs.", 1, legs.size());
+        Leg leg = legs.get(0);
+        Assert.assertEquals(TransportMode.transit_walk, leg.getMode());
+        Assert.assertEquals(5000, leg.getRoute().getDistance(), 0.0);
     }
 
     /**
