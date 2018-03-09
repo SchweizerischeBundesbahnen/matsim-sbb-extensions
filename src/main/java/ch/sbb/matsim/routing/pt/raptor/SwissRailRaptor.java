@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -158,16 +159,20 @@ public class SwissRailRaptor implements TransitRouter {
         for (IntermodalAccessEgressParameterSet paramset : srrCfg.getIntermodalAccessEgressParameterSets()) {
             double radius = paramset.getRadius();
             String mode = paramset.getMode();
-            String subPop = paramset.getSubpopulation();
+            String overrideMode = null;
+            if (mode.equals(TransportMode.walk) || mode.equals(TransportMode.transit_walk)) {
+                overrideMode = direction == Direction.Access ? TransportMode.access_walk : TransportMode.egress_walk;
+            }
+            Set<String> subPops = paramset.getSubpopulations();
             String linkIdAttribute = paramset.getLinkIdAttribute();
             String filterAttribute = paramset.getFilterAttribute();
             String filterValue = paramset.getFilterValue();
 
             boolean subpopMatches = true;
-            if (subPop != null && this.subpopulationAttribute != null) {
+            if (subPops != null && !subPops.isEmpty() && this.subpopulationAttribute != null) {
                 Object attr = this.personAttributes.getAttribute(personId, this.subpopulationAttribute);
                 String attrValue = attr == null ? null : attr.toString();
-                subpopMatches = subPop.equals(attrValue);
+                subpopMatches = subPops.contains(attrValue);
             }
 
             if (subpopMatches) {
@@ -199,6 +204,13 @@ public class SwissRailRaptor implements TransitRouter {
                             for (PlanElement pe : routeParts) {
                                 if (pe instanceof Leg) {
                                     ((Leg) pe).setDepartureTime(Time.UNDEFINED_TIME);
+                                }
+                            }
+                        }
+                        if (overrideMode != null) {
+                            for (PlanElement pe : routeParts) {
+                                if (pe instanceof Leg) {
+                                    ((Leg) pe).setMode(overrideMode);
                                 }
                             }
                         }

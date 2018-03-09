@@ -6,11 +6,14 @@ package ch.sbb.matsim.config;
 
 import org.matsim.core.config.ConfigGroup;
 import org.matsim.core.config.ReflectiveConfigGroup;
+import org.matsim.core.utils.collections.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author mrieser / SBB
@@ -93,8 +96,14 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     }
 
     public void addRangeQuerySettings(RangeQuerySettingsParameterSet settings) {
-        String subpop = settings.getSubpopulation();
-        this.rangeQuerySettingsPerSubpop.put(subpop, settings);
+        Set<String> subpops = settings.getSubpopulations();
+        if (subpops.isEmpty()) {
+            this.rangeQuerySettingsPerSubpop.put(null, settings);
+        } else {
+            for (String subpop : subpops) {
+                this.rangeQuerySettingsPerSubpop.put(subpop, settings);
+            }
+        }
         super.addParameterSet(settings);
     }
 
@@ -130,11 +139,11 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
 
         private static final String TYPE = "rangeQuerySettings";
 
-        private static final String PARAM_SUBPOP = "subpopulation";
+        private static final String PARAM_SUBPOPS = "subpopulations";
         private static final String PARAM_MAX_EARLIER_DEPARTURE = "maxEarlierDeparture_sec";
         private static final String PARAM_MAX_LATER_DEPARTURE = "maxLaterDeparture_sec";
 
-        private String subpopulation = null;
+        private final Set<String> subpopulations = new HashSet<>();
         private int maxEarlierDeparture = 600;
         private int maxLaterDeparture = 900;
 
@@ -142,14 +151,23 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
             super(TYPE);
         }
 
-        @StringGetter(PARAM_SUBPOP)
-        public String getSubpopulation() {
-            return subpopulation;
+        @StringGetter(PARAM_SUBPOPS)
+        public String getSubpopulationsAsString() {
+            return CollectionUtils.setToString(this.subpopulations);
         }
 
-        @StringSetter(PARAM_SUBPOP)
-        public void setSubpopulation(String subpopulation) {
-            this.subpopulation = subpopulation;
+        public Set<String> getSubpopulations() {
+            return this.subpopulations;
+        }
+
+        @StringSetter(PARAM_SUBPOPS)
+        public void setSubpopulations(String subpopulation) {
+            this.setSubpopulations(CollectionUtils.stringToSet(subpopulation));
+        }
+
+        public void setSubpopulations(Set<String> subpopulations) {
+            this.subpopulations.clear();
+            this.subpopulations.addAll(subpopulations);
         }
 
         @StringGetter(PARAM_MAX_EARLIER_DEPARTURE)
@@ -177,14 +195,14 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
 
         private static final String TYPE = "intermodalAccessEgress";
 
-        private static final String PARAM_SUBPOP = "subpopulation";
+        private static final String PARAM_SUBPOPS = "subpopulations";
         private static final String PARAM_MODE = "mode";
         private static final String PARAM_RADIUS = "radius";
         private static final String PARAM_LINKID_ATTRIBUTE = "linkIdAttribute";
         private static final String PARAM_FILTER_ATTRIBUTE = "filterAttribute";
         private static final String PARAM_FILTER_VALUE = "filterValue";
 
-        private String subpopulation = null;
+        private final Set<String> subpopulations = new HashSet<>();
         private String mode;
         private double radius;
         private String linkIdAttribute;
@@ -195,14 +213,23 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
             super(TYPE);
         }
 
-        @StringGetter(PARAM_SUBPOP)
-        public String getSubpopulation() {
-            return subpopulation;
+        @StringGetter(PARAM_SUBPOPS)
+        public String getSubpopulationsAsString() {
+            return CollectionUtils.setToString(this.subpopulations);
         }
 
-        @StringSetter(PARAM_SUBPOP)
-        public void setSubpopulation(String subpopulation) {
-            this.subpopulation = subpopulation;
+        public Set<String> getSubpopulations() {
+            return this.subpopulations;
+        }
+
+        @StringSetter(PARAM_SUBPOPS)
+        public void setSubpopulations(String subpopulations) {
+            this.setSubpopulations(CollectionUtils.stringToSet(subpopulations));
+        }
+
+        public void setSubpopulations(Set subpopulations) {
+            this.subpopulations.clear();
+            this.subpopulations.addAll(subpopulations);
         }
 
         @StringGetter(PARAM_MODE)
@@ -258,7 +285,7 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
         @Override
         public Map<String, String> getComments() {
             Map<String, String> map = super.getComments();
-            map.put(PARAM_SUBPOP, "Name of the (Object)Attribute defining the subpopulation to which a Person belongs (freight, through traffic, etc.). The attribute must be of type String. 'null' applies to all agents.");
+            map.put(PARAM_SUBPOPS, "Comma-separated list of names of subpopulations to which this mode is available. Leaving it empty applies to all agents.");
             map.put(PARAM_FILTER_ATTRIBUTE, "Name of the transit stop attribute used to filter stops that should be included in the set of potential stops for access and egress. The attribute should be of type String. 'null' disables the filter and all stops within the specified radius will be used.");
             map.put(PARAM_FILTER_VALUE, "Only stops where the filter attribute has the value specified here will be considered as access or egress stops.");
             map.put(PARAM_LINKID_ATTRIBUTE, "If the mode is routed on the network, specify which linkId acts as access link to this stop in the transport modes sub-network.");

@@ -173,6 +173,49 @@ public class SwissRailRaptorIntermodalTest {
         Assert.assertEquals(0.0, ((Activity) planElements.get(7)).getMaximumDuration(), 0.0);
     }
 
+    @Test
+    public void testIntermodalTrip_walkOnlyNoSubpop() {
+        IntermodalFixture f = new IntermodalFixture();
+
+        TripRouter tripRouter = new TripRouter();
+        tripRouter.setRoutingModule(TransportMode.walk,
+                new TeleportationRoutingModule(TransportMode.walk, f.scenario.getPopulation().getFactory(), 1.1, 1.3));
+        tripRouter.setRoutingModule(TransportMode.bike,
+                new TeleportationRoutingModule(TransportMode.bike, f.scenario.getPopulation().getFactory(), 3, 1.4));
+
+        f.srrConfig.setUseIntermodalAccessEgress(true);
+        IntermodalAccessEgressParameterSet walkAccess = new IntermodalAccessEgressParameterSet();
+        walkAccess.setMode(TransportMode.walk);
+        walkAccess.setRadius(1000);
+        f.srrConfig.addIntermodalAccessEgress(walkAccess);
+
+        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
+        SwissRailRaptor raptor = new SwissRailRaptor(data, new LeastCostRaptorRouteSelector(), null, null, tripRouter);
+
+        Facility fromFac = new FakeFacility(new Coord(10000, 10500), Id.create("from", Link.class));
+        Facility toFac = new FakeFacility(new Coord(50000, 10500), Id.create("to", Link.class));
+
+        List<Leg> legs = raptor.calcRoute(fromFac, toFac, 7*3600, f.dummyPerson);
+        for (Leg leg : legs) {
+            System.out.println(leg);
+        }
+
+        Assert.assertEquals("wrong number of legs.", 3, legs.size());
+        Leg leg = legs.get(0);
+        Assert.assertEquals(TransportMode.access_walk, leg.getMode());
+        Assert.assertEquals(Id.create("from", Link.class), leg.getRoute().getStartLinkId());
+        Assert.assertEquals(Id.create("pt_3", Link.class), leg.getRoute().getEndLinkId());
+        leg = legs.get(1);
+        Assert.assertEquals(TransportMode.pt, leg.getMode());
+        Assert.assertEquals(Id.create("pt_3", Link.class), leg.getRoute().getStartLinkId());
+        Assert.assertEquals(Id.create("pt_5", Link.class), leg.getRoute().getEndLinkId());
+        leg = legs.get(2);
+        Assert.assertEquals(TransportMode.egress_walk, leg.getMode());
+        Assert.assertEquals(Id.create("pt_5", Link.class), leg.getRoute().getStartLinkId());
+        Assert.assertEquals(Id.create("to", Link.class), leg.getRoute().getEndLinkId());
+    }
+
     /**
      * Test that if start and end are close to each other, such that the intermodal
      * access and egress go to/from the same stop, still a direct transit_walk is returned.

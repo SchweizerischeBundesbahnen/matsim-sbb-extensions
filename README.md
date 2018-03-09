@@ -85,12 +85,12 @@ the following config module to your `config.xml`:
     <paramset type="intermodalAccessEgress">
       <param name="mode" value="walk" />
       <param name="radius" value="1000" />
-      <param name="subpopulation" value="null" /> <!-- 'null' applies to every agent -->
+      <param name="subpopulations" value="" /> <!-- an empty value applies to every agent, comma-separated list of multiple subpopulations possible -->
     </paramset>
     <paramset type="intermodalAccessEgress">
       <param name="mode" value="bike" />
       <param name="radius" value="3000" />
-      <param name="subpopulation" value="cyclists" />
+      <param name="subpopulations" value="cyclists,bikers" />
       <param name="linkIdAttribute" value="accessLinkId_bike" />
       <param name="filterAttribute" value="bikeAccessible" />
       <param name="filterValue" value="true" />

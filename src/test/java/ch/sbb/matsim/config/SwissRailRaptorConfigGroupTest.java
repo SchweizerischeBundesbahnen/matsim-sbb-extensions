@@ -58,13 +58,13 @@ public class SwissRailRaptorConfigGroupTest {
             config1.setUseRangeQuery(true);
 
             RangeQuerySettingsParameterSet range1 = new RangeQuerySettingsParameterSet();
-            range1.setSubpopulation(null);
+            range1.setSubpopulations("");
             range1.setMaxEarlierDeparture(10*60);
             range1.setMaxLaterDeparture(59*60);
             config1.addRangeQuerySettings(range1);
 
             RangeQuerySettingsParameterSet range2 = new RangeQuerySettingsParameterSet();
-            range2.setSubpopulation("inflexible");
+            range2.setSubpopulations("inflexible");
             range2.setMaxEarlierDeparture(1*60);
             range2.setMaxLaterDeparture(15*60);
             config1.addRangeQuerySettings(range2);
@@ -77,13 +77,14 @@ public class SwissRailRaptorConfigGroupTest {
 
         RangeQuerySettingsParameterSet range1 = config2.getRangeQuerySettings(null);
         Assert.assertNotNull(range1);
-        Assert.assertNull(range1.getSubpopulation());
+        Assert.assertEquals(0, range1.getSubpopulations().size());
         Assert.assertEquals(10*60, range1.getMaxEarlierDeparture());
         Assert.assertEquals(59*60, range1.getMaxLaterDeparture());
 
         RangeQuerySettingsParameterSet range2 = config2.getRangeQuerySettings("inflexible");
         Assert.assertNotNull(range2);
-        Assert.assertEquals("inflexible", range2.getSubpopulation());
+        Assert.assertEquals(1, range2.getSubpopulations().size());
+        Assert.assertEquals("inflexible", range2.getSubpopulations().iterator().next());
         Assert.assertEquals(1*60, range2.getMaxEarlierDeparture());
         Assert.assertEquals(15*60, range2.getMaxLaterDeparture());
     }
@@ -98,7 +99,7 @@ public class SwissRailRaptorConfigGroupTest {
             IntermodalAccessEgressParameterSet paramset1 = new IntermodalAccessEgressParameterSet();
             paramset1.setMode(TransportMode.bike);
             paramset1.setRadius(2000);
-            paramset1.setSubpopulation(null);
+            paramset1.setSubpopulations("");
             paramset1.setFilterAttribute("bikeAndRail");
             paramset1.setFilterValue("true");
             config1.addIntermodalAccessEgress(paramset1);
@@ -106,7 +107,7 @@ public class SwissRailRaptorConfigGroupTest {
             IntermodalAccessEgressParameterSet paramset2 = new IntermodalAccessEgressParameterSet();
             paramset2.setMode("sff");
             paramset2.setRadius(5000);
-            paramset2.setSubpopulation("sff_users");
+            paramset2.setSubpopulations("sff_users,sff_passengers");
             paramset2.setLinkIdAttribute("linkId_sff");
             paramset2.setFilterAttribute("stop-type");
             paramset2.setFilterValue("hub");
@@ -125,7 +126,7 @@ public class SwissRailRaptorConfigGroupTest {
         IntermodalAccessEgressParameterSet paramSet1 = parameterSets.get(0);
         Assert.assertEquals(TransportMode.bike, paramSet1.getMode());
         Assert.assertEquals(2000, paramSet1.getRadius(), 0.0);
-        Assert.assertNull(paramSet1.getSubpopulation());
+        Assert.assertEquals(0, paramSet1.getSubpopulations().size());
         Assert.assertNull(paramSet1.getLinkIdAttribute());
         Assert.assertEquals("bikeAndRail", paramSet1.getFilterAttribute());
         Assert.assertEquals("true", paramSet1.getFilterValue());
@@ -133,7 +134,10 @@ public class SwissRailRaptorConfigGroupTest {
         IntermodalAccessEgressParameterSet paramSet2 = parameterSets.get(1);
         Assert.assertEquals("sff", paramSet2.getMode());
         Assert.assertEquals(5000, paramSet2.getRadius(), 0.0);
-        Assert.assertEquals("sff_users", paramSet2.getSubpopulation());
+        Assert.assertEquals(2, paramSet2.getSubpopulations().size());
+        Assert.assertTrue(paramSet2.getSubpopulations().contains("sff_users"));
+        Assert.assertTrue(paramSet2.getSubpopulations().contains("sff_passengers"));
+        Assert.assertFalse(paramSet2.getSubpopulations().contains("sff_drivers"));
         Assert.assertEquals("linkId_sff", paramSet2.getLinkIdAttribute());
         Assert.assertEquals("stop-type", paramSet2.getFilterAttribute());
         Assert.assertEquals("hub", paramSet2.getFilterValue());
@@ -193,7 +197,6 @@ public class SwissRailRaptorConfigGroupTest {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         OutputStreamWriter writer = new OutputStreamWriter(output);
         new ConfigWriter(fullConfig1).writeStream(writer);
-        new ConfigWriter(fullConfig1).writeStream(new PrintWriter(System.out));
 
         // read config in again as config2
         SwissRailRaptorConfigGroup config2 = new SwissRailRaptorConfigGroup();
