@@ -268,7 +268,7 @@ public class SwissRailRaptorData {
                         RRouteStop toRouteStop = routeStops[toRouteStopIndex];
                         if (isUsefulTransfer(fromRouteStop, toRouteStop, config.getBeelineWalkConnectionDistance())) {
                             transfers.compute(fromRouteStopIndex, (routeStopIndex, currentTransfers) -> {
-                                RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, transferCost);
+                                RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, transferCost, distance);
                                 if (currentTransfers == null) {
                                     return new RTransfer[] { newTransfer };
                                 }
@@ -498,12 +498,14 @@ public class SwissRailRaptorData {
         final int toRouteStop;
         final double transferTime;
         final double transferCost;
+        final double transferDistance;
 
-        RTransfer(int fromRouteStop, int toRouteStop, double transferTime, double transferCost) {
+        RTransfer(int fromRouteStop, int toRouteStop, double transferTime, double transferCost, double transferDistance) {
             this.fromRouteStop = fromRouteStop;
             this.toRouteStop = toRouteStop;
             this.transferTime = transferTime;
             this.transferCost = transferCost;
+            this.transferDistance = transferDistance;
         }
     }
 }
