@@ -88,24 +88,24 @@ public class SwissRailRaptor implements TransitRouter {
     }
 
     private List<InitialStop> findAccessStops(Facility<?> facility, Person person) {
-        List<TransitStopFacility> stops = findNearbyStops(facility);
-        List<InitialStop> initialStops = stops.stream().map(stop -> {
-            double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
-            double travelTime = Math.ceil(beelineDistance / this.config.getBeelineWalkSpeed());
-            double disutility = travelTime * this.config.getMarginalUtilityOfTravelTimeAccessWalk_utl_s();
-            return new InitialStop(stop, -disutility, travelTime, TransportMode.transit_walk);
-        }).collect(Collectors.toList());
-        return initialStops;
+            List<TransitStopFacility> stops = findNearbyStops(facility);
+            List<InitialStop> initialStops = stops.stream().map(stop -> {
+                double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
+                double travelTime = Math.ceil(beelineDistance / this.config.getBeelineWalkSpeed());
+                double disutility = travelTime * -this.config.getMarginalUtilityOfTravelTimeAccessWalk_utl_s();
+                return new InitialStop(stop, disutility, travelTime, beelineDistance, TransportMode.access_walk);
+            }).collect(Collectors.toList());
+            return initialStops;
     }
 
     private List<InitialStop> findEgressStops(Facility<?> facility, Person person) {
-        List<TransitStopFacility> stops = findNearbyStops(facility);
-        List<InitialStop> initialStops = stops.stream().map(stop -> {
-            double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
-            double travelTime = Math.ceil(beelineDistance / this.config.getBeelineWalkSpeed());
-            double disutility = travelTime * this.config.getMarginalUtilityOfTravelTimeEgressWalk_utl_s();
-            return new InitialStop(stop, -disutility, travelTime, TransportMode.transit_walk);
-        }).collect(Collectors.toList());
+            List<TransitStopFacility> stops = findNearbyStops(facility);
+            List<InitialStop> initialStops = stops.stream().map(stop -> {
+                double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
+                double travelTime = Math.ceil(beelineDistance / this.config.getBeelineWalkSpeed());
+                double disutility = travelTime * -this.config.getMarginalUtilityOfTravelTimeEgressWalk_utl_s();
+                return new InitialStop(stop, disutility, travelTime, beelineDistance, TransportMode.egress_walk);
+            }).collect(Collectors.toList());
         return initialStops;
     }
 
