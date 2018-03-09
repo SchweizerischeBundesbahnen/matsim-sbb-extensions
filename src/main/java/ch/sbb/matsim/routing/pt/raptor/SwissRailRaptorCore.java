@@ -8,7 +8,6 @@ import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RRoute;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RRouteStop;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RTransfer;
 import org.matsim.api.core.v01.TransportMode;
-import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
@@ -550,7 +549,9 @@ public class SwissRailRaptorCore {
             i++;
             TransitStopFacility toStop = pe.toRouteStop == null ? null : pe.toRouteStop.routeStop.getStopFacility();
             double travelTime = pe.arrivalTime - time;
-            if (pe.isTransfer) {
+            if (pe.initialStop != null && pe.initialStop.planElements != null) {
+                raptorRoute.addPlanElements(time, travelTime, pe.initialStop.planElements);
+            } else if (pe.isTransfer) {
                 boolean differentFromTo = (fromStop == null || toStop == null) || (fromStop != toStop);
                 if (differentFromTo) {
                     if (i == peCount - 2) {
@@ -565,12 +566,12 @@ public class SwissRailRaptorCore {
                     if (fromStop != null && toStop == null) {
                         mode = TransportMode.egress_walk;
                     }
-                    raptorRoute.addNonPt(fromStop, toStop, time, travelTime, mode);
+                    raptorRoute.addNonPt(fromStop, toStop, time, travelTime, pe.distance, mode);
                 }
             } else {
                 TransitLine line = pe.toRouteStop.line;
                 TransitRoute route = pe.toRouteStop.route;
-                raptorRoute.addPt(fromStop, toStop, line, route, time, travelTime);
+                raptorRoute.addPt(fromStop, toStop, line, route, time, travelTime, pe.distance);
             }
             time = pe.arrivalTime;
             fromStop = toStop;
