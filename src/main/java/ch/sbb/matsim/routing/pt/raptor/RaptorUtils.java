@@ -8,6 +8,7 @@ import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Leg;
+import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
@@ -56,13 +57,20 @@ public final class RaptorUtils {
     public static List<Leg> convertRouteToLegs(RaptorRoute route) {
         List<Leg> legs = new ArrayList<>(route.parts.size());
         for (RaptorRoute.RoutePart part : route.parts) {
-            if (part.line != null) {
+            if (part.planElements != null) {
+                for (PlanElement pe : part.planElements) {
+                    if (pe instanceof Leg) {
+                        legs.add((Leg) pe);
+                    }
+                }
+            } else if (part.line != null) {
                 // a pt leg
                 Leg ptLeg = PopulationUtils.createLeg(part.mode);
                 ptLeg.setDepartureTime(part.depTime);
                 ptLeg.setTravelTime(part.travelTime);
                 ExperimentalTransitRoute ptRoute = new ExperimentalTransitRoute(part.fromStop, part.line, part.route, part.toStop);
                 ptRoute.setTravelTime(part.travelTime);
+                ptRoute.setDistance(part.distance);
                 ptLeg.setRoute(ptRoute);
                 legs.add(ptLeg);
             } else {
