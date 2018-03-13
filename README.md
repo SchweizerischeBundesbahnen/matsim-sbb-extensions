@@ -3,8 +3,9 @@
 The following extensions for [MATSim](http://www.matsim.org/) are provided by
 the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahnen).
 
+To use the extensions along your MATSim code, follow these two steps:
 
- **Step 1**. Add the JitPack repository to you `pom.xml`.
+ **Step 1**. Add the JitPack repository to your `pom.xml`.
   ```$xml
 	<repositories>
 		<repository>
