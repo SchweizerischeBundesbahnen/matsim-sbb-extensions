@@ -17,15 +17,15 @@ import javax.inject.Inject;
  */
 public class DefaultRaptorParametersForPerson implements RaptorParametersForPerson {
 
-    private final RaptorConfig defaultParameters;
+    private final RaptorParameters defaultParameters;
 
     @Inject
     public DefaultRaptorParametersForPerson(Config config) {
-        this.defaultParameters = RaptorUtils.createRaptorConfig(config);
+        this.defaultParameters = RaptorUtils.createRaptorParameters(config);
     }
 
     @Override
-    public RaptorConfig getRaptorParameters(Person person) {
+    public RaptorParameters getRaptorParameters(Person person) {
         return this.defaultParameters;
     }
 }

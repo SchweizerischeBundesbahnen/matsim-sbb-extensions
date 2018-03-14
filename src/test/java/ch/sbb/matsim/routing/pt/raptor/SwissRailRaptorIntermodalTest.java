@@ -70,7 +70,7 @@ public class SwissRailRaptorIntermodalTest {
         bikeAccess.setFilterValue("true");
         f.srrConfig.addIntermodalAccessEgress(bikeAccess);
 
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        RaptorParameters raptorConfig = RaptorUtils.createRaptorParameters(f.config);
         SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
         SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()), new LeastCostRaptorRouteSelector(), null, null, tripRouter);
 
@@ -129,7 +129,7 @@ public class SwissRailRaptorIntermodalTest {
         bikeAccess.setFilterValue("true");
         f.srrConfig.addIntermodalAccessEgress(bikeAccess);
 
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        RaptorParameters raptorConfig = RaptorUtils.createRaptorParameters(f.config);
         SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
         SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()), new LeastCostRaptorRouteSelector(), null, null, tripRouter);
 
@@ -189,7 +189,7 @@ public class SwissRailRaptorIntermodalTest {
         walkAccess.setRadius(1000);
         f.srrConfig.addIntermodalAccessEgress(walkAccess);
 
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        RaptorParameters raptorConfig = RaptorUtils.createRaptorParameters(f.config);
         SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
         SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()), new LeastCostRaptorRouteSelector(), null, null, tripRouter);
 
@@ -243,7 +243,7 @@ public class SwissRailRaptorIntermodalTest {
         bikeAccess.setFilterValue("true");
         f.srrConfig.addIntermodalAccessEgress(bikeAccess);
 
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
+        RaptorParameters raptorConfig = RaptorUtils.createRaptorParameters(f.config);
         SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
         SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()), new LeastCostRaptorRouteSelector(), null, null, tripRouter);
 

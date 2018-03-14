@@ -10,7 +10,7 @@ import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
 /**
  * @author mrieser / SBB
  */
-public class RaptorConfig {
+public class RaptorParameters {
 
     /**
      * The distance in meters in which stop facilities should be searched for
@@ -57,7 +57,7 @@ public class RaptorConfig {
     private final SwissRailRaptorConfigGroup config;
     private final PlanCalcScoreConfigGroup scoringConfig;
 
-    public RaptorConfig(SwissRailRaptorConfigGroup config, PlanCalcScoreConfigGroup scoringConfig) {
+    public RaptorParameters(SwissRailRaptorConfigGroup config, PlanCalcScoreConfigGroup scoringConfig) {
         this.config = config;
         this.scoringConfig = scoringConfig;
     }
@@ -155,7 +155,7 @@ public class RaptorConfig {
     }
 
     public String getSubpopulationAttribute() {
-        return subpopulationAttribute;
+        return this.subpopulationAttribute;
     }
 
     public void setSubpopulationAttribute(String subpopulationAttribute) {

@@ -37,7 +37,7 @@ public class SwissRailRaptorData {
 
     private static final Logger log = Logger.getLogger(SwissRailRaptorData.class);
 
-    final RaptorConfig config;
+    final RaptorParameters config;
     final int countStops;
     final int countRouteStops;
     final RRoute[] routes;
@@ -48,7 +48,7 @@ public class SwissRailRaptorData {
     final Map<TransitStopFacility, int[]> routeStopsPerStopFacility;
     final QuadTree<TransitStopFacility> stopsQT;
 
-    private SwissRailRaptorData(RaptorConfig config, int countStops,
+    private SwissRailRaptorData(RaptorParameters config, int countStops,
                                 RRoute[] routes, double[] departures, RRouteStop[] routeStops,
                                 RTransfer[] transfers, Map<TransitStopFacility, Integer> stopFacilityIndices,
                                 Map<TransitStopFacility, int[]> routeStopsPerStopFacility, QuadTree<TransitStopFacility> stopsQT) {
@@ -64,7 +64,7 @@ public class SwissRailRaptorData {
         this.stopsQT = stopsQT;
     }
 
-    public static SwissRailRaptorData create(TransitSchedule schedule, RaptorConfig config, Network network) {
+    public static SwissRailRaptorData create(TransitSchedule schedule, RaptorParameters config, Network network) {
         log.info("Preparing data for SwissRailRaptor...");
         long startMillis = System.currentTimeMillis();
 
@@ -210,7 +210,7 @@ public class SwissRailRaptorData {
     }
 
     // calculate possible transfers between TransitRouteStops
-    private static Map<Integer, RTransfer[]> calculateRouteStopTransfers(TransitSchedule schedule, QuadTree<TransitStopFacility> stopsQT, Map<TransitStopFacility, int[]> routeStopsPerStopFacility, RRouteStop[] routeStops, RaptorConfig config) {
+    private static Map<Integer, RTransfer[]> calculateRouteStopTransfers(TransitSchedule schedule, QuadTree<TransitStopFacility> stopsQT, Map<TransitStopFacility, int[]> routeStopsPerStopFacility, RRouteStop[] routeStops, RaptorParameters config) {
         Map<Integer, RTransfer[]> transfers = new HashMap<>(stopsQT.size() * 5);
         double maxBeelineWalkConnectionDistance = config.getBeelineWalkConnectionDistance();
         double beelineWalkSpeed = config.getBeelineWalkSpeed();

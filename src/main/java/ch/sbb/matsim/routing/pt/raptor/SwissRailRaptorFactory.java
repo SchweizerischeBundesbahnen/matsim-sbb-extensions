@@ -23,7 +23,7 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
 
     private SwissRailRaptorData data = null;
     private final TransitSchedule schedule;
-    private final RaptorConfig raptorConfig;
+    private final RaptorParameters raptorConfig;
     private final RaptorParametersForPerson raptorParametersForPerson;
     private final RaptorRouteSelector routeSelector;
 
@@ -37,7 +37,7 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
                                   RaptorParametersForPerson raptorParametersForPerson, RaptorRouteSelector routeSelector,
                                   PlansConfigGroup plansConfigGroup, Population population, Provider<TripRouter> tripRouterProvider) {
         this.schedule = schedule;
-        this.raptorConfig = RaptorUtils.createRaptorConfig(config);
+        this.raptorConfig = RaptorUtils.createRaptorParameters(config);
         this.network = network;
         this.raptorParametersForPerson = raptorParametersForPerson;
         this.routeSelector = routeSelector;

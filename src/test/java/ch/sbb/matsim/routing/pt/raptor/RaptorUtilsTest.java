@@ -52,20 +52,20 @@ public class RaptorUtilsTest {
         Assert.assertEquals(ConfigGroup.class, srrConfig2.getClass());
 
         // create RaptorConfig, test if SwissRailRaptorConfigGroup got created
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(config2);
+        RaptorParameters raptorParams = RaptorUtils.createRaptorParameters(config2);
         srrConfig2 = config2.getModules().get(SwissRailRaptorConfigGroup.GROUP);
         Assert.assertNotNull(srrConfig2);
         Assert.assertEquals(SwissRailRaptorConfigGroup.class, srrConfig2.getClass());
 
-        Assert.assertNotNull(raptorConfig.getConfig());
-        Assert.assertEquals(srrConfig2, raptorConfig.getConfig());
+        Assert.assertNotNull(raptorParams.getConfig());
+        Assert.assertEquals(srrConfig2, raptorParams.getConfig());
 
-        RaptorConfig raptorConfig2 = RaptorUtils.createRaptorConfig(config2);
-        Assert.assertEquals("the same config object should be returned in subsequent calls.", srrConfig2, raptorConfig2.getConfig());
+        RaptorParameters raptorParams2 = RaptorUtils.createRaptorParameters(config2);
+        Assert.assertEquals("the same config object should be returned in subsequent calls.", srrConfig2, raptorParams2.getConfig());
 
         // check that the config is actually what we configured
-        Assert.assertTrue(raptorConfig2.getConfig().isUseRangeQuery());
-        Assert.assertTrue(raptorConfig2.getConfig().isUseIntermodalAccessEgress());
-        Assert.assertFalse(raptorConfig2.getConfig().isUseModeMappingForPassengers());
+        Assert.assertTrue(raptorParams2.getConfig().isUseRangeQuery());
+        Assert.assertTrue(raptorParams2.getConfig().isUseIntermodalAccessEgress());
+        Assert.assertFalse(raptorParams2.getConfig().isUseModeMappingForPassengers());
     }
 }

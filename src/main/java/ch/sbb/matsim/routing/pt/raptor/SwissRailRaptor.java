@@ -44,7 +44,7 @@ public class SwissRailRaptor implements TransitRouter {
 
     private final SwissRailRaptorData data;
     private final SwissRailRaptorCore raptor;
-    private final RaptorConfig config;
+    private final RaptorParameters parameters;
     private final RaptorParametersForPerson parametersForPerson;
     private final RaptorRouteSelector defaultRouteSelector;
     private final String subpopulationAttribute;
@@ -59,7 +59,7 @@ public class SwissRailRaptor implements TransitRouter {
     public SwissRailRaptor(final SwissRailRaptorData data, RaptorParametersForPerson parametersForPerson, RaptorRouteSelector routeSelector,
                            String subpopulationAttribute, ObjectAttributes personAttributes, TripRouter tripRouter) {
         this.data = data;
-        this.config = data.config;
+        this.parameters = data.config;
         this.raptor = new SwissRailRaptorCore(data);
         this.parametersForPerson = parametersForPerson;
         this.defaultRouteSelector = routeSelector;
@@ -70,7 +70,7 @@ public class SwissRailRaptor implements TransitRouter {
 
     @Override
     public List<Leg> calcRoute(Facility<?> fromFacility, Facility<?> toFacility, double departureTime, Person person) {
-        RaptorConfig config = this.parametersForPerson.getRaptorParameters(person);
+        RaptorParameters config = this.parametersForPerson.getRaptorParameters(person);
         List<InitialStop> accessStops = findAccessStops(fromFacility, person, departureTime);
         List<InitialStop> egressStops = findEgressStops(toFacility, person, departureTime);
 
@@ -89,7 +89,7 @@ public class SwissRailRaptor implements TransitRouter {
     }
 
     public List<Leg> calcRoute(Facility<?> fromFacility, Facility<?> toFacility, double earliestDepartureTime, double desiredDepartureTime, double latestDepartureTime, Person person, RaptorRouteSelector selector) {
-        RaptorConfig config = this.parametersForPerson.getRaptorParameters(person);
+        RaptorParameters config = this.parametersForPerson.getRaptorParameters(person);
         List<InitialStop> accessStops = findAccessStops(fromFacility, person, desiredDepartureTime);
         List<InitialStop> egressStops = findEgressStops(toFacility, person, desiredDepartureTime);
 
@@ -108,7 +108,7 @@ public class SwissRailRaptor implements TransitRouter {
         List<InitialStop> accessStops = findAccessStops(fromFacility, person, desiredDepartureTime);
         List<InitialStop> egressStops = findEgressStops(toFacility, person, desiredDepartureTime);
 
-        List<RaptorRoute> foundRoutes = this.raptor.calcRoutes(earliestDepartureTime, desiredDepartureTime, latestDepartureTime, accessStops, egressStops, config);
+        List<RaptorRoute> foundRoutes = this.raptor.calcRoutes(earliestDepartureTime, desiredDepartureTime, latestDepartureTime, accessStops, egressStops, parameters);
         RaptorRoute directWalk = createDirectWalk(fromFacility, toFacility, desiredDepartureTime, person);
 
         if (foundRoutes == null) {
@@ -121,15 +121,15 @@ public class SwissRailRaptor implements TransitRouter {
     }
 
     private List<InitialStop> findAccessStops(Facility<?> facility, Person person, double departureTime) {
-        SwissRailRaptorConfigGroup srrCfg = this.config.getConfig();
+        SwissRailRaptorConfigGroup srrCfg = this.parameters.getConfig();
         if (srrCfg.isUseIntermodalAccessEgress()) {
             return findIntermodalStops(facility, person, departureTime, Direction.Access);
         } else {
             List<TransitStopFacility> stops = findNearbyStops(facility);
             List<InitialStop> initialStops = stops.stream().map(stop -> {
                 double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
-                double travelTime = Math.ceil(beelineDistance / this.config.getBeelineWalkSpeed());
-                double disutility = travelTime * -this.config.getMarginalUtilityOfTravelTimeAccessWalk_utl_s();
+                double travelTime = Math.ceil(beelineDistance / this.parameters.getBeelineWalkSpeed());
+                double disutility = travelTime * -this.parameters.getMarginalUtilityOfTravelTimeAccessWalk_utl_s();
                 return new InitialStop(stop, disutility, travelTime, beelineDistance, TransportMode.access_walk);
             }).collect(Collectors.toList());
             return initialStops;
@@ -137,15 +137,15 @@ public class SwissRailRaptor implements TransitRouter {
     }
 
     private List<InitialStop> findEgressStops(Facility<?> facility, Person person, double departureTime) {
-        SwissRailRaptorConfigGroup srrCfg = this.config.getConfig();
+        SwissRailRaptorConfigGroup srrCfg = this.parameters.getConfig();
         if (srrCfg.isUseIntermodalAccessEgress()) {
             return findIntermodalStops(facility, person, departureTime, Direction.Egress);
         } else {
             List<TransitStopFacility> stops = findNearbyStops(facility);
             List<InitialStop> initialStops = stops.stream().map(stop -> {
                 double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
-                double travelTime = Math.ceil(beelineDistance / this.config.getBeelineWalkSpeed());
-                double disutility = travelTime * -this.config.getMarginalUtilityOfTravelTimeEgressWalk_utl_s();
+                double travelTime = Math.ceil(beelineDistance / this.parameters.getBeelineWalkSpeed());
+                double disutility = travelTime * -this.parameters.getMarginalUtilityOfTravelTimeEgressWalk_utl_s();
                 return new InitialStop(stop, disutility, travelTime, beelineDistance, TransportMode.egress_walk);
             }).collect(Collectors.toList());
             return initialStops;
@@ -155,7 +155,7 @@ public class SwissRailRaptor implements TransitRouter {
     private enum Direction { Access, Egress }
 
     private List<InitialStop> findIntermodalStops(Facility<?> facility, Person person, double departureTime, Direction direction) {
-        SwissRailRaptorConfigGroup srrCfg = this.config.getConfig();
+        SwissRailRaptorConfigGroup srrCfg = this.parameters.getConfig();
         double x = facility.getCoord().getX();
         double y = facility.getCoord().getY();
         String personId = person.getId().toString();
@@ -246,7 +246,7 @@ public class SwissRailRaptor implements TransitRouter {
                             }
                         }
                         double travelTime = getTravelTime(routeParts);
-                        double marginalUtilityTraveling = this.config.getMarginalUtilityOfTraveling_utl_sec(mode);
+                        double marginalUtilityTraveling = this.parameters.getMarginalUtilityOfTraveling_utl_sec(mode);
                         double disutility = travelTime * -marginalUtilityTraveling;
                         InitialStop iStop = new InitialStop(stop, disutility, travelTime, routeParts);
                         initialStops.add(iStop);
@@ -273,11 +273,11 @@ public class SwissRailRaptor implements TransitRouter {
     private List<TransitStopFacility> findNearbyStops(Facility<?> facility) {
         double x = facility.getCoord().getX();
         double y = facility.getCoord().getY();
-        Collection<TransitStopFacility> stopFacilities = this.data.stopsQT.getDisk(x, y, this.config.getSearchRadius());
+        Collection<TransitStopFacility> stopFacilities = this.data.stopsQT.getDisk(x, y, this.parameters.getSearchRadius());
         if (stopFacilities.size() < 2) {
             TransitStopFacility  nearestStop = this.data.stopsQT.getClosest(x, y);
             double nearestDistance = CoordUtils.calcEuclideanDistance(facility.getCoord(), nearestStop.getCoord());
-            stopFacilities = this.data.stopsQT.getDisk(x, y, nearestDistance + this.config.getExtensionRadius());
+            stopFacilities = this.data.stopsQT.getDisk(x, y, nearestDistance + this.parameters.getExtensionRadius());
         }
         if (stopFacilities instanceof List) {
             return (List<TransitStopFacility>) stopFacilities;
@@ -287,8 +287,8 @@ public class SwissRailRaptor implements TransitRouter {
 
     private RaptorRoute createDirectWalk(Facility<?> fromFacility, Facility<?> toFacility, double departureTime, Person person) {
         double beelineDistance = CoordUtils.calcEuclideanDistance(fromFacility.getCoord(), toFacility.getCoord());
-        double walkTime = beelineDistance / this.config.getBeelineWalkSpeed();
-        double walkCost_per_s = -this.config.getMarginalUtilityOfTravelTimeWalk_utl_s();
+        double walkTime = beelineDistance / this.parameters.getBeelineWalkSpeed();
+        double walkCost_per_s = -this.parameters.getMarginalUtilityOfTravelTimeWalk_utl_s();
         double walkCost = walkTime * walkCost_per_s;
 
         RaptorRoute route = new RaptorRoute(fromFacility, toFacility, walkCost);

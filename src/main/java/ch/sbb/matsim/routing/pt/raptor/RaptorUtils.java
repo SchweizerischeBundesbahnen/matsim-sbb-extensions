@@ -28,30 +28,30 @@ public final class RaptorUtils {
     private RaptorUtils() {
     }
 
-    public static RaptorConfig createRaptorConfig(Config config) {
+    public static RaptorParameters createRaptorParameters(Config config) {
         SwissRailRaptorConfigGroup advancedConfig = ConfigUtils.addOrGetModule(config, SwissRailRaptorConfigGroup.class);
 
         TransitRouterConfig trConfig = new TransitRouterConfig(config);
-        RaptorConfig raptorConfig = new RaptorConfig(advancedConfig, config.planCalcScore());
-        raptorConfig.setBeelineWalkConnectionDistance(trConfig.getBeelineWalkConnectionDistance());
-        raptorConfig.setBeelineWalkSpeed(trConfig.getBeelineWalkSpeed());
+        RaptorParameters raptorParams = new RaptorParameters(advancedConfig, config.planCalcScore());
+        raptorParams.setBeelineWalkConnectionDistance(trConfig.getBeelineWalkConnectionDistance());
+        raptorParams.setBeelineWalkSpeed(trConfig.getBeelineWalkSpeed());
 
-        raptorConfig.setSearchRadius(trConfig.getSearchRadius());
-        raptorConfig.setExtensionRadius(trConfig.getExtensionRadius());
+        raptorParams.setSearchRadius(trConfig.getSearchRadius());
+        raptorParams.setExtensionRadius(trConfig.getExtensionRadius());
 
-        raptorConfig.setMinimalTransferTime(trConfig.getAdditionalTransferTime());
+        raptorParams.setMinimalTransferTime(trConfig.getAdditionalTransferTime());
 
-        raptorConfig.setMarginalUtilityOfTravelTimeWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
-        raptorConfig.setMarginalUtilityOfTravelTimeAccessWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
-        raptorConfig.setMarginalUtilityOfTravelTimeEgressWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
-        raptorConfig.setMarginalUtilityOfTravelTimePt_utl_s(trConfig.getMarginalUtilityOfTravelTimePt_utl_s());
-        raptorConfig.setMarginalUtilityOfWaitingPt_utl_s(trConfig.getMarginalUtilityOfWaitingPt_utl_s());
+        raptorParams.setMarginalUtilityOfTravelTimeWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
+        raptorParams.setMarginalUtilityOfTravelTimeAccessWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
+        raptorParams.setMarginalUtilityOfTravelTimeEgressWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
+        raptorParams.setMarginalUtilityOfTravelTimePt_utl_s(trConfig.getMarginalUtilityOfTravelTimePt_utl_s());
+        raptorParams.setMarginalUtilityOfWaitingPt_utl_s(trConfig.getMarginalUtilityOfWaitingPt_utl_s());
 
-        raptorConfig.setTransferPenaltyCost(-trConfig.getUtilityOfLineSwitch_utl());
+        raptorParams.setTransferPenaltyCost(-trConfig.getUtilityOfLineSwitch_utl());
 
-        raptorConfig.setSubpopulationAttribute(config.plans().getSubpopulationAttributeName());
+        raptorParams.setSubpopulationAttribute(config.plans().getSubpopulationAttributeName());
 
-        return raptorConfig;
+        return raptorParams;
     }
 
     public static List<Leg> convertRouteToLegs(RaptorRoute route) {
