@@ -24,6 +24,7 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
     private SwissRailRaptorData data = null;
     private final TransitSchedule schedule;
     private final RaptorConfig raptorConfig;
+    private final RaptorParametersForPerson raptorParametersForPerson;
     private final RaptorRouteSelector routeSelector;
 
     private Network network;
@@ -32,11 +33,13 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
     private Provider<TripRouter> tripRouterProvider;
 
     @Inject
-    public SwissRailRaptorFactory(final TransitSchedule schedule, final Config config, final Network network, RaptorRouteSelector routeSelector,
+    public SwissRailRaptorFactory(final TransitSchedule schedule, final Config config, final Network network,
+                                  RaptorParametersForPerson raptorParametersForPerson, RaptorRouteSelector routeSelector,
                                   PlansConfigGroup plansConfigGroup, Population population, Provider<TripRouter> tripRouterProvider) {
         this.schedule = schedule;
         this.raptorConfig = RaptorUtils.createRaptorConfig(config);
         this.network = network;
+        this.raptorParametersForPerson = raptorParametersForPerson;
         this.routeSelector = routeSelector;
         this.plansConfigGroup = plansConfigGroup;
         this.population = population;
@@ -47,7 +50,7 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
     public SwissRailRaptor get() {
         SwissRailRaptorData data = getData();
         TripRouter tripRouter = this.tripRouterProvider.get();
-        return new SwissRailRaptor(data, this.routeSelector,
+        return new SwissRailRaptor(data, this.raptorParametersForPerson, this.routeSelector,
                 this.plansConfigGroup.getSubpopulationAttributeName(), this.population.getPersonAttributes(), tripRouter);
     }
 

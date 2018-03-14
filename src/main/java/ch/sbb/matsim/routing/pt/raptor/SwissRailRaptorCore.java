@@ -30,7 +30,6 @@ import java.util.Map;
 public class SwissRailRaptorCore {
 
     private final SwissRailRaptorData data;
-    private final RaptorConfig config;
 
     private final PathElement[] arrivalPathPerRouteStop;
     private final double[] egressCostsPerRouteStop;
@@ -47,7 +46,6 @@ public class SwissRailRaptorCore {
 
     public SwissRailRaptorCore(SwissRailRaptorData data) {
         this.data = data;
-        this.config = data.config;
         this.arrivalPathPerRouteStop = new PathElement[data.countRouteStops];
         this.egressCostsPerRouteStop = new double[data.countRouteStops];
         this.leastArrivalCostAtRouteStop = new double[data.countRouteStops];
@@ -73,10 +71,9 @@ public class SwissRailRaptorCore {
         this.bestArrivalCost = Double.POSITIVE_INFINITY;
     }
 
-    public RaptorRoute calcLeastCostRoute(double depTime, List<InitialStop> accessStops, List<InitialStop> egressStops) {
+    public RaptorRoute calcLeastCostRoute(double depTime, List<InitialStop> accessStops, List<InitialStop> egressStops, RaptorConfig config) {
         final int maxTransfers = 20; // sensible defaults, could be made configurable if there is a need for it.
         final int maxTransfersAfterFirstArrival = 2;
-
 
         reset();
 
@@ -114,7 +111,7 @@ public class SwissRailRaptorCore {
             // but because we re-use the earliestArrivalTime-array, we don't have to do anything.
 
             // second stage: process routes
-            exploreRoutes();
+            exploreRoutes(config);
 
             PathElement leastCostPath = findLeastCostArrival(destinationStops);
             if (leastCostPath != null) {
@@ -143,7 +140,7 @@ public class SwissRailRaptorCore {
         return raptorRoute;
     }
 
-    public List<RaptorRoute> calcRoutes(double earliestDepTime, double desiredDepTime, double latestDepTime, List<InitialStop> accessStops, List<InitialStop> egressStops) {
+    public List<RaptorRoute> calcRoutes(double earliestDepTime, double desiredDepTime, double latestDepTime, List<InitialStop> accessStops, List<InitialStop> egressStops, RaptorConfig config) {
         List<RaptorRoute> foundRoutes = new ArrayList<>();
         int maxTransfers = 20; // sensible defaults, could be made configurable if there is a need for it.
         final int maxTransfersAfterFirstArrival = 2;
@@ -187,7 +184,7 @@ public class SwissRailRaptorCore {
                         double depTimeAtStart = this.data.departures[depIndex];
                         double depTimeAtStop = depTimeAtStart + depOffset;
                         if (depTimeAtStop >= earliestTimeAtStop && depTimeAtStop <= latestTimeAtStop) {
-                            double costOffset = (depTimeAtStop - earliestTimeAtStop) * this.config.getMarginalUtilityOfWaitingPt_utl_s();
+                            double costOffset = (depTimeAtStop - earliestTimeAtStop) * config.getMarginalUtilityOfWaitingPt_utl_s();
                             departures.add(new DepartureAtRouteStop(routeStop, routeStopIndex, depIndex, depTimeAtStop, costOffset, accessStop));
                         }
                     }
@@ -245,7 +242,7 @@ public class SwissRailRaptorCore {
                 // but because we re-use the earliestArrivalTime-array, we don't have to do anything.
 
                 // second stage: process routes
-                exploreRoutes();
+                exploreRoutes(config);
 
                 PathElement leastCostPath = findLeastCostArrival(destinationStops);
                 if (leastCostPath != null && (lastFoundBestPath == null || leastCostPath.comingFrom != lastFoundBestPath.comingFrom)) {
@@ -350,7 +347,7 @@ public class SwissRailRaptorCore {
         return routesToKeep;
     }
 
-    private void exploreRoutes() {
+    private void exploreRoutes(RaptorConfig config) {
         this.improvedStops.clear();
         this.reachedRouteStopIndices.clear();
 
@@ -378,7 +375,7 @@ public class SwissRailRaptorCore {
                     double vehicleArrivalTime = currentDepartureTime + firstRouteStop.arrivalOffset;
                     currentAgentBoardingTime = (agentFirstArrivalTime < vehicleArrivalTime) ? vehicleArrivalTime : agentFirstArrivalTime;
                     double waitingTime = currentAgentBoardingTime - agentFirstArrivalTime;
-                    double waitingCost = -this.config.getMarginalUtilityOfWaitingPt_utl_s() * waitingTime;
+                    double waitingCost = -config.getMarginalUtilityOfWaitingPt_utl_s() * waitingTime;
                     currentCostWhenBoarding = boardingPE.arrivalCost + waitingCost;
                 }
 
@@ -391,7 +388,7 @@ public class SwissRailRaptorCore {
                     RRouteStop toRouteStop = this.data.routeStops[toRouteStopIndex];
                     double arrivalTime = currentDepartureTime + toRouteStop.arrivalOffset;
                     double inVehicleTime = arrivalTime - currentAgentBoardingTime;
-                    double inVehicleCost = inVehicleTime * -this.config.getMarginalUtilityOfTravelTimePt_utl_s();
+                    double inVehicleCost = inVehicleTime * -config.getMarginalUtilityOfTravelTimePt_utl_s();
                     double arrivalCost = currentCostWhenBoarding + inVehicleCost;
                     double previousArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];
                     if (arrivalCost <= previousArrivalCost) {
@@ -416,7 +413,7 @@ public class SwissRailRaptorCore {
                             double alternativeVehicleArrivalTime = alternativeDepartureTime + toRouteStop.arrivalOffset;
                             double alternativeAgentBoardingTime = (alternativeAgentFirstArrivalTime < alternativeVehicleArrivalTime) ? alternativeVehicleArrivalTime : alternativeAgentFirstArrivalTime;
                             double alternativeWaitingTime = alternativeAgentBoardingTime - alternativeAgentFirstArrivalTime;
-                            double alternativeWaitingCost = -this.config.getMarginalUtilityOfWaitingPt_utl_s() * alternativeWaitingTime;
+                            double alternativeWaitingCost = -config.getMarginalUtilityOfWaitingPt_utl_s() * alternativeWaitingTime;
                             double alternativeCostWhenBoarding = alternativeBoardingPE.arrivalCost + alternativeWaitingCost;
                             if (alternativeCostWhenBoarding < arrivalCost) {
                                 currentDepartureIndex = alternativeDepartureIndex;
