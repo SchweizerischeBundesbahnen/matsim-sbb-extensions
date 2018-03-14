@@ -51,6 +51,7 @@ public class RaptorParameters {
     private double minimalTransferTime = 60;
 
     private double transferPenaltyCost = 0;
+    private double transferPenaltyTravelTimeToCostFactor = 0.0;
 
     private String subpopulationAttribute;
 
@@ -144,6 +145,14 @@ public class RaptorParameters {
 
     public void setMinimalTransferTime(double minimalTransferTime) {
         this.minimalTransferTime = minimalTransferTime;
+    }
+
+    public double getTransferPenaltyTravelTimeToCostFactor() {
+        return this.transferPenaltyTravelTimeToCostFactor;
+    }
+
+    public void setTransferPenaltyTravelTimeToCostFactor(double transferPenaltyTravelTimeToCostFactor) {
+        this.transferPenaltyTravelTimeToCostFactor = transferPenaltyTravelTimeToCostFactor;
     }
 
     public double getTransferPenaltyCost() {

@@ -25,10 +25,13 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     private static final String PARAM_USE_RANGE_QUERY = "useRangeQuery";
     private static final String PARAM_USE_INTERMODAL_ACCESS_EGRESS = "useIntermodalAccessEgress";
     private static final String PARAM_USE_MODE_MAPPING = "useModeMappingForPassengers";
+    private static final String PARAM_TRANSFER_PENALTY_FACTOR = "transferPenaltyTravelTimeToCostFactor";
 
     private boolean useRangeQuery = false;
     private boolean useIntermodality = false;
     private boolean useModeMapping = false;
+
+    private double transferPenaltyTravelTimeToCostFactor = 0.0;
 
     private final Map<String, RangeQuerySettingsParameterSet> rangeQuerySettingsPerSubpop = new HashMap<>();
     private final List<IntermodalAccessEgressParameterSet> intermodalAccessEgressSettings = new ArrayList<>();
@@ -68,6 +71,15 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
         this.useModeMapping = useModeMapping;
     }
 
+    @StringGetter(PARAM_TRANSFER_PENALTY_FACTOR)
+    public double getTransferPenaltyTravelTimeToCostFactor() {
+        return transferPenaltyTravelTimeToCostFactor;
+    }
+
+    @StringSetter(PARAM_TRANSFER_PENALTY_FACTOR)
+    public void setTransferPenaltyTravelTimeToCostFactor(double transferPenaltyTravelTimeToCostFactor) {
+        this.transferPenaltyTravelTimeToCostFactor = transferPenaltyTravelTimeToCostFactor;
+    }
 
     @Override
     public ConfigGroup createParameterSet(String type) {

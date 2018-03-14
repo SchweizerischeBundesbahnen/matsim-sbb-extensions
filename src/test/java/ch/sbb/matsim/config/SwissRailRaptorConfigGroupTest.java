@@ -19,7 +19,6 @@ import org.matsim.core.config.ConfigWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.util.List;
 
 /**
@@ -40,6 +39,7 @@ public class SwissRailRaptorConfigGroupTest {
             config1.setUseRangeQuery(true);
             config1.setUseIntermodalAccessEgress(true);
             config1.setUseModeMappingForPassengers(true);
+            config1.setTransferPenaltyTravelTimeToCostFactor(0.0031);
         }
 
         SwissRailRaptorConfigGroup config2 = writeRead(config1);
@@ -48,6 +48,7 @@ public class SwissRailRaptorConfigGroupTest {
         Assert.assertTrue(config2.isUseRangeQuery());
         Assert.assertTrue(config2.isUseIntermodalAccessEgress());
         Assert.assertTrue(config2.isUseModeMappingForPassengers());
+        Assert.assertEquals(0.0031, config2.getTransferPenaltyTravelTimeToCostFactor(), 0.0);
     }
 
     @Test

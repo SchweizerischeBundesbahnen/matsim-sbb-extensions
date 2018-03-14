@@ -48,6 +48,7 @@ public final class RaptorUtils {
         raptorParams.setMarginalUtilityOfWaitingPt_utl_s(trConfig.getMarginalUtilityOfWaitingPt_utl_s());
 
         raptorParams.setTransferPenaltyCost(-trConfig.getUtilityOfLineSwitch_utl());
+        raptorParams.setTransferPenaltyTravelTimeToCostFactor(advancedConfig.getTransferPenaltyTravelTimeToCostFactor());
 
         raptorParams.setSubpopulationAttribute(config.plans().getSubpopulationAttributeName());
 
