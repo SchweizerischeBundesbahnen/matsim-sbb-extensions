@@ -4,9 +4,11 @@
 
 package ch.sbb.matsim.routing.pt.raptor;
 
+import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.core.population.routes.NetworkRoute;
@@ -100,11 +102,17 @@ public class SwissRailRaptorData {
         Map<TransitStopFacility, Integer> stopFacilityIndices = new HashMap<>((int) (schedule.getFacilities().size() * 1.5));
         Map<TransitStopFacility, int[]> routeStopsPerStopFacility = new HashMap<>();
 
+        SwissRailRaptorConfigGroup srrConfig = params.getConfig();
+        boolean useModeMapping = srrConfig.isUseModeMappingForPassengers();
         for (TransitLine line : schedule.getTransitLines().values()) {
             List<TransitRoute> transitRoutes = new ArrayList<>(line.getRoutes().values());
             transitRoutes.sort((tr1, tr2) -> Double.compare(getEarliestDeparture(tr1).getDepartureTime(), getEarliestDeparture(tr2).getDepartureTime())); // sort routes by earliest departure for additional performance gains
             for (TransitRoute route : transitRoutes) {
                 int indexFirstDeparture = indexDeparture;
+                String mode = TransportMode.pt;
+                if (useModeMapping) {
+                    mode = srrConfig.getModeMappingForPassengersParameterSet(route.getTransportMode()).getPassengerMode();
+                }
                 RRoute rroute = new RRoute(indexRouteStops, route.getStops().size(), indexFirstDeparture, route.getDepartures().size());
                 routes[indexRoutes] = rroute;
                 NetworkRoute networkRoute = route.getRoute();
@@ -129,7 +137,7 @@ public class SwissRailRaptorData {
                         }
                     }
                     int stopFacilityIndex = stopFacilityIndices.computeIfAbsent(routeStop.getStopFacility(), stop -> stopFacilityIndices.size());
-                    RRouteStop rRouteStop = new RRouteStop(routeStop, line, route, indexRoutes, stopFacilityIndex, distanceAlongRoute);
+                    RRouteStop rRouteStop = new RRouteStop(routeStop, line, route, mode, indexRoutes, stopFacilityIndex, distanceAlongRoute);
                     final int thisRouteStopIndex = indexRouteStops;
                     routeStops[thisRouteStopIndex] = rRouteStop;
                     routeStopsPerStopFacility.compute(routeStop.getStopFacility(), (stop, currentRouteStops) -> {
@@ -468,6 +476,7 @@ public class SwissRailRaptorData {
         final TransitRouteStop routeStop;
         final TransitLine line;
         final TransitRoute route;
+        final String mode;
         final int transitRouteIndex;
         final int stopFacilityIndex;
         final double arrivalOffset;
@@ -476,10 +485,11 @@ public class SwissRailRaptorData {
         int indexFirstTransfer = -1;
         int countTransfers = 0;
 
-        RRouteStop(TransitRouteStop routeStop, TransitLine line, TransitRoute route, int transitRouteIndex, int stopFacilityIndex, double distanceAlongRoute) {
+        RRouteStop(TransitRouteStop routeStop, TransitLine line, TransitRoute route, String mode, int transitRouteIndex, int stopFacilityIndex, double distanceAlongRoute) {
             this.routeStop = routeStop;
             this.line = line;
             this.route = route;
+            this.mode = mode;
             this.transitRouteIndex = transitRouteIndex;
             this.stopFacilityIndex = stopFacilityIndex;
             this.distanceAlongRoute = distanceAlongRoute;

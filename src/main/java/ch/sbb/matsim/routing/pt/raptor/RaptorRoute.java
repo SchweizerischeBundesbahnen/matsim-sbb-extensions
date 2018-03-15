@@ -51,8 +51,8 @@ public class RaptorRoute {
         this.travelTime += travelTime;
     }
 
-    public void addPt(TransitStopFacility fromStop, TransitStopFacility toStop, TransitLine line, TransitRoute route, double depTime, double travelTime, double distance) {
-        this.editableParts.add(new RoutePart(fromStop, toStop, TransportMode.pt, depTime, travelTime, distance, line, route, null));
+    public void addPt(TransitStopFacility fromStop, TransitStopFacility toStop, TransitLine line, TransitRoute route, String mode, double depTime, double travelTime, double distance) {
+        this.editableParts.add(new RoutePart(fromStop, toStop, mode, depTime, travelTime, distance, line, route, null));
         if (Double.isNaN(this.departureTime)) {
             this.departureTime = depTime;
         }

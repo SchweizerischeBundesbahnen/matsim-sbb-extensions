@@ -319,6 +319,12 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
             super(TYPE);
         }
 
+        public ModeMappingForPassengersParameterSet(String routeMode, String passengerMode) {
+            super(TYPE);
+            this.routeMode = routeMode;
+            this.passengerMode = passengerMode;
+        }
+
         @StringGetter(PARAM_ROUTE_MODE)
         public String getRouteMode() {
             return routeMode;

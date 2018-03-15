@@ -581,7 +581,7 @@ public class SwissRailRaptorCore {
             } else {
                 TransitLine line = pe.toRouteStop.line;
                 TransitRoute route = pe.toRouteStop.route;
-                raptorRoute.addPt(fromStop, toStop, line, route, time, travelTime, pe.distance);
+                raptorRoute.addPt(fromStop, toStop, line, route, pe.toRouteStop.mode, time, travelTime, pe.distance);
             }
             time = pe.arrivalTime;
             fromStop = toStop;

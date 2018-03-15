@@ -742,6 +742,37 @@ public class SwissRailRaptorTest {
         return config;
     }
 
+    @Test
+    public void testModeMapping() {
+        Fixture f = new Fixture();
+        f.init();
+        for (TransitRoute route : f.blueLine.getRoutes().values()) {
+            route.setTransportMode("tram");
+        }
+        for (TransitRoute route : f.redLine.getRoutes().values()) {
+            route.setTransportMode("train");
+        }
+        for (TransitRoute route : f.greenLine.getRoutes().values()) {
+            route.setTransportMode("bus");
+        }
+
+        SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(f.config, SwissRailRaptorConfigGroup.class);
+        srrConfig.setUseModeMappingForPassengers(true);
+        srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("tram", "rail"));
+        srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("train", "rail"));
+        srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("bus", "road"));
+
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
+        Coord toCoord = new Coord(16100, 10050);
+        List<Leg> legs = router.calcRoute(new FakeFacility(new Coord(3800, 5100)), new FakeFacility(toCoord), 6.0*3600, null);
+        assertEquals(5, legs.size());
+        assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+        assertEquals("rail", legs.get(1).getMode());
+        assertEquals(TransportMode.transit_walk, legs.get(2).getMode());
+        assertEquals("road", legs.get(3).getMode());
+        assertEquals(TransportMode.egress_walk, legs.get(4).getMode());
+    }
+
     /**
      * Generates the following network for testing:
      * <pre>
