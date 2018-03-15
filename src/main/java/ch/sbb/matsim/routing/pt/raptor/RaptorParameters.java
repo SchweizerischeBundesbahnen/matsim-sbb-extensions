@@ -33,37 +33,19 @@ public class RaptorParameters {
      */
     private double extensionRadius = 200.0;
 
-    /**
-     * The distance in meters that agents can walk to get from one stop to
-     * another stop of a nearby transit line.
-     */
-    private double beelineWalkConnectionDistance = 200.0;
 
     private double beelineWalkSpeed; // meter / second
 
-    private double marginalUtilityOfTravelTimeWalk_utl_s;
-
-    private double marginalUtilityOfTravelTimeAccessWalk_utl_s;
-
-    private double marginalUtilityOfTravelTimeEgressWalk_utl_s;
-
-    private Map<String, Double> marginalUtilityOfTravelTime_utl_s = new HashMap<>();
+    private final Map<String, Double> marginalUtilityOfTravelTime_utl_s = new HashMap<>();
 
     private double marginalUtilityOfWaitingPt_utl_s;
 
-    private double minimalTransferTime = 60;
-
-    private double transferPenaltyCost = 0;
     private double transferPenaltyTravelTimeToCostFactor = 0.0;
 
-    private String subpopulationAttribute;
-
     private final SwissRailRaptorConfigGroup config;
-    private final PlanCalcScoreConfigGroup scoringConfig;
 
-    public RaptorParameters(SwissRailRaptorConfigGroup config, PlanCalcScoreConfigGroup scoringConfig) {
+    public RaptorParameters(SwissRailRaptorConfigGroup config) {
         this.config = config;
-        this.scoringConfig = scoringConfig;
     }
 
     public SwissRailRaptorConfigGroup getConfig() {
@@ -86,44 +68,12 @@ public class RaptorParameters {
         this.extensionRadius = extensionRadius;
     }
 
-    public double getBeelineWalkConnectionDistance() {
-        return this.beelineWalkConnectionDistance;
-    }
-
-    public void setBeelineWalkConnectionDistance(double beelineWalkConnectionDistance) {
-        this.beelineWalkConnectionDistance = beelineWalkConnectionDistance;
-    }
-
     public double getBeelineWalkSpeed() {
         return this.beelineWalkSpeed;
     }
 
     public void setBeelineWalkSpeed(double beelineWalkSpeed) {
         this.beelineWalkSpeed = beelineWalkSpeed;
-    }
-
-    public double getMarginalUtilityOfTravelTimeWalk_utl_s() {
-        return this.marginalUtilityOfTravelTimeWalk_utl_s;
-    }
-
-    public void setMarginalUtilityOfTravelTimeWalk_utl_s(double marginalUtilityOfTravelTimeWalk_utl_s) {
-        this.marginalUtilityOfTravelTimeWalk_utl_s = marginalUtilityOfTravelTimeWalk_utl_s;
-    }
-
-    public double getMarginalUtilityOfTravelTimeAccessWalk_utl_s() {
-        return this.marginalUtilityOfTravelTimeAccessWalk_utl_s;
-    }
-
-    public void setMarginalUtilityOfTravelTimeAccessWalk_utl_s(double marginalUtilityOfTravelTimeAccessWalk_utl_s) {
-        this.marginalUtilityOfTravelTimeAccessWalk_utl_s = marginalUtilityOfTravelTimeAccessWalk_utl_s;
-    }
-
-    public double getMarginalUtilityOfTravelTimeEgressWalk_utl_s() {
-        return this.marginalUtilityOfTravelTimeEgressWalk_utl_s;
-    }
-
-    public void setMarginalUtilityOfTravelTimeEgressWalk_utl_s(double marginalUtilityOfTravelTimeEgressWalk_utl_s) {
-        this.marginalUtilityOfTravelTimeEgressWalk_utl_s = marginalUtilityOfTravelTimeEgressWalk_utl_s;
     }
 
     public double getMarginalUtilityOfTravelTime_utl_s(String mode) {
@@ -146,14 +96,6 @@ public class RaptorParameters {
         this.marginalUtilityOfWaitingPt_utl_s = marginalUtilityOfWaitingPt_utl_s;
     }
 
-    public double getMinimalTransferTime() {
-        return this.minimalTransferTime;
-    }
-
-    public void setMinimalTransferTime(double minimalTransferTime) {
-        this.minimalTransferTime = minimalTransferTime;
-    }
-
     public double getTransferPenaltyTravelTimeToCostFactor() {
         return this.transferPenaltyTravelTimeToCostFactor;
     }
@@ -162,23 +104,4 @@ public class RaptorParameters {
         this.transferPenaltyTravelTimeToCostFactor = transferPenaltyTravelTimeToCostFactor;
     }
 
-    public double getTransferPenaltyCost() {
-        return this.transferPenaltyCost;
-    }
-
-    public void setTransferPenaltyCost(double transferPenaltyCost) {
-        this.transferPenaltyCost = transferPenaltyCost;
-    }
-
-    public String getSubpopulationAttribute() {
-        return this.subpopulationAttribute;
-    }
-
-    public void setSubpopulationAttribute(String subpopulationAttribute) {
-        this.subpopulationAttribute = subpopulationAttribute;
-    }
-
-    public double getMarginalUtilityOfTraveling_utl_sec(String mode) {
-        return this.scoringConfig.getModes().get(mode).getMarginalUtilityOfTraveling() / 3600.0;
-    }
 }

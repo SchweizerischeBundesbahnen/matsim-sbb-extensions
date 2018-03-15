@@ -6,6 +6,7 @@ package ch.sbb.matsim.routing.pt.raptor;
 
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.PlanElement;
@@ -13,6 +14,7 @@ import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
+import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.GenericRouteImpl;
 import org.matsim.pt.router.TransitRouterConfig;
@@ -30,22 +32,46 @@ public final class RaptorUtils {
     private RaptorUtils() {
     }
 
-    public static RaptorParameters createRaptorParameters(Config config) {
+    public static RaptorStaticConfig createStaticConfig(Config config) {
+        PlanCalcScoreConfigGroup pcsConfig = config.planCalcScore();
+        PlansCalcRouteConfigGroup pcrConfig = config.plansCalcRoute();
+        SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(config, SwissRailRaptorConfigGroup.class);
+
+        RaptorStaticConfig staticConfig = new RaptorStaticConfig();
+
+        staticConfig.setBeelineWalkConnectionDistance(config.transitRouter().getMaxBeelineWalkConnectionDistance());
+
+        PlansCalcRouteConfigGroup.ModeRoutingParams walk = pcrConfig.getModeRoutingParams().get(TransportMode.walk);
+        staticConfig.setBeelineWalkSpeed(walk.getTeleportedModeSpeed() / walk.getBeelineDistanceFactor());
+
+        double marginalUtilityOfTravelTimeWalk_utl_s = pcsConfig.getModes().get(TransportMode.walk).getMarginalUtilityOfTraveling() /3600.0 - pcsConfig.getPerforming_utils_hr()/3600. ;
+        staticConfig.setMarginalUtilityOfTravelTimeWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
+        staticConfig.setMarginalUtilityOfTravelTimeAccessWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
+        staticConfig.setMarginalUtilityOfTravelTimeEgressWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
+
+        staticConfig.setMinimalTransferTime(config.transitRouter().getAdditionalTransferTime());
+        staticConfig.setTransferPenaltyCost(-pcsConfig.getUtilityOfLineSwitch());
+
+        staticConfig.setUseModeMappingForPassengers(srrConfig.isUseModeMappingForPassengers());
+        if (srrConfig.isUseModeMappingForPassengers()) {
+            for (SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet mapping : srrConfig.getModeMappingForPassengers()) {
+                staticConfig.addModeMappingForPassengers(mapping.getRouteMode(), mapping.getPassengerMode());
+            }
+        }
+
+        return staticConfig;
+    }
+
+    public static RaptorParameters createParameters(Config config) {
         SwissRailRaptorConfigGroup advancedConfig = ConfigUtils.addOrGetModule(config, SwissRailRaptorConfigGroup.class);
 
         TransitRouterConfig trConfig = new TransitRouterConfig(config);
-        RaptorParameters raptorParams = new RaptorParameters(advancedConfig, config.planCalcScore());
-        raptorParams.setBeelineWalkConnectionDistance(trConfig.getBeelineWalkConnectionDistance());
+        RaptorParameters raptorParams = new RaptorParameters(advancedConfig);
         raptorParams.setBeelineWalkSpeed(trConfig.getBeelineWalkSpeed());
 
-        raptorParams.setSearchRadius(trConfig.getSearchRadius());
-        raptorParams.setExtensionRadius(trConfig.getExtensionRadius());
+        raptorParams.setSearchRadius(config.transitRouter().getSearchRadius());
+        raptorParams.setExtensionRadius(config.transitRouter().getExtensionRadius());
 
-        raptorParams.setMinimalTransferTime(trConfig.getAdditionalTransferTime());
-
-        raptorParams.setMarginalUtilityOfTravelTimeWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
-        raptorParams.setMarginalUtilityOfTravelTimeAccessWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
-        raptorParams.setMarginalUtilityOfTravelTimeEgressWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
         raptorParams.setMarginalUtilityOfWaitingPt_utl_s(trConfig.getMarginalUtilityOfWaitingPt_utl_s());
 
         PlanCalcScoreConfigGroup pcsConfig = config.planCalcScore();
@@ -57,10 +83,7 @@ public final class RaptorUtils {
             raptorParams.setMarginalUtilityOfTravelTime_utl_s(mode, marginalUtility_utl_s);
         }
 
-        raptorParams.setTransferPenaltyCost(-trConfig.getUtilityOfLineSwitch_utl());
         raptorParams.setTransferPenaltyTravelTimeToCostFactor(advancedConfig.getTransferPenaltyTravelTimeToCostFactor());
-
-        raptorParams.setSubpopulationAttribute(config.plans().getSubpopulationAttributeName());
 
         return raptorParams;
     }

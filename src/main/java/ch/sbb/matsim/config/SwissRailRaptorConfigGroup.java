@@ -9,6 +9,7 @@ import org.matsim.core.config.ReflectiveConfigGroup;
 import org.matsim.core.utils.collections.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -145,6 +146,10 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
 
     public ModeMappingForPassengersParameterSet getModeMappingForPassengersParameterSet(String routeMode) {
         return this.modeMappingForPassengersByRouteMode.get(routeMode);
+    }
+
+    public Collection<ModeMappingForPassengersParameterSet> getModeMappingForPassengers() {
+        return this.modeMappingForPassengersByRouteMode.values();
     }
 
     public static class RangeQuerySettingsParameterSet extends ReflectiveConfigGroup {

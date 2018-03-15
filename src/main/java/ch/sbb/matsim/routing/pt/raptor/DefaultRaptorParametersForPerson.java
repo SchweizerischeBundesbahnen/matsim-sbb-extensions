@@ -21,7 +21,7 @@ public class DefaultRaptorParametersForPerson implements RaptorParametersForPers
 
     @Inject
     public DefaultRaptorParametersForPerson(Config config) {
-        this.defaultParameters = RaptorUtils.createRaptorParameters(config);
+        this.defaultParameters = RaptorUtils.createParameters(config);
     }
 
     @Override

@@ -70,8 +70,7 @@ public class SwissRailRaptorIntermodalTest {
         bikeAccess.setFilterValue("true");
         f.srrConfig.addIntermodalAccessEgress(bikeAccess);
 
-        RaptorParameters raptorParams = RaptorUtils.createRaptorParameters(f.config);
-        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorParams, f.scenario.getNetwork());
+        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), RaptorUtils.createStaticConfig(f.config), f.scenario.getNetwork());
         SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()), new LeastCostRaptorRouteSelector(), null, null, tripRouter);
 
         Facility fromFac = new FakeFacility(new Coord(10000, 10500), Id.create("from", Link.class));
@@ -129,8 +128,7 @@ public class SwissRailRaptorIntermodalTest {
         bikeAccess.setFilterValue("true");
         f.srrConfig.addIntermodalAccessEgress(bikeAccess);
 
-        RaptorParameters raptorConfig = RaptorUtils.createRaptorParameters(f.config);
-        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
+        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), RaptorUtils.createStaticConfig(f.config), f.scenario.getNetwork());
         SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()), new LeastCostRaptorRouteSelector(), null, null, tripRouter);
 
         RoutingModule ptRoutingModule = new SwissRailRaptorRoutingModule(raptor, f.scenario.getTransitSchedule(), f.scenario.getNetwork(), walkRoutingModule);
@@ -189,8 +187,7 @@ public class SwissRailRaptorIntermodalTest {
         walkAccess.setRadius(1000);
         f.srrConfig.addIntermodalAccessEgress(walkAccess);
 
-        RaptorParameters raptorConfig = RaptorUtils.createRaptorParameters(f.config);
-        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
+        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), RaptorUtils.createStaticConfig(f.config), f.scenario.getNetwork());
         SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()), new LeastCostRaptorRouteSelector(), null, null, tripRouter);
 
         Facility fromFac = new FakeFacility(new Coord(10000, 10500), Id.create("from", Link.class));
@@ -205,10 +202,10 @@ public class SwissRailRaptorIntermodalTest {
         Leg leg = legs.get(0);
         Assert.assertEquals(TransportMode.access_walk, leg.getMode());
         Assert.assertEquals(Id.create("from", Link.class), leg.getRoute().getStartLinkId());
-        Assert.assertEquals(Id.create("pt_3", Link.class), leg.getRoute().getEndLinkId());
+        Assert.assertEquals(Id.create("pt_2", Link.class), leg.getRoute().getEndLinkId());
         leg = legs.get(1);
         Assert.assertEquals(TransportMode.pt, leg.getMode());
-        Assert.assertEquals(Id.create("pt_3", Link.class), leg.getRoute().getStartLinkId());
+        Assert.assertEquals(Id.create("pt_2", Link.class), leg.getRoute().getStartLinkId());
         Assert.assertEquals(Id.create("pt_5", Link.class), leg.getRoute().getEndLinkId());
         leg = legs.get(2);
         Assert.assertEquals(TransportMode.egress_walk, leg.getMode());
@@ -243,8 +240,7 @@ public class SwissRailRaptorIntermodalTest {
         bikeAccess.setFilterValue("true");
         f.srrConfig.addIntermodalAccessEgress(bikeAccess);
 
-        RaptorParameters raptorConfig = RaptorUtils.createRaptorParameters(f.config);
-        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), raptorConfig, f.scenario.getNetwork());
+        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), RaptorUtils.createStaticConfig(f.config), f.scenario.getNetwork());
         SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()), new LeastCostRaptorRouteSelector(), null, null, tripRouter);
 
         Facility fromFac = new FakeFacility(new Coord(8000, 10500), Id.create("from", Link.class));
