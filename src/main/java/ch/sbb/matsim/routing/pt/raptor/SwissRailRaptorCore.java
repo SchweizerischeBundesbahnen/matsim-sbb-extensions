@@ -148,6 +148,8 @@ public class SwissRailRaptorCore {
 
         reset();
 
+        double marginalUtilityOfWaitingPt_utl_s = parameters.getMarginalUtilityOfWaitingPt_utl_s();
+
         PathElement lastFoundBestPath = null;
 
         /* the original algorithm works with time. Starting with the latest departure,
@@ -184,7 +186,7 @@ public class SwissRailRaptorCore {
                         double depTimeAtStart = this.data.departures[depIndex];
                         double depTimeAtStop = depTimeAtStart + depOffset;
                         if (depTimeAtStop >= earliestTimeAtStop && depTimeAtStop <= latestTimeAtStop) {
-                            double costOffset = (depTimeAtStop - earliestTimeAtStop) * parameters.getMarginalUtilityOfWaitingPt_utl_s();
+                            double costOffset = (depTimeAtStop - earliestTimeAtStop) * marginalUtilityOfWaitingPt_utl_s;
                             departures.add(new DepartureAtRouteStop(routeStop, routeStopIndex, depIndex, depTimeAtStop, costOffset, accessStop));
                         }
                     }
@@ -351,6 +353,9 @@ public class SwissRailRaptorCore {
         this.improvedStops.clear();
         this.reachedRouteStopIndices.clear();
 
+        double transferPenaltyTravelTimeToCostFactor = parameters.getTransferPenaltyTravelTimeToCostFactor();
+        double marginalUtilityOfWaitingPt_utl_s = parameters.getMarginalUtilityOfWaitingPt_utl_s();
+
         int routeIndex = -1;
         for (int firstRouteStopIndex = this.improvedRouteStopIndices.nextSetBit(0); firstRouteStopIndex >= 0; firstRouteStopIndex = this.improvedRouteStopIndices.nextSetBit(firstRouteStopIndex+1)) {
             RRouteStop firstRouteStop = this.data.routeStops[firstRouteStopIndex];
@@ -376,7 +381,7 @@ public class SwissRailRaptorCore {
                     double vehicleArrivalTime = currentDepartureTime + firstRouteStop.arrivalOffset;
                     currentAgentBoardingTime = (agentFirstArrivalTime < vehicleArrivalTime) ? vehicleArrivalTime : agentFirstArrivalTime;
                     double waitingTime = currentAgentBoardingTime - agentFirstArrivalTime;
-                    double waitingCost = -parameters.getMarginalUtilityOfWaitingPt_utl_s() * waitingTime;
+                    double waitingCost = -marginalUtilityOfWaitingPt_utl_s * waitingTime;
                     currentTravelCostWhenBoarding = boardingPE.arrivalTravelCost + waitingCost;
                     currentTransferCostWhenBoarding = boardingPE.arrivalTransferCost;
                 }
@@ -387,13 +392,15 @@ public class SwissRailRaptorCore {
                 routeIndex = tmpRouteIndex;
                 double firstDepartureTime = Double.isNaN(boardingPE.firstDepartureTime) ? currentAgentBoardingTime : boardingPE.firstDepartureTime;
 
+                double marginalUtilityOfTravelTime_utl_s = parameters.getMarginalUtilityOfTravelTime_utl_s(boardingPE.toRouteStop.mode);
+
                 for (int toRouteStopIndex = firstRouteStopIndex + 1; toRouteStopIndex < route.indexFirstRouteStop + route.countRouteStops; toRouteStopIndex++) {
                     RRouteStop toRouteStop = this.data.routeStops[toRouteStopIndex];
                     double arrivalTime = currentDepartureTime + toRouteStop.arrivalOffset;
                     double inVehicleTime = arrivalTime - currentAgentBoardingTime;
-                    double inVehicleCost = inVehicleTime * -parameters.getMarginalUtilityOfTravelTimePt_utl_s();
+                    double inVehicleCost = inVehicleTime * -marginalUtilityOfTravelTime_utl_s;
                     double arrivalTravelCost = currentTravelCostWhenBoarding + inVehicleCost;
-                    double arrivalTransferCost = ((arrivalTime - firstDepartureTime) * parameters.getTransferPenaltyTravelTimeToCostFactor()) * (boardingPE.transferCount);
+                    double arrivalTransferCost = ((arrivalTime - firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (boardingPE.transferCount);
                     double previousArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];
                     double totalArrivalCost = arrivalTravelCost + arrivalTransferCost;
                     if (totalArrivalCost <= previousArrivalCost) {
@@ -418,7 +425,7 @@ public class SwissRailRaptorCore {
                             double alternativeVehicleArrivalTime = alternativeDepartureTime + toRouteStop.arrivalOffset;
                             double alternativeAgentBoardingTime = (alternativeAgentFirstArrivalTime < alternativeVehicleArrivalTime) ? alternativeVehicleArrivalTime : alternativeAgentFirstArrivalTime;
                             double alternativeWaitingTime = alternativeAgentBoardingTime - alternativeAgentFirstArrivalTime;
-                            double alternativeWaitingCost = -parameters.getMarginalUtilityOfWaitingPt_utl_s() * alternativeWaitingTime;
+                            double alternativeWaitingCost = -marginalUtilityOfWaitingPt_utl_s * alternativeWaitingTime;
                             double alternativeTravelCostWhenBoarding = alternativeBoardingPE.arrivalTravelCost + alternativeWaitingCost;
                             double alternativeTotalCostWhenBoarding = alternativeTravelCostWhenBoarding + alternativeBoardingPE.arrivalTransferCost;
                             if (alternativeTotalCostWhenBoarding < totalArrivalCost) {
@@ -471,6 +478,9 @@ public class SwissRailRaptorCore {
     private void handleTransfers(boolean strict, RaptorParameters raptorParams) {
         this.improvedRouteStopIndices.clear();
         this.tmpImprovedStops.clear();
+
+        double transferPenaltyTravelTimeToCostFactor = raptorParams.getTransferPenaltyTravelTimeToCostFactor();
+
         for (int stopIndex = this.improvedStops.nextSetBit(0); stopIndex >= 0; stopIndex = this.improvedStops.nextSetBit(stopIndex + 1)) {
             PathElement fromPE = this.arrivalPathPerStop[stopIndex];
             double arrivalTime = fromPE.arrivalTime;
@@ -488,7 +498,7 @@ public class SwissRailRaptorCore {
                 int toRouteStopIndex = transfer.toRouteStop;
                 double newArrivalTime = arrivalTime + transfer.transferTime;
                 double newArrivalTravelCost = arrivalTravelCost + transfer.transferCost;
-                double newArrivalTransferCost = ((newArrivalTime - fromPE.firstDepartureTime) * raptorParams.getTransferPenaltyTravelTimeToCostFactor()) * (fromPE.transferCount + 1);
+                double newArrivalTransferCost = ((newArrivalTime - fromPE.firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (fromPE.transferCount + 1);
                 double newTotalArrivalCost = newArrivalTravelCost + newArrivalTransferCost;
                 double prevLeastArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];
                 if (newTotalArrivalCost < prevLeastArrivalCost || (!strict && newTotalArrivalCost <= prevLeastArrivalCost)) {

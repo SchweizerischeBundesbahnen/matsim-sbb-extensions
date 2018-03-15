@@ -20,6 +20,7 @@ import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.config.groups.PlanCalcScoreConfigGroup.ModeParams;
 import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
 import org.matsim.core.population.routes.GenericRouteImpl;
 import org.matsim.core.population.routes.LinkNetworkRouteImpl;
@@ -296,7 +297,7 @@ public class SwissRailRaptorTest {
         assertEquals(TransportMode.egress_walk, legs.get(4).getMode());
 
         Config config = ConfigUtils.createConfig();
-        double transferUtility = 300.0 * raptorParams.getMarginalUtilityOfTravelTimePt_utl_s(); // corresponds to 5 minutes transit travel time
+        double transferUtility = 300.0 * raptorParams.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt); // corresponds to 5 minutes transit travel time
         config.planCalcScore().setUtilityOfLineSwitch(transferUtility);
         raptorParams = RaptorUtils.createRaptorParameters(config);
         Assert.assertEquals(-transferUtility, raptorParams.getTransferPenaltyCost(), 0.0);
@@ -660,7 +661,7 @@ public class SwissRailRaptorTest {
 
             double expectedTravelTime = 35*60; // 35 minutes: 15 Blue, 5 Transfer, 15 Red
             double expectedAccessEgressTime = 2 * 100;  // 2 * 100 meters at 1m/s
-            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTimePt_utl_s();
+            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt);
 
             Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
         }
@@ -680,7 +681,7 @@ public class SwissRailRaptorTest {
 
             double expectedTravelTime = 35*60; // 35 minutes: 15 Blue, 5 Transfer, 15 Red
             double expectedAccessEgressTime = 2 * 100;  // 2 * 100 meters at 1m/s
-            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTimePt_utl_s() + 2;
+            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt) + 2;
 
             Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
         }
@@ -700,7 +701,7 @@ public class SwissRailRaptorTest {
 
             double expectedTravelTime = 35*60; // 35 minutes: 15 Blue, 5 Transfer, 15 Red
             double expectedAccessEgressTime = 2 * 100;  // 2 * 100 meters at 1m/s
-            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTimePt_utl_s() + 2 + 0.0025 * expectedTravelTime;
+            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt) + 2 + 0.0025 * expectedTravelTime;
 
             Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
         }
@@ -720,7 +721,7 @@ public class SwissRailRaptorTest {
 
             double expectedTravelTime = 65*60; // 65 minutes: 15 Blue, 5 Transfer, 45 Red
             double expectedAccessEgressTime = 2 * 100;  // 2 * 100 meters at 1m/s
-            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTimePt_utl_s() + 2 + 0.0025 * expectedTravelTime;
+            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt) + 2 + 0.0025 * expectedTravelTime;
 
             Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
         }
@@ -762,6 +763,14 @@ public class SwissRailRaptorTest {
         srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("train", "rail"));
         srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("bus", "road"));
 
+        ModeParams railParams = new ModeParams("rail");
+        railParams.setMarginalUtilityOfTraveling(-6.0);
+        f.config.planCalcScore().addModeParams(railParams);
+
+        ModeParams roadParams = new ModeParams("road");
+        roadParams.setMarginalUtilityOfTraveling(-6.0);
+        f.config.planCalcScore().addModeParams(roadParams);
+
         TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         Coord toCoord = new Coord(16100, 10050);
         List<Leg> legs = router.calcRoute(new FakeFacility(new Coord(3800, 5100)), new FakeFacility(toCoord), 6.0*3600, null);
@@ -771,6 +780,100 @@ public class SwissRailRaptorTest {
         assertEquals(TransportMode.transit_walk, legs.get(2).getMode());
         assertEquals("road", legs.get(3).getMode());
         assertEquals(TransportMode.egress_walk, legs.get(4).getMode());
+    }
+
+    @Test
+    public void testModeMappingCosts() {
+        Fixture f = new Fixture();
+        f.init();
+
+        Coord fromCoord = new Coord(12000, 5050); // C
+        Coord toCoord = new Coord(28000, 5050); // G
+        { // test default, from C to G the red line is the fastest/cheapest
+
+            TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
+            List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 6.0 * 3600 - 5 * 60, null);
+            assertEquals(3, legs.size());
+            assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+            assertEquals("pt", legs.get(1).getMode());
+            assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+
+            ExperimentalTransitRoute ptRoute = (ExperimentalTransitRoute) legs.get(1).getRoute();
+            assertEquals(Id.create("4", TransitStopFacility.class), ptRoute.getAccessStopId());
+            assertEquals(Id.create("12", TransitStopFacility.class), ptRoute.getEgressStopId());
+            assertEquals(f.redLine.getId(), ptRoute.getLineId());
+            assertEquals(Id.create("red C > G", TransitRoute.class), ptRoute.getRouteId());
+        }
+
+        // set different modes and add mode mapping
+
+        for (TransitRoute route : f.blueLine.getRoutes().values()) {
+            route.setTransportMode("tram");
+        }
+        for (TransitRoute route : f.redLine.getRoutes().values()) {
+            route.setTransportMode("train");
+        }
+        for (TransitRoute route : f.greenLine.getRoutes().values()) {
+            route.setTransportMode("bus");
+        }
+
+        Config config = ConfigUtils.createConfig();
+        {
+            SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(config, SwissRailRaptorConfigGroup.class);
+            srrConfig.setUseModeMappingForPassengers(true);
+            srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("tram", "rail"));
+            srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("train", "rail"));
+            srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("bus", "road"));
+
+            ModeParams railParams = new ModeParams("rail");
+            railParams.setMarginalUtilityOfTraveling(-6.0);
+            config.planCalcScore().addModeParams(railParams);
+
+            ModeParams roadParams = new ModeParams("road");
+            roadParams.setMarginalUtilityOfTraveling(-6.0);
+            config.planCalcScore().addModeParams(roadParams);
+        }
+
+        { // test with similar costs, the red line should still be cheaper
+            TransitRouter router = createTransitRouter(f.schedule, config, f.network);
+            List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 6.0 * 3600 - 5 * 60, null);
+            assertEquals(3, legs.size());
+            assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+            assertEquals("rail", legs.get(1).getMode());
+            assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+
+            ExperimentalTransitRoute ptRoute = (ExperimentalTransitRoute) legs.get(1).getRoute();
+            assertEquals(Id.create("4", TransitStopFacility.class), ptRoute.getAccessStopId());
+            assertEquals(Id.create("12", TransitStopFacility.class), ptRoute.getEgressStopId());
+            assertEquals(f.redLine.getId(), ptRoute.getLineId());
+            assertEquals(Id.create("red C > G", TransitRoute.class), ptRoute.getRouteId());
+        }
+
+        { // make bus cheaper, thus the green line should be used
+            // rail has cost 6/hour, opportunity cost are 6/hour, total cost 12/hour
+            // red line takes 9 minutes --> 12 / 60 * 9 = cost 1.8
+            // green takes 30 minutes from C to G, must be cheaper than 1.8
+            // and green departs 1min later which adds waiting-time cost ((6 + opportunity 6)/60 = 0.2)
+            // thus in-vehicle-cost must be cheaper than 1.6 (for 30 minutes) --> 3.2/hour
+            // --> max total cost 3.2, subtract opportunity cost --> max cost -2.8 (so you would actually get money to ride the bus)
+            // (the access/egress legs to red are each 2 meters shorter than to green line, which adds a little additional penalty for the green line, about 0.02)
+            ModeParams roadParams = new ModeParams("road");
+            roadParams.setMarginalUtilityOfTraveling(2.83);
+            config.planCalcScore().addModeParams(roadParams);
+
+            TransitRouter router = createTransitRouter(f.schedule, config, f.network);
+            List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 6.0 * 3600 - 5 * 60, null);
+            assertEquals(3, legs.size());
+            assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+            assertEquals("road", legs.get(1).getMode());
+            assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+
+            ExperimentalTransitRoute ptRoute = (ExperimentalTransitRoute) legs.get(1).getRoute();
+            assertEquals(Id.create("18", TransitStopFacility.class), ptRoute.getAccessStopId());
+            assertEquals(Id.create("21", TransitStopFacility.class), ptRoute.getEgressStopId());
+            assertEquals(f.greenLine.getId(), ptRoute.getLineId());
+            assertEquals(Id.create("green clockwise", TransitRoute.class), ptRoute.getRouteId());
+        }
     }
 
     /**

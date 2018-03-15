@@ -7,6 +7,9 @@ package ch.sbb.matsim.routing.pt.raptor;
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author mrieser / SBB
  */
@@ -44,7 +47,7 @@ public class RaptorParameters {
 
     private double marginalUtilityOfTravelTimeEgressWalk_utl_s;
 
-    private double marginalUtilityOfTravelTimePt_utl_s;
+    private Map<String, Double> marginalUtilityOfTravelTime_utl_s = new HashMap<>();
 
     private double marginalUtilityOfWaitingPt_utl_s;
 
@@ -123,12 +126,16 @@ public class RaptorParameters {
         this.marginalUtilityOfTravelTimeEgressWalk_utl_s = marginalUtilityOfTravelTimeEgressWalk_utl_s;
     }
 
-    public double getMarginalUtilityOfTravelTimePt_utl_s() {
-        return this.marginalUtilityOfTravelTimePt_utl_s;
+    public double getMarginalUtilityOfTravelTime_utl_s(String mode) {
+        Double marginalUtility = this.marginalUtilityOfTravelTime_utl_s.get(mode);
+        if (marginalUtility == null) {
+            throw new NullPointerException("Marginal utility of travel time is missing for mode: " + mode);
+        }
+        return marginalUtility;
     }
 
-    public void setMarginalUtilityOfTravelTimePt_utl_s(double marginalUtilityOfTravelTimePt_utl_s) {
-        this.marginalUtilityOfTravelTimePt_utl_s = marginalUtilityOfTravelTimePt_utl_s;
+    public void setMarginalUtilityOfTravelTime_utl_s(String mode, double marginalUtilityOfTravelTime_utl_s) {
+        this.marginalUtilityOfTravelTime_utl_s.put(mode, marginalUtilityOfTravelTime_utl_s);
     }
 
     public double getMarginalUtilityOfWaitingPt_utl_s() {

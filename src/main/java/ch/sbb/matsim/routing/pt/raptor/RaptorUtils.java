@@ -12,6 +12,7 @@ import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.GenericRouteImpl;
 import org.matsim.pt.router.TransitRouterConfig;
@@ -19,6 +20,7 @@ import org.matsim.pt.routes.ExperimentalTransitRoute;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author mrieser / SBB
@@ -44,8 +46,16 @@ public final class RaptorUtils {
         raptorParams.setMarginalUtilityOfTravelTimeWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
         raptorParams.setMarginalUtilityOfTravelTimeAccessWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
         raptorParams.setMarginalUtilityOfTravelTimeEgressWalk_utl_s(trConfig.getMarginalUtilityOfTravelTimeWalk_utl_s());
-        raptorParams.setMarginalUtilityOfTravelTimePt_utl_s(trConfig.getMarginalUtilityOfTravelTimePt_utl_s());
         raptorParams.setMarginalUtilityOfWaitingPt_utl_s(trConfig.getMarginalUtilityOfWaitingPt_utl_s());
+
+        PlanCalcScoreConfigGroup pcsConfig = config.planCalcScore();
+        double marginalUtilityPerforming = pcsConfig.getPerforming_utils_hr() / 3600.0;
+        for (Map.Entry<String, PlanCalcScoreConfigGroup.ModeParams> e : pcsConfig.getModes().entrySet()) {
+            String mode = e.getKey();
+            PlanCalcScoreConfigGroup.ModeParams modeParams = e.getValue();
+            double marginalUtility_utl_s = modeParams.getMarginalUtilityOfTraveling()/3600.0 - marginalUtilityPerforming;
+            raptorParams.setMarginalUtilityOfTravelTime_utl_s(mode, marginalUtility_utl_s);
+        }
 
         raptorParams.setTransferPenaltyCost(-trConfig.getUtilityOfLineSwitch_utl());
         raptorParams.setTransferPenaltyTravelTimeToCostFactor(advancedConfig.getTransferPenaltyTravelTimeToCostFactor());
