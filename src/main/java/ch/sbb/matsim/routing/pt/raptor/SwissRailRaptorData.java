@@ -64,7 +64,7 @@ public class SwissRailRaptorData {
         this.stopsQT = stopsQT;
     }
 
-    public static SwissRailRaptorData create(TransitSchedule schedule, RaptorParameters config, Network network) {
+    public static SwissRailRaptorData create(TransitSchedule schedule, RaptorParameters params, Network network) {
         log.info("Preparing data for SwissRailRaptor...");
         long startMillis = System.currentTimeMillis();
 
@@ -175,7 +175,7 @@ public class SwissRailRaptorData {
         }
         int countStopFacilities = stops.size();
 
-        Map<Integer, RTransfer[]> allTransfers = calculateRouteStopTransfers(schedule, stopsQT, routeStopsPerStopFacility, routeStops, config);
+        Map<Integer, RTransfer[]> allTransfers = calculateRouteStopTransfers(schedule, stopsQT, routeStopsPerStopFacility, routeStops, params);
         long countTransfers = 0;
         for (RTransfer[] transfers : allTransfers.values()) {
             countTransfers += transfers.length;
@@ -197,7 +197,7 @@ public class SwissRailRaptorData {
             }
         }
 
-        SwissRailRaptorData data = new SwissRailRaptorData(config, countStopFacilities, routes, departures, routeStops, transfers, stopFacilityIndices, routeStopsPerStopFacility, stopsQT);
+        SwissRailRaptorData data = new SwissRailRaptorData(params, countStopFacilities, routes, departures, routeStops, transfers, stopFacilityIndices, routeStopsPerStopFacility, stopsQT);
 
         long endMillis = System.currentTimeMillis();
         log.info("SwissRailRaptor data preparation done. Took " + (endMillis - startMillis) / 1000 + " seconds.");
