@@ -116,19 +116,186 @@ ignored.
 
 If intermodal access and egress legs are created, the default MainModeIdentifier might not 
 recognize such trips as pt trips. Therefore, an adapted MainModeIdentifier must be used.
-`RunSBBExtension` enables such an adapted one so it should work out of the box. If you combine
+`SwissRailRaptorModule` enables such an adapted one, so it should work out of the box. If you combine
 the intermodal SwissRailRaptor with other MATSim extensions, also requiring custom 
-MainModeIdentifiers, make sure to combine them correctly.
+MainModeIdentifiers, make sure to provide an implementation combining the different 
+requirements correctly.
 
 #### Range Queries
 
 Range queries, sometimes also named profile queries, search for possible connections within a 
 time window instead of finding only one connection that arrives with least cost based on a fixed
-departure time.
+departure time. As MATSim still requires a single route in the end to be assigned to the agent,
+a route must be selected from the returned route set to be assigned to the agent.
 
-TODO 
+To configure SwissRailRaptor to first search for a pt route within a time window, and then 
+select a matching route, use the following configuration parameters:
 
-Please note that range queries infer a large performance penalty.
+```$xml
+<module name="swissRailRaptor">
+  <param name="useRangeQuery" value="true" />
+
+  <paramset type="rangeQuerySettings">
+    <param name="maxEarlierDeparture_sec" value="600" />
+    <param name="maxLaterDeparture_sec" value="900" />
+    <param name="subpopulations" value="" /> <!-- an empty value applies to every agent, comma-separated list of multiple subpopulations possible -->
+  </paramset>
+  <paramset type="routeSelector">
+    <param name="betaTravelTime" value="1" />
+    <param name="betaDepartureTime" value="1" />
+    <param name="betaTransferCount" value="300" />
+    <param name="subpopulations" value="" /> <!-- an empty value applies to every agent, comma-separated list of multiple subpopulations possible -->
+  </paramset>
+</module>
+```
+
+The default route selection algorithm (`ch.sbb.matsim.routing.pt.raptor.ConfigurableRaptorRouteSelector`)
+supports selecting a route based on a calculated score that depends on the total travel time, the number
+of transfers, and the deviation from the desired departure time:
+
+```
+score = betaDepartureTime * abs(desiredDepartureTime - effectiveDepartureTime)
+        + betaTravelTime * totalTravelTime
+        + betaTransfer * transferCount
+```
+
+The route with the best (lowest) score will be chosen and returned as a series of legs, to be integrated 
+into the agents plan. If multiple routes share the same best score, a random one of this set will be
+selected.
+
+Once a route was selected from the calculated choice set, the end time of the previous activity
+is adapted to ensure an optimal departure time for the chosen connection. It is possible to 
+provide multiple settings for different subpopulations. This allows to have one group of agents 
+to be flexible in their departure time choice, while others are not.
+
+***Be aware that range queries infer a large performance penalty!***
+
+Instead of using the built-in, configurable route selection algorithm, a custom implementation
+of the interface `ch.sbb.matsim.routing.pt.raptor.RaptorRouteSelector` can be provided:
+
+```$java
+// somewhere in your main method, where you set up your controler:
+controler.addOverridingModule(new AbstractModule() {
+    @Override
+    public void install() {
+        install(new SwissRailRaptorModule());
+        bind(RaptorRouteSelector.class).to(MyCustomRouteSelector.class);
+    }
+});
+```
+This allows one to implement more complex choice behaviors.
+
+#### Differentiating PT Sub-Modes
+
+By default, the pt router creates legs with mode `pt`. In some cases, it is necessary to
+sub-divide the public transport services. This might be the case when some services operate
+at special (or strongly different) prices or speeds. For example, slow but luxury class tourist
+trains, high-speed trains that require a special ticket, or long distance coaches that are cheaper
+but slower than a comparable train service. In all such cases it might be necessary to apply 
+different costs to the different services in order to find realistic routes. Also, to stay
+consistent, the different costs should be used for the scoring of the executed plans.
+
+SwissRailRaptor supports differentiating pt sub-modes by mapping the transportMode of transit
+lines and routes (in the following referred as "route mode") to "passenger modes". The costs for using
+such passenger modes can then be configured in the normal `planCalcScore` configuration group.
+
+To configure the passenger mode mappings, add the following section to your `config.xml`:
+
+  ```$xml
+  <module name="swissRailRaptor">
+    <param name="useModeMappingForPassengers" value="true" />
+    
+    <paramset type="modeMapping">
+      <param name="routeMode" value="train" />
+      <param name="passengerMode" value="rail" />
+    </paramset>
+    <paramset type="modeMapping">
+      <param name="routeMode" value="tram" />
+      <param name="passengerMode" value="rail" />
+    </paramset>
+    <paramset type="modeMapping">
+      <param name="routeMode" value="bus" />
+      <param name="passengerMode" value="road" />
+    </paramset>
+  </module>
+  ```
+In the example above, it is assumed that in `transitSchedule.xml` the modes `train`, `tram` 
+and `bus` are used as transport modes for the operating services. During route search, the
+scoring parameters for the modes `rail` and `road` are used to calculate the costs of using
+the respective lines. In the resulting legs that make up the found route, the modes `rail`
+and `road` will be used as well instead of the default `pt` that is used by MATSim's default
+pt router to describe public transport legs. This implies that next to providing the scoring
+parameters for the passenger modes (in the example above `rail` and `road`), these passenger
+modes must also be listed as transit modes in the transit configuration, so they will be
+correctly recognized and handled as pt passenger legs:
+
+  ```$xml
+   <module name="transit">
+     <param name="transitModes" value="rail,road" />
+   </module>
+   ```
+
+
+#### Person-specific routing-costs
+
+In some scenarios, costs to use public transport may differ from agent to agent. The most
+likely application is the combination with pt sub-modes described above: Some agents might
+have a season ticket that only applies to certain lines, while other agents don't have such
+a season ticket. Or agents might have different values of travel time based on their income,
+and thus prefer different services of competing ones.
+
+In order to support such scenarios, SwissRailRaptor provides the interface 
+`ch.sbb.matsim.routing.pt.raptor.RaptorParametersForPerson` which allows to specify the
+parameters used for each routing request depending on the agent requesting a route.
+By default, a simple implementation `ch.sbb.matsim.routing.pt.raptor.DefaultRaptorParametersForPerson`
+is used that returns the same parameters for every request. In order to use a more specialized
+implementation, bind your implementation of the `RaptorParametersForPerson` interface as follows:
+
+```$java
+// somewhere in your main method, where you set up your controler:
+controler.addOverridingModule(new AbstractModule() {
+    @Override
+    public void install() {
+        install(new SwissRailRaptorModule());
+        bind(RaptorParametersForPerson.class).to(MyPersonSpecificRaptorParameters.class);
+    }
+});
+```
+Make sure to bind your implementation *after* installing the `SwissRailRaptorModule` in order to
+actually overwrite the default binding for `RaptorParametersForPerson`.
+
+#### Improved Cost-Calculation for Transfers
+
+The default pt router in MATSim applies a fixed cost term for each transfer during route search.
+This can lead to problems, as empirical data shows that perceived costs for transfers depend the
+total travel time: A transfer during an urban commute of a total of 15 minutes is perceived 
+with a lower disutility than a transfer during a long-distance journey of 2 hours.
+
+SwissRailRaptor supports transfer costs based on the total travel of a route:
+
+  ```$xml
+   <module name="swissRailRaptor">
+     <param name="transferPenaltyTravelTimeToCostFactor" value="0.0003" />
+   </module>
+   ```
+
+If the `transferPenaltyTravelTimeTimeToCostFactor` is configured differently from `0.0`,
+transfer costs during route search are calculated as:
+
+```
+singleTransferCost = fixedTransferCost + totalTravelTime * transferPenaltyTravelTimeToCostFactor;
+totalTransferCost = numberOfTransfers * singleTransferCost
+```
+
+The fixed transfer cost is taken from the `planCalcScore`'s `utilityOfLineSwitch`, while the 
+`transferPenaltyTravelTimetoCostFactor` is taken from the SwissRailRaptor's configuration.
+
+Assuming a travel time disutility of 6 utils per hour, combined with opportunity costs of another
+6 utils per hour would result in a total travel time disutility of 0.00333 utils per second
+(`(6+6)/3600=0.00333`).
+The configured value of 0.0003 in the example above would thus correspond to a single transfer 
+having a (non-fixed) cost comparable to 9% of the total travel time.
+
 
 ## Deterministic Public Transport Simulation <span id="detPTSim" />
 

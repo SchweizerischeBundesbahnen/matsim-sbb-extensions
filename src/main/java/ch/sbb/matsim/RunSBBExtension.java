@@ -5,7 +5,6 @@
 package ch.sbb.matsim;
 
 import ch.sbb.matsim.mobsim.qsim.SBBQSimModule;
-import ch.sbb.matsim.routing.pt.raptor.IntermodalAwareRouterModeIdentifier;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorModule;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Scenario;
@@ -13,7 +12,6 @@ import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
-import org.matsim.core.router.MainModeIdentifier;
 import org.matsim.core.scenario.ScenarioUtils;
 
 /**
@@ -41,7 +39,6 @@ public class RunSBBExtension {
 
 				// To use the fast pt router:
 				install(new SwissRailRaptorModule());
-				bind(MainModeIdentifier.class).to(IntermodalAwareRouterModeIdentifier.class);
 			}
 		});
 
