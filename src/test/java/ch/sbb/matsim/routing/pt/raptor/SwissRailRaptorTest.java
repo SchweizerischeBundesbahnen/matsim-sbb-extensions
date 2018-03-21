@@ -4,6 +4,7 @@
 
 package ch.sbb.matsim.routing.pt.raptor;
 
+import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
 import org.junit.Assert;
 import org.junit.Test;
 import org.matsim.api.core.v01.Coord;
@@ -12,12 +13,15 @@ import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
+import org.matsim.api.core.v01.network.NetworkFactory;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.api.core.v01.population.Activity;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.config.groups.PlanCalcScoreConfigGroup.ModeParams;
+import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
 import org.matsim.core.population.routes.GenericRouteImpl;
 import org.matsim.core.population.routes.LinkNetworkRouteImpl;
 import org.matsim.core.population.routes.NetworkRoute;
@@ -32,7 +36,6 @@ import org.matsim.facilities.ActivityFacilities;
 import org.matsim.facilities.ActivityFacility;
 import org.matsim.pt.router.FakeFacility;
 import org.matsim.pt.router.TransitRouter;
-import org.matsim.pt.router.TransitRouterConfig;
 import org.matsim.pt.routes.ExperimentalTransitRoute;
 import org.matsim.pt.transitSchedule.api.Departure;
 import org.matsim.pt.transitSchedule.api.TransitLine;
@@ -45,6 +48,7 @@ import org.matsim.testcases.MatsimTestCase;
 import org.matsim.testcases.MatsimTestUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -58,9 +62,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class SwissRailRaptorTest {
 
-    private SwissRailRaptor createTransitRouter(TransitSchedule schedule, RaptorConfig raptorConfig) {
-        SwissRailRaptorData data = SwissRailRaptorData.create(schedule, raptorConfig);
-        SwissRailRaptor raptor = new SwissRailRaptor(data, new LeastCostRaptorRouteSelector());
+    private SwissRailRaptor createTransitRouter(TransitSchedule schedule, Config config, Network network) {
+        SwissRailRaptorData data = SwissRailRaptorData.create(schedule, RaptorUtils.createStaticConfig(config), network);
+        SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(config), new LeastCostRaptorRouteSelector());
         return raptor;
     }
 
@@ -68,8 +72,8 @@ public class SwissRailRaptorTest {
     public void testSingleLine() {
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         Coord fromCoord = new Coord(3800, 5100);
         Coord toCoord = new Coord(16100, 5050);
         List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 5.0*3600, null);
@@ -88,7 +92,7 @@ public class SwissRailRaptorTest {
             actualTravelTime += leg.getTravelTime();
         }
         double expectedTravelTime = 29.0 * 60 + // agent takes the *:06 course, arriving in D at *:29
-                CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
+                CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(Math.ceil(expectedTravelTime), actualTravelTime, MatsimTestCase.EPSILON);
     }
 
@@ -96,8 +100,8 @@ public class SwissRailRaptorTest {
     public void testWalkDurations() {
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         Coord fromCoord = new Coord(3800, 5100);
         Coord toCoord = new Coord(16100, 5050);
         List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 5.0*3600, null);
@@ -106,9 +110,9 @@ public class SwissRailRaptorTest {
         assertEquals(TransportMode.pt, legs.get(1).getMode());
         assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
 
-        double expectedAccessWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("0", TransitStopFacility.class)).getCoord(), fromCoord) / raptorConfig.getBeelineWalkSpeed();
+        double expectedAccessWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("0", TransitStopFacility.class)).getCoord(), fromCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(Math.ceil(expectedAccessWalkTime), legs.get(0).getTravelTime(), MatsimTestUtils.EPSILON);
-        double expectedEgressWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
+        double expectedEgressWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(Math.ceil(expectedEgressWalkTime), legs.get(2).getTravelTime(), MatsimTestUtils.EPSILON);
     }
 
@@ -116,8 +120,8 @@ public class SwissRailRaptorTest {
     public void testWalkDurations_range() {
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        SwissRailRaptor router = createTransitRouter(f.schedule, raptorConfig);
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        SwissRailRaptor router = createTransitRouter(f.schedule, f.config, f.network);
         Coord fromCoord = new Coord(3800, 5100);
         Coord toCoord = new Coord(16100, 5050);
         double depTime = 5.0 * 3600;
@@ -127,9 +131,9 @@ public class SwissRailRaptorTest {
         assertEquals(TransportMode.pt, legs.get(1).getMode());
         assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
 
-        double expectedAccessWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("0", TransitStopFacility.class)).getCoord(), fromCoord) / raptorConfig.getBeelineWalkSpeed();
+        double expectedAccessWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("0", TransitStopFacility.class)).getCoord(), fromCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(Math.ceil(expectedAccessWalkTime), legs.get(0).getTravelTime(), MatsimTestUtils.EPSILON);
-        double expectedEgressWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
+        double expectedEgressWalkTime = CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(Math.ceil(expectedEgressWalkTime), legs.get(2).getTravelTime(), MatsimTestUtils.EPSILON);
     }
 
@@ -137,8 +141,8 @@ public class SwissRailRaptorTest {
     public void testFromToSameStop() {
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         Coord fromCoord = new Coord(3800, 5100);
         Coord toCoord = new Coord(4100, 5050);
         List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 5.0*3600, null);
@@ -148,7 +152,7 @@ public class SwissRailRaptorTest {
         for (Leg leg : legs) {
             actualTravelTime += leg.getTravelTime();
         }
-        double expectedTravelTime = CoordUtils.calcEuclideanDistance(fromCoord, toCoord) / raptorConfig.getBeelineWalkSpeed();
+        double expectedTravelTime = CoordUtils.calcEuclideanDistance(fromCoord, toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(expectedTravelTime, actualTravelTime, MatsimTestCase.EPSILON);
     }
 
@@ -156,18 +160,16 @@ public class SwissRailRaptorTest {
     public void testDirectWalkCheaper() {
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         Coord fromCoord = new Coord(4000, 3000);
         Coord toCoord = new Coord(8000, 3000);
         List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 5.0*3600, null);
         assertEquals(1, legs.size());
         assertEquals(TransportMode.transit_walk, legs.get(0).getMode());
-        double actualTravelTime = 0.0;
-        for (Leg leg : legs) {
-            actualTravelTime += leg.getTravelTime();
-        }
-        double expectedTravelTime = CoordUtils.calcEuclideanDistance(fromCoord, toCoord) / raptorConfig.getBeelineWalkSpeed();
+        assertEquals(4000, legs.get(0).getRoute().getDistance(), 0.0);
+        double actualTravelTime = legs.get(0).getTravelTime();
+        double expectedTravelTime = CoordUtils.calcEuclideanDistance(fromCoord, toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(expectedTravelTime, actualTravelTime, MatsimTestCase.EPSILON);
     }
 
@@ -176,8 +178,7 @@ public class SwissRailRaptorTest {
     public void testSingleLine_DifferentWaitingTime() {
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         Coord fromCoord = new Coord(4000, 5002);
         Coord toCoord = new Coord(8000, 5002);
 
@@ -198,8 +199,8 @@ public class SwissRailRaptorTest {
     public void testLineChange() {
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         Coord toCoord = new Coord(16100, 10050);
         List<Leg> legs = router.calcRoute(new FakeFacility(new Coord(3800, 5100)), new FakeFacility(toCoord), 6.0*3600, null);
         assertEquals(5, legs.size());
@@ -225,7 +226,7 @@ public class SwissRailRaptorTest {
             actualTravelTime += leg.getTravelTime();
         }
         double expectedTravelTime = 31.0 * 60 + // agent takes the *:06 course, arriving in C at *:18, departing at *:21, arriving in K at*:31
-                CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("19", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
+                CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("19", TransitStopFacility.class)).getCoord(), toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(Math.ceil(expectedTravelTime), actualTravelTime, MatsimTestCase.EPSILON);
     }
 
@@ -239,8 +240,8 @@ public class SwissRailRaptorTest {
          */
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         Coord toCoord = new Coord(28100, 4950);
         List<Leg> legs = router.calcRoute(new FakeFacility( new Coord(3800, 5100)), new FakeFacility(toCoord), 5.0*3600 + 40.0*60, null);
         assertEquals("wrong number of legs", 4, legs.size());
@@ -265,7 +266,7 @@ public class SwissRailRaptorTest {
             actualTravelTime += leg.getTravelTime();
         }
         double expectedTravelTime = 29.0 * 60 + // agent takes the *:46 course, arriving in C at *:58, departing at *:00, arriving in G at*:09
-                CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("12", TransitStopFacility.class)).getCoord(), toCoord) / raptorConfig.getBeelineWalkSpeed();
+                CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("12", TransitStopFacility.class)).getCoord(), toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(Math.ceil(expectedTravelTime), actualTravelTime, MatsimTestCase.EPSILON);
     }
 
@@ -281,9 +282,9 @@ public class SwissRailRaptorTest {
          */
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        raptorConfig.setTransferPenaltyCost(0);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        f.config.planCalcScore().setUtilityOfLineSwitch(0);
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         List<Leg> legs = router.calcRoute(new FakeFacility(new Coord(11900, 5100)), new FakeFacility(new Coord(24100, 4950)), 6.0*3600 - 5.0*60, null);
         assertEquals("wrong number of legs", 5, legs.size());
         assertEquals(TransportMode.access_walk, legs.get(0).getMode());
@@ -294,8 +295,12 @@ public class SwissRailRaptorTest {
         assertEquals(f.blueLine.getId(), ((ExperimentalTransitRoute) legs.get(3).getRoute()).getLineId());
         assertEquals(TransportMode.egress_walk, legs.get(4).getMode());
 
-        raptorConfig.setTransferPenaltyCost(-300.0 * raptorConfig.getMarginalUtilityOfTravelTimePt_utl_s()); // corresponds to 5 minutes transit travel time
-        router = createTransitRouter(f.schedule, raptorConfig);
+        Config config = ConfigUtils.createConfig();
+        double transferUtility = 300.0 * raptorParams.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt); // corresponds to 5 minutes transit travel time
+        config.planCalcScore().setUtilityOfLineSwitch(transferUtility);
+        RaptorStaticConfig raptorConfig = RaptorUtils.createStaticConfig(config);
+        Assert.assertEquals(-transferUtility, raptorConfig.getTransferPenaltyCost(), 0.0);
+        router = createTransitRouter(f.schedule, config, f.network);
         legs = router.calcRoute(new FakeFacility(new Coord(11900, 5100)), new FakeFacility(new Coord(24100, 4950)), 6.0*3600 - 5.0*60, null);
         assertEquals(3, legs.size());
         assertEquals(TransportMode.access_walk, legs.get(0).getMode());
@@ -316,10 +321,9 @@ public class SwissRailRaptorTest {
          */
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        raptorConfig.setTransferPenaltyCost(0);
-        assertEquals(0, raptorConfig.getMinimalTransferTime(), 1e-8);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        f.config.planCalcScore().setUtilityOfLineSwitch(0);
+        f.config.transitRouter().setAdditionalTransferTime(0);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         List<Leg> legs = router.calcRoute(new FakeFacility(new Coord(11900, 5100)), new FakeFacility(new Coord(24100, 4950)), 6.0*3600 - 5.0*60, null);
         assertEquals("wrong number of legs",5, legs.size());
         assertEquals(TransportMode.access_walk, legs.get(0).getMode());
@@ -330,8 +334,9 @@ public class SwissRailRaptorTest {
         assertEquals(f.blueLine.getId(), ((ExperimentalTransitRoute) legs.get(3).getRoute()).getLineId());
         assertEquals(TransportMode.egress_walk, legs.get(4).getMode());
 
-        raptorConfig.setMinimalTransferTime(3*60+1); // just a little bit more than 3 minutes, so we miss the connection at G
-        router = createTransitRouter(f.schedule, raptorConfig); // this is necessary to update the router for any change in config.
+        Config config = ConfigUtils.createConfig();
+        config.transitRouter().setAdditionalTransferTime(3*60 + 1);
+        router = createTransitRouter(f.schedule, config, f.network); // this is necessary to update the router for any change in config.
         legs = router.calcRoute(new FakeFacility(new Coord(11900, 5100)), new FakeFacility(new Coord(24100, 4950)), 6.0*3600 - 5.0*60, null);
         assertEquals("wrong number of legs",3, legs.size());
         assertEquals(TransportMode.access_walk, legs.get(0).getMode());
@@ -348,8 +353,8 @@ public class SwissRailRaptorTest {
         // is no late service in the schedule.
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         Coord fromCoord = new Coord(3800, 5100);
         Coord toCoord = new Coord(16100, 5050);
         List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 25.0*3600, null);
@@ -360,7 +365,7 @@ public class SwissRailRaptorTest {
         for (Leg leg : legs) {
             actualTravelTime += leg.getTravelTime();
         }
-        double expectedTravelTime = CoordUtils.calcEuclideanDistance(fromCoord, toCoord) / raptorConfig.getBeelineWalkSpeed();
+        double expectedTravelTime = CoordUtils.calcEuclideanDistance(fromCoord, toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(expectedTravelTime, actualTravelTime, MatsimTestCase.EPSILON);
     }
 
@@ -368,8 +373,7 @@ public class SwissRailRaptorTest {
     public void testCoordFarAway() {
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        TransitRouter router = createTransitRouter(f.schedule, raptorConfig);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
         double x = +42000;
         double x1 = -2000;
         List<Leg> legs = router.calcRoute(new FakeFacility(new Coord(x1, 0)), new FakeFacility(new Coord(x, 0)), 5.5*3600, null); // should map to stops A and I
@@ -392,10 +396,10 @@ public class SwissRailRaptorTest {
     @Test
     public void testSingleWalkOnly() {
         WalkFixture f = new WalkFixture();
-        f.routerConfig.setSearchRadius(0.8 * CoordUtils.calcEuclideanDistance(f.coord2, f.coord4));
-        f.routerConfig.setExtensionRadius(0.0);
+        f.scenario.getConfig().transitRouter().setSearchRadius(0.8 * CoordUtils.calcEuclideanDistance(f.coord2, f.coord4));
+        f.scenario.getConfig().transitRouter().setExtensionRadius(0.0);
 
-        TransitRouter router = createTransitRouter(f.schedule, f.routerConfig);
+        TransitRouter router = createTransitRouter(f.schedule, f.scenario.getConfig(), f.scenario.getNetwork());
         List<Leg> legs = router.calcRoute(new FakeFacility(f.coord2), new FakeFacility(f.coord4), 990, null);
         assertEquals(1, legs.size());
         assertEquals(TransportMode.transit_walk, legs.get(0).getMode());
@@ -410,10 +414,10 @@ public class SwissRailRaptorTest {
     @Test
     public void testDoubleWalkOnly() {
         WalkFixture f = new WalkFixture();
-        f.routerConfig.setSearchRadius(0.8 * CoordUtils.calcEuclideanDistance(f.coord2, f.coord4));
-        f.routerConfig.setExtensionRadius(0.0);
+        f.scenario.getConfig().transitRouter().setSearchRadius(0.8 * CoordUtils.calcEuclideanDistance(f.coord2, f.coord4));
+        f.scenario.getConfig().transitRouter().setExtensionRadius(0.0);
 
-        TransitRouter router = createTransitRouter(f.schedule, f.routerConfig);
+        TransitRouter router = createTransitRouter(f.schedule, f.scenario.getConfig(), f.scenario.getNetwork());
         List<Leg> legs = router.calcRoute(new FakeFacility(f.coord2), new FakeFacility(f.coord6), 990, null);
         assertEquals(1, legs.size());
         assertEquals(TransportMode.transit_walk, legs.get(0).getMode());
@@ -425,7 +429,7 @@ public class SwissRailRaptorTest {
         // 5 minutes additional transfer time
         {
             TransferFixture f = new TransferFixture(5 * 60.0);
-            TransitRouter router = createTransitRouter(f.schedule, f.routerConfig);
+            TransitRouter router = createTransitRouter(f.schedule, f.config, f.scenario.getNetwork());
             Coord fromCoord = f.fromFacility.getCoord();
             Coord toCoord = f.toFacility.getCoord();
             List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 7.0*3600 + 50*60, null);
@@ -461,7 +465,7 @@ public class SwissRailRaptorTest {
         // 65 minutes additional transfer time - miss one departure
         {
             TransferFixture f = new TransferFixture(65 * 60.0);
-            TransitRouter router = createTransitRouter(f.schedule, f.routerConfig);
+            TransitRouter router = createTransitRouter(f.schedule, f.config, f.scenario.getNetwork());
             Coord fromCoord = f.fromFacility.getCoord();
             Coord toCoord = f.toFacility.getCoord();
             List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 7.0*3600 + 50*60, null);
@@ -497,7 +501,7 @@ public class SwissRailRaptorTest {
         // 600 minutes additional transfer time - miss all departures
         {
             TransferFixture f = new TransferFixture(600 * 60.0);
-            TransitRouter router = createTransitRouter(f.schedule, f.routerConfig);
+            TransitRouter router = createTransitRouter(f.schedule, f.config, f.scenario.getNetwork());
             Coord fromCoord = f.fromFacility.getCoord();
             Coord toCoord = f.toFacility.getCoord();
             List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 7.0*3600 + 50*60, null);
@@ -546,7 +550,7 @@ public class SwissRailRaptorTest {
         // no other services run anymore.
         NightBusFixture f = new NightBusFixture();
 
-        TransitRouter router = createTransitRouter(f.schedule, f.routerConfig);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.scenario.getNetwork());
         Coord fromCoord = new Coord(5010, 1010);
         Coord toCoord = new Coord(5010, 5010);
         List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 8.0*3600-2*60, null);
@@ -577,8 +581,7 @@ public class SwissRailRaptorTest {
     public void testRangeQuery() {
         Fixture f = new Fixture();
         f.init();
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        SwissRailRaptor raptor = createTransitRouter(f.schedule, raptorConfig);
+        SwissRailRaptor raptor = createTransitRouter(f.schedule, f.config, f.network);
 
         Coord fromCoord = new Coord(3800, 5100);
         Coord toCoord = new Coord(28100, 4950);
@@ -587,7 +590,7 @@ public class SwissRailRaptorTest {
 
         for (int i = 0; i < routes.size(); i++) {
             RaptorRoute route = routes.get(i);
-            System.out.println(i + "  depTime = " + Time.writeTime(route.getDepartureTime()) + "  arrTime = " + Time.writeTime(route.getDepartureTime() + route.getTravelTime()) + "  # transfers = " + route.getNumberOfTransfers() + "  costs = " + route.totalCosts);
+            System.out.println(i + "  depTime = " + Time.writeTime(route.getDepartureTime()) + "  arrTime = " + Time.writeTime(route.getDepartureTime() + route.getTravelTime()) + "  # transfers = " + route.getNumberOfTransfers() + "  costs = " + route.getTotalCosts());
         }
 
         Assert.assertEquals(6, routes.size());
@@ -604,7 +607,7 @@ public class SwissRailRaptorTest {
         Assert.assertEquals("wrong number of transfers", expectedTransfers, route.getNumberOfTransfers());
         Assert.assertEquals("wrong departure time", Time.parseTime(depTime), route.getDepartureTime(), 0.99);
         Assert.assertEquals("wrong arrival time", Time.parseTime(arrTime), route.getDepartureTime() + route.getTravelTime(), 0.99);
-        Assert.assertEquals("wrong cost", expectedCost, route.totalCosts, 1e-5);
+        Assert.assertEquals("wrong cost", expectedCost, route.getTotalCosts(), 1e-5);
     }
 
     /** test for https://github.com/SchweizerischeBundesbahnen/matsim-sbb-extensions/issues/1
@@ -628,8 +631,7 @@ public class SwissRailRaptorTest {
         f.schedule.addStopFacility(bazStop);
 
 
-        RaptorConfig raptorConfig = RaptorUtils.createRaptorConfig(f.config);
-        SwissRailRaptor raptor = createTransitRouter(f.schedule, raptorConfig);
+        SwissRailRaptor raptor = createTransitRouter(f.schedule, f.config, f.network);
 
         Coord fromCoord = new Coord(3800, 5100);
         Coord toCoord = new Coord(28100, 4950);
@@ -637,6 +639,240 @@ public class SwissRailRaptorTest {
         List<Leg> legs = raptor.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime, null);
         // this test mostly checks that there are no Exceptions.
         Assert.assertEquals(3, legs.size());
+    }
+
+    @Test
+    public void testTravelTimeDependentTransferCosts() {
+        TravelTimeDependentTransferFixture f = new TravelTimeDependentTransferFixture();
+
+        { // test default 0 + 0 * tt
+            Config config = prepareConfig(0, 0);
+            SwissRailRaptor raptor = createTransitRouter(f.schedule, config, f.network);
+
+            Coord fromCoord = new Coord(0, 100);
+            Coord toCoord = new Coord(20000, 100);
+            double depTime = 6.0 * 3600;
+            List<RaptorRoute> routes = raptor.calcRoutes(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime - 300, depTime, depTime + 300, null);
+            Assert.assertEquals(1, routes.size());
+            RaptorRoute route1 = routes.get(0);
+
+            RaptorParameters params = RaptorUtils.createParameters(config);
+
+            double expectedTravelTime = 35*60; // 35 minutes: 15 Blue, 5 Transfer, 15 Red
+            double expectedAccessEgressTime = 2 * 100;  // 2 * 100 meters at 1m/s
+            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt);
+
+            Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
+        }
+
+        { // test 2 + 0 * tt
+            Config config = prepareConfig(2, 0);
+            SwissRailRaptor raptor = createTransitRouter(f.schedule, config, f.network);
+
+            Coord fromCoord = new Coord(0, 100);
+            Coord toCoord = new Coord(20000, 100);
+            double depTime = 6.0 * 3600;
+            List<RaptorRoute> routes = raptor.calcRoutes(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime - 300, depTime, depTime + 300, null);
+            Assert.assertEquals(1, routes.size());
+            RaptorRoute route1 = routes.get(0);
+
+            RaptorParameters params = RaptorUtils.createParameters(config);
+
+            double expectedTravelTime = 35*60; // 35 minutes: 15 Blue, 5 Transfer, 15 Red
+            double expectedAccessEgressTime = 2 * 100;  // 2 * 100 meters at 1m/s
+            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt) + 2;
+
+            Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
+        }
+
+        { // test 2 + 0.0025 * tt
+            Config config = prepareConfig(2, 0.0025);
+            SwissRailRaptor raptor = createTransitRouter(f.schedule, config, f.network);
+
+            Coord fromCoord = new Coord(0, 100);
+            Coord toCoord = new Coord(20000, 100);
+            double depTime = 6.0 * 3600;
+            List<RaptorRoute> routes = raptor.calcRoutes(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime - 300, depTime, depTime + 300, null);
+            Assert.assertEquals(1, routes.size());
+            RaptorRoute route1 = routes.get(0);
+
+            RaptorParameters params = RaptorUtils.createParameters(config);
+
+            double expectedTravelTime = 35*60; // 35 minutes: 15 Blue, 5 Transfer, 15 Red
+            double expectedAccessEgressTime = 2 * 100;  // 2 * 100 meters at 1m/s
+            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt) + 2 + 0.0025 * expectedTravelTime;
+
+            Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
+        }
+
+        { // test 2 + 0.0025 * tt, longer trip
+            Config config = prepareConfig(2, 0.0025);
+            SwissRailRaptor raptor = createTransitRouter(f.schedule, config, f.network);
+
+            Coord fromCoord = new Coord(0, 100);
+            Coord toCoord = new Coord(40000, 100);
+            double depTime = 6.0 * 3600;
+            List<RaptorRoute> routes = raptor.calcRoutes(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime - 300, depTime, depTime + 300, null);
+            Assert.assertEquals(1, routes.size());
+            RaptorRoute route1 = routes.get(0);
+
+            RaptorParameters params = RaptorUtils.createParameters(config);
+
+            double expectedTravelTime = 65*60; // 65 minutes: 15 Blue, 5 Transfer, 45 Red
+            double expectedAccessEgressTime = 2 * 100;  // 2 * 100 meters at 1m/s
+            double expectedCost = (expectedTravelTime + expectedAccessEgressTime) * -params.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt) + 2 + 0.0025 * expectedTravelTime;
+
+            Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
+        }
+    }
+
+    private Config prepareConfig(double transferFixedCost, double transferRelativeCostFactor) {
+        SwissRailRaptorConfigGroup srrConfig = new SwissRailRaptorConfigGroup();
+        Config config = ConfigUtils.createConfig(srrConfig);
+        config.transitRouter().setDirectWalkFactor(1.0);
+
+        double beelineDistanceFactor = config.plansCalcRoute().getModeRoutingParams().get( TransportMode.walk ).getBeelineDistanceFactor();
+        PlansCalcRouteConfigGroup.ModeRoutingParams walkParameters = new PlansCalcRouteConfigGroup.ModeRoutingParams(TransportMode.walk);
+        walkParameters.setTeleportedModeSpeed(beelineDistanceFactor); // set it such that the beelineWalkSpeed is exactly 1
+        config.plansCalcRoute().addParameterSet(walkParameters);
+
+        config.planCalcScore().setUtilityOfLineSwitch(-transferFixedCost);
+        srrConfig.setTransferPenaltyTravelTimeToCostFactor(transferRelativeCostFactor);
+
+        return config;
+    }
+
+    @Test
+    public void testModeMapping() {
+        Fixture f = new Fixture();
+        f.init();
+        for (TransitRoute route : f.blueLine.getRoutes().values()) {
+            route.setTransportMode("tram");
+        }
+        for (TransitRoute route : f.redLine.getRoutes().values()) {
+            route.setTransportMode("train");
+        }
+        for (TransitRoute route : f.greenLine.getRoutes().values()) {
+            route.setTransportMode("bus");
+        }
+
+        SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(f.config, SwissRailRaptorConfigGroup.class);
+        srrConfig.setUseModeMappingForPassengers(true);
+        srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("tram", "rail"));
+        srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("train", "rail"));
+        srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("bus", "road"));
+
+        ModeParams railParams = new ModeParams("rail");
+        railParams.setMarginalUtilityOfTraveling(-6.0);
+        f.config.planCalcScore().addModeParams(railParams);
+
+        ModeParams roadParams = new ModeParams("road");
+        roadParams.setMarginalUtilityOfTraveling(-6.0);
+        f.config.planCalcScore().addModeParams(roadParams);
+
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
+        Coord toCoord = new Coord(16100, 10050);
+        List<Leg> legs = router.calcRoute(new FakeFacility(new Coord(3800, 5100)), new FakeFacility(toCoord), 6.0*3600, null);
+        assertEquals(5, legs.size());
+        assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+        assertEquals("rail", legs.get(1).getMode());
+        assertEquals(TransportMode.transit_walk, legs.get(2).getMode());
+        assertEquals("road", legs.get(3).getMode());
+        assertEquals(TransportMode.egress_walk, legs.get(4).getMode());
+    }
+
+    @Test
+    public void testModeMappingCosts() {
+        Fixture f = new Fixture();
+        f.init();
+
+        Coord fromCoord = new Coord(12000, 5050); // C
+        Coord toCoord = new Coord(28000, 5050); // G
+        { // test default, from C to G the red line is the fastest/cheapest
+
+            TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
+            List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 6.0 * 3600 - 5 * 60, null);
+            assertEquals(3, legs.size());
+            assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+            assertEquals("pt", legs.get(1).getMode());
+            assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+
+            ExperimentalTransitRoute ptRoute = (ExperimentalTransitRoute) legs.get(1).getRoute();
+            assertEquals(Id.create("4", TransitStopFacility.class), ptRoute.getAccessStopId());
+            assertEquals(Id.create("12", TransitStopFacility.class), ptRoute.getEgressStopId());
+            assertEquals(f.redLine.getId(), ptRoute.getLineId());
+            assertEquals(Id.create("red C > G", TransitRoute.class), ptRoute.getRouteId());
+        }
+
+        // set different modes and add mode mapping
+
+        for (TransitRoute route : f.blueLine.getRoutes().values()) {
+            route.setTransportMode("tram");
+        }
+        for (TransitRoute route : f.redLine.getRoutes().values()) {
+            route.setTransportMode("train");
+        }
+        for (TransitRoute route : f.greenLine.getRoutes().values()) {
+            route.setTransportMode("bus");
+        }
+
+        Config config = ConfigUtils.createConfig();
+        {
+            SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(config, SwissRailRaptorConfigGroup.class);
+            srrConfig.setUseModeMappingForPassengers(true);
+            srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("tram", "rail"));
+            srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("train", "rail"));
+            srrConfig.addModeMappingForPassengers(new SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet("bus", "road"));
+
+            ModeParams railParams = new ModeParams("rail");
+            railParams.setMarginalUtilityOfTraveling(-6.0);
+            config.planCalcScore().addModeParams(railParams);
+
+            ModeParams roadParams = new ModeParams("road");
+            roadParams.setMarginalUtilityOfTraveling(-6.0);
+            config.planCalcScore().addModeParams(roadParams);
+        }
+
+        { // test with similar costs, the red line should still be cheaper
+            TransitRouter router = createTransitRouter(f.schedule, config, f.network);
+            List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 6.0 * 3600 - 5 * 60, null);
+            assertEquals(3, legs.size());
+            assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+            assertEquals("rail", legs.get(1).getMode());
+            assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+
+            ExperimentalTransitRoute ptRoute = (ExperimentalTransitRoute) legs.get(1).getRoute();
+            assertEquals(Id.create("4", TransitStopFacility.class), ptRoute.getAccessStopId());
+            assertEquals(Id.create("12", TransitStopFacility.class), ptRoute.getEgressStopId());
+            assertEquals(f.redLine.getId(), ptRoute.getLineId());
+            assertEquals(Id.create("red C > G", TransitRoute.class), ptRoute.getRouteId());
+        }
+
+        { // make bus cheaper, thus the green line should be used
+            // rail has cost 6/hour, opportunity cost are 6/hour, total cost 12/hour
+            // red line takes 9 minutes --> 12 / 60 * 9 = cost 1.8
+            // green takes 30 minutes from C to G, must be cheaper than 1.8
+            // and green departs 1min later which adds waiting-time cost ((6 + opportunity 6)/60 = 0.2)
+            // thus in-vehicle-cost must be cheaper than 1.6 (for 30 minutes) --> 3.2/hour
+            // --> max total cost 3.2, subtract opportunity cost --> max cost -2.8 (so you would actually get money to ride the bus)
+            // (the access/egress legs to red are each 2 meters shorter than to green line, which adds a little additional penalty for the green line, about 0.02)
+            ModeParams roadParams = new ModeParams("road");
+            roadParams.setMarginalUtilityOfTraveling(2.83);
+            config.planCalcScore().addModeParams(roadParams);
+
+            TransitRouter router = createTransitRouter(f.schedule, config, f.network);
+            List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 6.0 * 3600 - 5 * 60, null);
+            assertEquals(3, legs.size());
+            assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+            assertEquals("road", legs.get(1).getMode());
+            assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+
+            ExperimentalTransitRoute ptRoute = (ExperimentalTransitRoute) legs.get(1).getRoute();
+            assertEquals(Id.create("18", TransitStopFacility.class), ptRoute.getAccessStopId());
+            assertEquals(Id.create("21", TransitStopFacility.class), ptRoute.getEgressStopId());
+            assertEquals(f.greenLine.getId(), ptRoute.getLineId());
+            assertEquals(Id.create("green clockwise", TransitRoute.class), ptRoute.getRouteId());
+        }
     }
 
     /**
@@ -659,9 +895,9 @@ public class SwissRailRaptorTest {
      */
     private static class WalkFixture {
 
-        /*package*/ final MutableScenario scenario;
-        /*package*/ final TransitSchedule schedule;
-        /*package*/ final RaptorConfig routerConfig;
+        final MutableScenario scenario;
+        final TransitSchedule schedule;
+        final RaptorStaticConfig staticConfig;
 
         final Coord coord1;
         final Coord coord2;
@@ -682,21 +918,20 @@ public class SwissRailRaptorTest {
         /*package*/ WalkFixture() {
             this.scenario = (MutableScenario) ScenarioUtils.createScenario(ConfigUtils.createConfig());
             this.scenario.getConfig().transit().setUseTransit(true);
-            this.routerConfig = RaptorUtils.createRaptorConfig(this.scenario.getConfig());
-            this.routerConfig.setSearchRadius(500.0);
-            this.routerConfig.setBeelineWalkConnectionDistance(100.0);
-            this.routerConfig.setBeelineWalkSpeed(10.0); // so the agents can walk the distance in 10 seconds
+            this.staticConfig = RaptorUtils.createStaticConfig(this.scenario.getConfig());
+            this.staticConfig.setBeelineWalkConnectionDistance(100.0);
+            this.staticConfig.setBeelineWalkSpeed(10.0); // so the agents can walk the distance in 10 seconds
 
             double x = 0;
             this.coord1 = new Coord(x, (double) 0);
             x += 1000;
             this.coord2 = new Coord(x, (double) 0);
-            x += (this.routerConfig.getBeelineWalkConnectionDistance() * 0.75);
+            x += (this.staticConfig.getBeelineWalkConnectionDistance() * 0.75);
             double y = -1000;
             this.coord3 = new Coord(x, y);
             this.coord4 = new Coord(x, (double) 0);
             this.coord5 = new Coord(x, (double) 1000);
-            x += (this.routerConfig.getBeelineWalkConnectionDistance() * 0.75);
+            x += (this.staticConfig.getBeelineWalkConnectionDistance() * 0.75);
             this.coord6 = new Coord(x, (double) 0);
             x += 1000;
             this.coord7 = new Coord(x, (double) 0);
@@ -823,7 +1058,6 @@ public class SwissRailRaptorTest {
         /*package*/ final Config config;
         /*package*/ final Scenario scenario;
         /*package*/ final TransitSchedule schedule;
-        /*package*/ final RaptorConfig routerConfig;
 
         final TransitStopFacility stop0;
         final TransitStopFacility stop1;
@@ -837,11 +1071,15 @@ public class SwissRailRaptorTest {
             this.config = ConfigUtils.createConfig();
             this.config.transitRouter().setAdditionalTransferTime(additionalTransferTime);
             this.scenario = ScenarioUtils.createScenario(this.config);
-            this.scenario.getConfig().transit().setUseTransit(true);
-            this.routerConfig = RaptorUtils.createRaptorConfig(this.scenario.getConfig());
-            this.routerConfig.setSearchRadius(500.0);
-            this.routerConfig.setBeelineWalkConnectionDistance(100.0);
-            this.routerConfig.setBeelineWalkSpeed(1.0); // so the agents can walk the distance in 100 seconds
+            this.config.transit().setUseTransit(true);
+            this.config.transitRouter().setSearchRadius(500.0);
+            this.config.transitRouter().setMaxBeelineWalkConnectionDistance(100.0);
+
+            double beelineDistanceFactor = this.config.plansCalcRoute().getModeRoutingParams().get( TransportMode.walk ).getBeelineDistanceFactor();
+            PlansCalcRouteConfigGroup.ModeRoutingParams walkParameters = new PlansCalcRouteConfigGroup.ModeRoutingParams(TransportMode.walk);
+            walkParameters.setTeleportedModeSpeed(beelineDistanceFactor); // set it such that the beelineWalkSpeed is exactly 1
+            this.config.plansCalcRoute().addParameterSet(walkParameters);
+//            double beelineWalkSpeed = this.config.plansCalcRoute().addParameterSet(walk);getTeleportedModeSpeeds().get(TransportMode.walk) / beelineDistanceFactor;
 
             // network
             Network network = this.scenario.getNetwork();
@@ -960,7 +1198,7 @@ public class SwissRailRaptorTest {
         /*package*/ final Config config;
         /*package*/ final Scenario scenario;
         /*package*/ final TransitSchedule schedule;
-        /*package*/ final RaptorConfig routerConfig;
+        /*package*/ final RaptorParameters routerConfig;
 
         final TransitStopFacility stop0;
         final TransitStopFacility stop1;
@@ -976,7 +1214,7 @@ public class SwissRailRaptorTest {
         private NightBusFixture() {
             this.config = ConfigUtils.createConfig();
             this.scenario = ScenarioUtils.createScenario(this.config);
-            this.routerConfig = RaptorUtils.createRaptorConfig(this.scenario.getConfig());
+            this.routerConfig = RaptorUtils.createParameters(this.scenario.getConfig());
 
             // schedule
             this.schedule = this.scenario.getTransitSchedule();
@@ -987,6 +1225,24 @@ public class SwissRailRaptorTest {
             Id<Link> linkId20 = Id.create(20, Link.class);
             Id<Link> linkId30 = Id.create(30, Link.class);
             Id<Link> linkId40 = Id.create(40, Link.class);
+
+            Network network = this.scenario.getNetwork();
+            NetworkFactory nf = network.getFactory();
+
+            Node nodeA = nf.createNode(Id.create("A", Node.class), new Coord(5000, 1000));
+            Node nodeB = nf.createNode(Id.create("B", Node.class), new Coord(9000, 5000));
+            network.addNode(nodeA);
+            network.addNode(nodeB);
+            Link link0 = nf.createLink(linkId0, nodeA, nodeB);
+            Link link10 = nf.createLink(linkId10, nodeA, nodeB);
+            Link link20 = nf.createLink(linkId20, nodeA, nodeB);
+            Link link30 = nf.createLink(linkId30, nodeA, nodeB);
+            Link link40 = nf.createLink(linkId40, nodeA, nodeB);
+            network.addLink(link0);
+            network.addLink(link10);
+            network.addLink(link20);
+            network.addLink(link30);
+            network.addLink(link40);
 
             this.stop0 = sb.createTransitStopFacility(Id.create("0", TransitStopFacility.class), new Coord(5000, 1000), false);
             this.stop1 = sb.createTransitStopFacility(Id.create("1", TransitStopFacility.class), new Coord(1000, 1000), false);
@@ -1031,7 +1287,7 @@ public class SwissRailRaptorTest {
             { // line 2
                 TransitLine line2 = sb.createTransitLine(this.lineId2);
                 this.schedule.addTransitLine(line2);
-                NetworkRoute netRoute = new LinkNetworkRouteImpl(linkId10, linkId20);
+                NetworkRoute netRoute = new LinkNetworkRouteImpl(linkId0, linkId30);
                 List<TransitRouteStop> stops = new ArrayList<>();
                 stops.add(sb.createTransitRouteStop(this.stop0, Time.UNDEFINED_TIME, 0.0));
                 stops.add(sb.createTransitRouteStop(this.stop3, 5*60.0, Time.UNDEFINED_TIME));
@@ -1043,7 +1299,7 @@ public class SwissRailRaptorTest {
             { // line 3
                 TransitLine line3 = sb.createTransitLine(this.lineId3);
                 this.schedule.addTransitLine(line3);
-                NetworkRoute netRoute = new LinkNetworkRouteImpl(linkId10, linkId20);
+                NetworkRoute netRoute = new LinkNetworkRouteImpl(linkId20, linkId40);
                 List<TransitRouteStop> stops = new ArrayList<>();
                 stops.add(sb.createTransitRouteStop(this.stop2, Time.UNDEFINED_TIME, 0.0));
                 stops.add(sb.createTransitRouteStop(this.stop3, Time.UNDEFINED_TIME, 5*60.0));
@@ -1053,6 +1309,115 @@ public class SwissRailRaptorTest {
 
                 route.addDeparture(sb.createDeparture(Id.create("l3 d0", Departure.class), 8.0*3600 + 20*60));
             }
+        }
+    }
+
+    /**
+     * Generates the following network for testing:
+     * <pre>
+     * (n) Node
+     * [s] Stop Facility
+     *  l  Link
+     *
+     *
+     * (0)---0---(1) (2)---1---(3)---2---(4)---3---(5)
+     * [0]       [1] [2]       [3]       [4]       [5]
+     *
+     * There are two transit lines: the Blue line from 0 to 1, and the Red line from 2 to 5.
+     * Travel times between stops are 15 minutes, Each line departs every 20 minutes between
+     * 6 and 8 o'clock.
+     * </pre>
+     */
+    private static class TravelTimeDependentTransferFixture {
+
+        private final Config config;
+        private final Network network;
+        private final TransitSchedule schedule;
+        private final TransitStopFacility[] stops = new TransitStopFacility[6];
+
+        TravelTimeDependentTransferFixture() {
+            Id<Link> linkId0 = Id.create(0, Link.class);
+            Id<Link> linkId1 = Id.create(1, Link.class);
+            Id<Link> linkId2 = Id.create(2, Link.class);
+            Id<Link> linkId3 = Id.create(3, Link.class);
+
+            this.config = ConfigUtils.createConfig();
+            Scenario scenario = ScenarioUtils.createScenario(config);
+
+            this.network = scenario.getNetwork();
+            NetworkFactory nf = this.network.getFactory();
+
+            Node[] nodes = new Node[6];
+            nodes[0] = nf.createNode(Id.create(0, Node.class), new Coord(0, 0));
+            nodes[1] = nf.createNode(Id.create(1, Node.class), new Coord(10000, 0));
+            nodes[2] = nf.createNode(Id.create(2, Node.class), new Coord(10000, 0));
+            nodes[3] = nf.createNode(Id.create(3, Node.class), new Coord(20000, 0));
+            nodes[4] = nf.createNode(Id.create(4, Node.class), new Coord(30000, 0));
+            nodes[5] = nf.createNode(Id.create(5, Node.class), new Coord(40000, 0));
+            for (Node node : nodes) {
+                this.network.addNode(node);
+            }
+            Link link0 = nf.createLink(linkId0, nodes[0], nodes[1]);
+            Link link1 = nf.createLink(linkId1, nodes[2], nodes[3]);
+            Link link2 = nf.createLink(linkId2, nodes[3], nodes[4]);
+            Link link3 = nf.createLink(linkId3, nodes[4], nodes[5]);
+
+            this.network.addLink(link0);
+            this.network.addLink(link1);
+            this.network.addLink(link2);
+            this.network.addLink(link3);
+
+            this.schedule = scenario.getTransitSchedule();
+            TransitScheduleFactory f = schedule.getFactory();
+
+            this.stops[0] = f.createTransitStopFacility(Id.create(0, TransitStopFacility.class), nodes[0].getCoord(), false);
+            this.stops[1] = f.createTransitStopFacility(Id.create(1, TransitStopFacility.class), nodes[1].getCoord(), false);
+            this.stops[2] = f.createTransitStopFacility(Id.create(2, TransitStopFacility.class), nodes[2].getCoord(), false);
+            this.stops[3] = f.createTransitStopFacility(Id.create(3, TransitStopFacility.class), nodes[3].getCoord(), false);
+            this.stops[4] = f.createTransitStopFacility(Id.create(4, TransitStopFacility.class), nodes[4].getCoord(), false);
+            this.stops[5] = f.createTransitStopFacility(Id.create(5, TransitStopFacility.class), nodes[5].getCoord(), false);
+            this.stops[0].setLinkId(linkId0);
+            this.stops[1].setLinkId(linkId0);
+            this.stops[2].setLinkId(linkId1);
+            this.stops[3].setLinkId(linkId1);
+            this.stops[4].setLinkId(linkId2);
+            this.stops[5].setLinkId(linkId3);
+
+            for (TransitStopFacility stop : this.stops) {
+                schedule.addStopFacility(stop);
+            }
+
+            TransitLine blueLine = f.createTransitLine(Id.create("Blue", TransitLine.class));
+            NetworkRoute blueNetRoute = new LinkNetworkRouteImpl(linkId0, linkId0);
+            List<TransitRouteStop> blueStops = new ArrayList<>();
+            TransitRouteStop rStop0 = f.createTransitRouteStop(this.stops[0], Time.UNDEFINED_TIME, 0);
+            TransitRouteStop rStop1 = f.createTransitRouteStop(this.stops[1], 900, Time.UNDEFINED_TIME);
+            blueStops.add(rStop0);
+            blueStops.add(rStop1);
+            TransitRoute blueRoute = f.createTransitRoute(Id.create("Blue", TransitRoute.class), blueNetRoute, blueStops, "train");
+            for (int i = 0; i < 7; i++) {
+                blueRoute.addDeparture(f.createDeparture(Id.create("blue" + i, Departure.class), 6*3600 + i * 1200));
+            }
+            blueLine.addRoute(blueRoute);
+            schedule.addTransitLine(blueLine);
+
+            TransitLine redLine = f.createTransitLine(Id.create("Red", TransitLine.class));
+            NetworkRoute redNetRoute = new LinkNetworkRouteImpl(linkId1, Collections.singletonList(linkId2), linkId3);
+            List<TransitRouteStop> redStops = new ArrayList<>();
+            TransitRouteStop rStop2 = f.createTransitRouteStop(this.stops[2], Time.UNDEFINED_TIME, 0);
+            TransitRouteStop rStop3 = f.createTransitRouteStop(this.stops[3], 900, 930);
+            TransitRouteStop rStop4 = f.createTransitRouteStop(this.stops[4], 1800, 1830);
+            TransitRouteStop rStop5 = f.createTransitRouteStop(this.stops[5], 2700, Time.UNDEFINED_TIME);
+            redStops.add(rStop2);
+            redStops.add(rStop3);
+            redStops.add(rStop4);
+            redStops.add(rStop5);
+            TransitRoute redRoute = f.createTransitRoute(Id.create("Red", TransitRoute.class), redNetRoute, redStops, "train");
+            for (int i = 0; i < 7; i++) {
+                redRoute.addDeparture(f.createDeparture(Id.create("red" + i, Departure.class), 6*3600 + i * 1200));
+            }
+            redLine.addRoute(redRoute);
+            schedule.addTransitLine(redLine);
         }
     }
 }
