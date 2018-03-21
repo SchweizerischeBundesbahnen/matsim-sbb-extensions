@@ -7,6 +7,10 @@ package ch.sbb.matsim.routing.pt.raptor;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.TransportMode;
+import org.matsim.api.core.v01.network.Link;
+import org.matsim.api.core.v01.network.Network;
+import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.utils.collections.QuadTree;
 import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.misc.Time;
@@ -30,11 +34,11 @@ import java.util.Set;
 /**
  * @author mrieser / SBB
  */
-class SwissRailRaptorData {
+public class SwissRailRaptorData {
 
     private static final Logger log = Logger.getLogger(SwissRailRaptorData.class);
 
-    final RaptorConfig config;
+    final RaptorStaticConfig config;
     final int countStops;
     final int countRouteStops;
     final RRoute[] routes;
@@ -45,7 +49,7 @@ class SwissRailRaptorData {
     final Map<TransitStopFacility, int[]> routeStopsPerStopFacility;
     final QuadTree<TransitStopFacility> stopsQT;
 
-    private SwissRailRaptorData(RaptorConfig config, int countStops,
+    private SwissRailRaptorData(RaptorStaticConfig config, int countStops,
                                 RRoute[] routes, double[] departures, RRouteStop[] routeStops,
                                 RTransfer[] transfers, Map<TransitStopFacility, Integer> stopFacilityIndices,
                                 Map<TransitStopFacility, int[]> routeStopsPerStopFacility, QuadTree<TransitStopFacility> stopsQT) {
@@ -61,7 +65,7 @@ class SwissRailRaptorData {
         this.stopsQT = stopsQT;
     }
 
-    public static SwissRailRaptorData create(TransitSchedule schedule, RaptorConfig config) {
+    public static SwissRailRaptorData create(TransitSchedule schedule, RaptorStaticConfig staticConfig, Network network) {
         log.info("Preparing data for SwissRailRaptor...");
         long startMillis = System.currentTimeMillis();
 
@@ -97,16 +101,41 @@ class SwissRailRaptorData {
         Map<TransitStopFacility, Integer> stopFacilityIndices = new HashMap<>((int) (schedule.getFacilities().size() * 1.5));
         Map<TransitStopFacility, int[]> routeStopsPerStopFacility = new HashMap<>();
 
+        boolean useModeMapping = staticConfig.isUseModeMappingForPassengers();
         for (TransitLine line : schedule.getTransitLines().values()) {
             List<TransitRoute> transitRoutes = new ArrayList<>(line.getRoutes().values());
             transitRoutes.sort((tr1, tr2) -> Double.compare(getEarliestDeparture(tr1).getDepartureTime(), getEarliestDeparture(tr2).getDepartureTime())); // sort routes by earliest departure for additional performance gains
             for (TransitRoute route : transitRoutes) {
                 int indexFirstDeparture = indexDeparture;
+                String mode = TransportMode.pt;
+                if (useModeMapping) {
+                    mode = staticConfig.getPassengerMode(route.getTransportMode());
+                }
                 RRoute rroute = new RRoute(indexRouteStops, route.getStops().size(), indexFirstDeparture, route.getDepartures().size());
                 routes[indexRoutes] = rroute;
+                NetworkRoute networkRoute = route.getRoute();
+                List<Id<Link>> allLinkIds = new ArrayList<>();
+                allLinkIds.add(networkRoute.getStartLinkId());
+                allLinkIds.addAll(networkRoute.getLinkIds());
+                if (allLinkIds.size() > 1 || networkRoute.getStartLinkId() != networkRoute.getEndLinkId()) {
+                    allLinkIds.add(networkRoute.getEndLinkId());
+                }
+                Iterator<Id<Link>> linkIdIterator = allLinkIds.iterator();
+                Id<Link> currentLinkId = linkIdIterator.next();
+                double distanceAlongRoute = 0.0;
                 for (TransitRouteStop routeStop : route.getStops()) {
+                    while (!routeStop.getStopFacility().getLinkId().equals(currentLinkId)) {
+                        if (linkIdIterator.hasNext()) {
+                            currentLinkId = linkIdIterator.next();
+                            Link link = network.getLinks().get(currentLinkId);
+                            distanceAlongRoute += link.getLength();
+                        } else {
+                            distanceAlongRoute = Double.NaN;
+                            break;
+                        }
+                    }
                     int stopFacilityIndex = stopFacilityIndices.computeIfAbsent(routeStop.getStopFacility(), stop -> stopFacilityIndices.size());
-                    RRouteStop rRouteStop = new RRouteStop(routeStop, line, route, indexRoutes, stopFacilityIndex);
+                    RRouteStop rRouteStop = new RRouteStop(routeStop, line, route, mode, indexRoutes, stopFacilityIndex, distanceAlongRoute);
                     final int thisRouteStopIndex = indexRouteStops;
                     routeStops[thisRouteStopIndex] = rRouteStop;
                     routeStopsPerStopFacility.compute(routeStop.getStopFacility(), (stop, currentRouteStops) -> {
@@ -152,7 +181,7 @@ class SwissRailRaptorData {
         }
         int countStopFacilities = stops.size();
 
-        Map<Integer, RTransfer[]> allTransfers = calculateRouteStopTransfers(schedule, stopsQT, routeStopsPerStopFacility, routeStops, config);
+        Map<Integer, RTransfer[]> allTransfers = calculateRouteStopTransfers(schedule, stopsQT, routeStopsPerStopFacility, routeStops, staticConfig);
         long countTransfers = 0;
         for (RTransfer[] transfers : allTransfers.values()) {
             countTransfers += transfers.length;
@@ -174,7 +203,7 @@ class SwissRailRaptorData {
             }
         }
 
-        SwissRailRaptorData data = new SwissRailRaptorData(config, countStopFacilities, routes, departures, routeStops, transfers, stopFacilityIndices, routeStopsPerStopFacility, stopsQT);
+        SwissRailRaptorData data = new SwissRailRaptorData(staticConfig, countStopFacilities, routes, departures, routeStops, transfers, stopFacilityIndices, routeStopsPerStopFacility, stopsQT);
 
         long endMillis = System.currentTimeMillis();
         log.info("SwissRailRaptor data preparation done. Took " + (endMillis - startMillis) / 1000 + " seconds.");
@@ -187,7 +216,7 @@ class SwissRailRaptorData {
     }
 
     // calculate possible transfers between TransitRouteStops
-    private static Map<Integer, RTransfer[]> calculateRouteStopTransfers(TransitSchedule schedule, QuadTree<TransitStopFacility> stopsQT, Map<TransitStopFacility, int[]> routeStopsPerStopFacility, RRouteStop[] routeStops, RaptorConfig config) {
+    private static Map<Integer, RTransfer[]> calculateRouteStopTransfers(TransitSchedule schedule, QuadTree<TransitStopFacility> stopsQT, Map<TransitStopFacility, int[]> routeStopsPerStopFacility, RRouteStop[] routeStops, RaptorStaticConfig config) {
         Map<Integer, RTransfer[]> transfers = new HashMap<>(stopsQT.size() * 5);
         double maxBeelineWalkConnectionDistance = config.getBeelineWalkConnectionDistance();
         double beelineWalkSpeed = config.getBeelineWalkSpeed();
@@ -243,9 +272,9 @@ class SwissRailRaptorData {
                     RRouteStop fromRouteStop = routeStops[fromRouteStopIndex];
                     for (int toRouteStopIndex : toRouteStopIndices) {
                         RRouteStop toRouteStop = routeStops[toRouteStopIndex];
-                        if (isUsefulTransfer(fromRouteStop, toRouteStop, config.getBeelineWalkConnectionDistance())) {
+                        if (isUsefulTransfer(fromRouteStop, toRouteStop)) {
                             transfers.compute(fromRouteStopIndex, (routeStopIndex, currentTransfers) -> {
-                                RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, transferCost);
+                                RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, transferCost, distance);
                                 if (currentTransfers == null) {
                                     return new RTransfer[] { newTransfer };
                                 }
@@ -262,7 +291,7 @@ class SwissRailRaptorData {
         return transfers;
     }
 
-    private static boolean isUsefulTransfer(RRouteStop fromRouteStop, RRouteStop toRouteStop, double maxDistance) {
+    private static boolean isUsefulTransfer(RRouteStop fromRouteStop, RRouteStop toRouteStop) {
         if (fromRouteStop == toRouteStop) {
             return false;
         }
@@ -291,7 +320,7 @@ class SwissRailRaptorData {
         }
         // If one could have transferred to the same route one stop before, it does not make sense
         // to transfer here.
-        if (couldHaveTransferredOneStopEarlierInOppositeDirection(fromRouteStop, toRouteStop, maxDistance)) {
+        if (couldHaveTransferredOneStopEarlierInOppositeDirection(fromRouteStop, toRouteStop)) {
             return false;
         }
         // if we failed all other checks, it looks like this transfer is useful
@@ -391,7 +420,7 @@ class SwissRailRaptorData {
         }
     }
 
-    private static boolean couldHaveTransferredOneStopEarlierInOppositeDirection(RRouteStop fromRouteStop, RRouteStop toRouteStop, double maxDistance) {
+    private static boolean couldHaveTransferredOneStopEarlierInOppositeDirection(RRouteStop fromRouteStop, RRouteStop toRouteStop) {
         TransitRouteStop previousRouteStop = null;
         for (TransitRouteStop routeStop : fromRouteStop.route.getStops()) {
             if (fromRouteStop.routeStop == routeStop) {
@@ -416,15 +445,7 @@ class SwissRailRaptorData {
         }
 
         TransitRouteStop toStop = toIter.next();
-        if (previousRouteStop.getStopFacility() == toStop.getStopFacility()) {
-            return true;
-        }
-
-        double distance = CoordUtils.calcEuclideanDistance(previousRouteStop.getStopFacility().getCoord(), toStop.getStopFacility().getCoord());
-        if (distance < maxDistance) {
-            return true;
-        }
-        return false;
+        return previousRouteStop.getStopFacility() == toStop.getStopFacility();
     }
 
     static final class RRoute {
@@ -445,19 +466,23 @@ class SwissRailRaptorData {
         final TransitRouteStop routeStop;
         final TransitLine line;
         final TransitRoute route;
+        final String mode;
         final int transitRouteIndex;
         final int stopFacilityIndex;
         final double arrivalOffset;
         final double departureOffset;
+        final double distanceAlongRoute;
         int indexFirstTransfer = -1;
         int countTransfers = 0;
 
-        RRouteStop(TransitRouteStop routeStop, TransitLine line, TransitRoute route, int transitRouteIndex, int stopFacilityIndex) {
+        RRouteStop(TransitRouteStop routeStop, TransitLine line, TransitRoute route, String mode, int transitRouteIndex, int stopFacilityIndex, double distanceAlongRoute) {
             this.routeStop = routeStop;
             this.line = line;
             this.route = route;
+            this.mode = mode;
             this.transitRouteIndex = transitRouteIndex;
             this.stopFacilityIndex = stopFacilityIndex;
+            this.distanceAlongRoute = distanceAlongRoute;
             // "normalize" the arrival and departure offsets, make sure they are always well defined.
             this.arrivalOffset = isUndefinedTime(routeStop.getArrivalOffset()) ? routeStop.getDepartureOffset() : routeStop.getArrivalOffset();
             this.departureOffset = isUndefinedTime(routeStop.getDepartureOffset()) ? routeStop.getArrivalOffset() : routeStop.getDepartureOffset();
@@ -473,12 +498,14 @@ class SwissRailRaptorData {
         final int toRouteStop;
         final double transferTime;
         final double transferCost;
+        final double transferDistance;
 
-        RTransfer(int fromRouteStop, int toRouteStop, double transferTime, double transferCost) {
+        RTransfer(int fromRouteStop, int toRouteStop, double transferTime, double transferCost, double transferDistance) {
             this.fromRouteStop = fromRouteStop;
             this.toRouteStop = toRouteStop;
             this.transferTime = transferTime;
             this.transferCost = transferCost;
+            this.transferDistance = transferDistance;
         }
     }
 }

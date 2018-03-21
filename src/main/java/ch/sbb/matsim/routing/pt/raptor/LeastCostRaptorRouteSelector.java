@@ -27,13 +27,13 @@ public class LeastCostRaptorRouteSelector implements RaptorRouteSelector {
         RaptorRoute bestRoute = null;
         double bestDiff = 0;
         for (RaptorRoute route : routes) {
-            if (bestRoute == null || route.totalCosts < bestRoute.totalCosts) {
+            if (bestRoute == null || route.getTotalCosts() < bestRoute.getTotalCosts()) {
                 bestRoute = route;
                 bestDiff = route.getDepartureTime() - desiredDepartureTime;
                 if (bestDiff < 0) {
                     bestDiff = -bestDiff * 2;
                 }
-            } else if (route.totalCosts == bestRoute.totalCosts) {
+            } else if (route.getTotalCosts() == bestRoute.getTotalCosts()) {
                 double diff = route.getDepartureTime() - desiredDepartureTime;
                 if (diff < 0) {
                     diff = -diff * 2; // make it positive and double
