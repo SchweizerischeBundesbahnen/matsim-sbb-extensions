@@ -7,8 +7,10 @@ package ch.sbb.matsim.mobsim.qsim;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.apache.log4j.Logger;
+import ch.sbb.matsim.config.SBBTransitConfigGroup;
 import org.matsim.core.config.Config;
+import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.mobsim.qsim.AbstractQSimPlugin;
 import org.matsim.core.mobsim.qsim.ActivityEnginePlugin;
 import org.matsim.core.mobsim.qsim.PopulationPlugin;
@@ -24,13 +26,13 @@ import ch.sbb.matsim.mobsim.qsim.pt.SBBTransitEnginePlugin;
 /**
  * @author mrieser / SBB
  */
-public class SBBQSimModule extends com.google.inject.AbstractModule {
-
-    private static final Logger log = Logger.getLogger(SBBQSimModule.class);
+public class SBBQSimModule extends AbstractModule {
 
     @Override
-    protected void configure() {
-        // let's hope the normal QSimModule's configuration still holds.
+    public void install() {
+        // make sure the config is registered before the simulation starts
+        // https://github.com/SchweizerischeBundesbahnen/matsim-sbb-extensions/issues/3
+        ConfigUtils.addOrGetModule(getConfig(), SBBTransitConfigGroup.class);
     }
 
     // @SuppressWarnings("static-method")
