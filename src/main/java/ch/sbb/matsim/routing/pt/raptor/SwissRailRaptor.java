@@ -71,6 +71,9 @@ public class SwissRailRaptor implements TransitRouter {
     @Override
     public List<Leg> calcRoute(Facility<?> fromFacility, Facility<?> toFacility, double departureTime, Person person) {
         RaptorParameters parameters = this.parametersForPerson.getRaptorParameters(person);
+        if (parameters.getConfig().isUseRangeQuery()) {
+            return this.performRangeQuery(fromFacility, toFacility, departureTime, person, parameters);
+        }
         List<InitialStop> accessStops = findAccessStops(fromFacility, person, departureTime, parameters);
         List<InitialStop> egressStops = findEgressStops(toFacility, person, departureTime, parameters);
 
@@ -82,6 +85,29 @@ public class SwissRailRaptor implements TransitRouter {
         }
         List<Leg> legs = RaptorUtils.convertRouteToLegs(foundRoute);
         return legs;
+    }
+
+    private List<Leg> performRangeQuery(Facility<?> fromFacility, Facility<?> toFacility, double desiredDepartureTime, Person person, RaptorParameters parameters) {
+        SwissRailRaptorConfigGroup srrConfig = parameters.getConfig();
+
+        Object attr = this.personAttributes.getAttribute(person.getId().toString(), this.subpopulationAttribute);
+        String subpopulation = attr == null ? null : attr.toString();
+        SwissRailRaptorConfigGroup.RangeQuerySettingsParameterSet rangeSettings = srrConfig.getRangeQuerySettings(subpopulation);
+
+        double earliestDepartureTime = desiredDepartureTime - rangeSettings.getMaxEarlierDeparture();
+        double latestDepartureTime = desiredDepartureTime + rangeSettings.getMaxLaterDeparture();
+
+        if (this.defaultRouteSelector instanceof ConfigurableRaptorRouteSelector) {
+            ConfigurableRaptorRouteSelector selector = (ConfigurableRaptorRouteSelector) this.defaultRouteSelector;
+
+            SwissRailRaptorConfigGroup.RouteSelectorParameterSet params = srrConfig.getRouteSelector(subpopulation);
+
+            selector.setBetaTransfer(params.getBetaTransfers());
+            selector.setBetaTravelTime(params.getBetaTravelTime());
+            selector.setBetaDepartureTime(params.getBetaDepartureTime());
+        }
+
+        return this.calcRoute(fromFacility, toFacility, earliestDepartureTime, desiredDepartureTime, latestDepartureTime, person, this.defaultRouteSelector);
     }
 
     public List<Leg> calcRoute(Facility<?> fromFacility, Facility<?> toFacility, double earliestDepartureTime, double desiredDepartureTime, double latestDepartureTime, Person person) {

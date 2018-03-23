@@ -7,6 +7,7 @@ package ch.sbb.matsim.config;
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.IntermodalAccessEgressParameterSet;
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet;
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.RangeQuerySettingsParameterSet;
+import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.RouteSelectorParameterSet;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -88,6 +89,48 @@ public class SwissRailRaptorConfigGroupTest {
         Assert.assertEquals("inflexible", range2.getSubpopulations().iterator().next());
         Assert.assertEquals(1*60, range2.getMaxEarlierDeparture());
         Assert.assertEquals(15*60, range2.getMaxLaterDeparture());
+    }
+
+    @Test
+    public void testConfigIO_routeSelector() {
+        SwissRailRaptorConfigGroup config1 = new SwissRailRaptorConfigGroup();
+
+        { // prepare config1
+            config1.setUseRangeQuery(true);
+
+            RouteSelectorParameterSet selector1 = new RouteSelectorParameterSet();
+            selector1.setSubpopulations("");
+            selector1.setBetaTransfers(600);
+            selector1.setBetaDepartureTime(1.6);
+            selector1.setBetaTravelTime(1.3);
+            config1.addRouteSelector(selector1);
+
+            RouteSelectorParameterSet selector2 = new RouteSelectorParameterSet();
+            selector2.setSubpopulations("inflexible");
+            selector2.setBetaTransfers(500);
+            selector2.setBetaDepartureTime(5);
+            selector2.setBetaTravelTime(1.2);
+            config1.addRouteSelector(selector2);
+        }
+
+        SwissRailRaptorConfigGroup config2 = writeRead(config1);
+
+        // do checks
+        Assert.assertTrue(config2.isUseRangeQuery());
+
+        RouteSelectorParameterSet selector1 = config2.getRouteSelector(null);
+        Assert.assertNotNull(selector1);
+        Assert.assertEquals(0, selector1.getSubpopulations().size());
+        Assert.assertEquals(600, selector1.getBetaTransfers(), 0.0);
+        Assert.assertEquals(1.6, selector1.getBetaDepartureTime(), 0.0);
+        Assert.assertEquals(1.3, selector1.getBetaTravelTime(), 0.0);
+
+        RouteSelectorParameterSet selector2 = config2.getRouteSelector("inflexible");
+        Assert.assertNotNull(selector2);
+        Assert.assertEquals(1, selector2.getSubpopulations().size());
+        Assert.assertEquals(500, selector2.getBetaTransfers(), 0.0);
+        Assert.assertEquals(5, selector2.getBetaDepartureTime(), 0.0);
+        Assert.assertEquals(1.2, selector2.getBetaTravelTime(), 0.0);
     }
 
     @Test

@@ -35,6 +35,7 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     private double transferPenaltyTravelTimeToCostFactor = 0.0;
 
     private final Map<String, RangeQuerySettingsParameterSet> rangeQuerySettingsPerSubpop = new HashMap<>();
+    private final Map<String, RouteSelectorParameterSet> routeSelectorPerSubpop = new HashMap<>();
     private final List<IntermodalAccessEgressParameterSet> intermodalAccessEgressSettings = new ArrayList<>();
     private final Map<String, ModeMappingForPassengersParameterSet> modeMappingForPassengersByRouteMode = new HashMap<>();
 
@@ -86,6 +87,8 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     public ConfigGroup createParameterSet(String type) {
         if (RangeQuerySettingsParameterSet.TYPE.equals(type)) {
             return new RangeQuerySettingsParameterSet();
+        } else if (RouteSelectorParameterSet.TYPE.equals(type)) {
+            return new RouteSelectorParameterSet();
         } else if (IntermodalAccessEgressParameterSet.TYPE.equals(type)) {
             return new IntermodalAccessEgressParameterSet();
         } else if (ModeMappingForPassengersParameterSet.TYPE.equals(type)) {
@@ -99,6 +102,8 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     public void addParameterSet(ConfigGroup set) {
         if (set instanceof RangeQuerySettingsParameterSet) {
             addRangeQuerySettings((RangeQuerySettingsParameterSet) set);
+        } else if (set instanceof RouteSelectorParameterSet) {
+            addRouteSelector((RouteSelectorParameterSet) set);
         } else if (set instanceof IntermodalAccessEgressParameterSet) {
             addIntermodalAccessEgress((IntermodalAccessEgressParameterSet) set);
         } else if (set instanceof ModeMappingForPassengersParameterSet) {
@@ -126,6 +131,28 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
 
     public RangeQuerySettingsParameterSet removeRangeQuerySettings(String subpopulation) {
         RangeQuerySettingsParameterSet paramSet = this.rangeQuerySettingsPerSubpop.remove(subpopulation);
+        super.removeParameterSet(paramSet);
+        return paramSet;
+    }
+
+    public void addRouteSelector(RouteSelectorParameterSet settings) {
+        Set<String> subpops = settings.getSubpopulations();
+        if (subpops.isEmpty()) {
+            this.routeSelectorPerSubpop.put(null, settings);
+        } else {
+            for (String subpop : subpops) {
+                this.routeSelectorPerSubpop.put(subpop, settings);
+            }
+        }
+        super.addParameterSet(settings);
+    }
+
+    public RouteSelectorParameterSet getRouteSelector(String subpopulation) {
+        return this.routeSelectorPerSubpop.get(subpopulation);
+    }
+
+    public RouteSelectorParameterSet removeRouteSelector(String subpopulation) {
+        RouteSelectorParameterSet paramSet = this.routeSelectorPerSubpop.remove(subpopulation);
         super.removeParameterSet(paramSet);
         return paramSet;
     }
@@ -205,6 +232,74 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
         @StringSetter(PARAM_MAX_LATER_DEPARTURE)
         public void setMaxLaterDeparture(int maxLaterDeparture) {
             this.maxLaterDeparture = maxLaterDeparture;
+        }
+    }
+
+    public static class RouteSelectorParameterSet extends ReflectiveConfigGroup {
+
+        private static final String TYPE = "routeSelector";
+
+        private static final String PARAM_SUBPOPS = "subpopulations";
+        private static final String PARAM_BETA_TRAVELTIME = "betaTravelTime";
+        private static final String PARAM_BETA_DEPARTURETIME = "betaDepartureTime";
+        private static final String PARAM_BETA_TRANSFERS = "betaTransferCount";
+
+        private final Set<String> subpopulations = new HashSet<>();
+        private double betaTravelTime = 1;
+        private double betaDepartureTime = 1;
+        private double betaTransfers = 300;
+
+        public RouteSelectorParameterSet() {
+            super(TYPE);
+        }
+
+        @StringGetter(PARAM_SUBPOPS)
+        public String getSubpopulationsAsString() {
+            return CollectionUtils.setToString(this.subpopulations);
+        }
+
+        public Set<String> getSubpopulations() {
+            return this.subpopulations;
+        }
+
+        @StringSetter(PARAM_SUBPOPS)
+        public void setSubpopulations(String subpopulation) {
+            this.setSubpopulations(CollectionUtils.stringToSet(subpopulation));
+        }
+
+        public void setSubpopulations(Set<String> subpopulations) {
+            this.subpopulations.clear();
+            this.subpopulations.addAll(subpopulations);
+        }
+
+        @StringGetter(PARAM_BETA_TRAVELTIME)
+        public double getBetaTravelTime() {
+            return this.betaTravelTime;
+        }
+
+        @StringSetter(PARAM_BETA_TRAVELTIME)
+        public void setBetaTravelTime(double betaTravelTime) {
+            this.betaTravelTime = betaTravelTime;
+        }
+
+        @StringGetter(PARAM_BETA_DEPARTURETIME)
+        public double getBetaDepartureTime() {
+            return betaDepartureTime;
+        }
+
+        @StringSetter(PARAM_BETA_DEPARTURETIME)
+        public void setBetaDepartureTime(double betaDepartureTime) {
+            this.betaDepartureTime = betaDepartureTime;
+        }
+
+        @StringGetter(PARAM_BETA_TRANSFERS)
+        public double getBetaTransfers() {
+            return betaTransfers;
+        }
+
+        @StringSetter(PARAM_BETA_TRANSFERS)
+        public void setBetaTransfers(double betaTransfers) {
+            this.betaTransfers = betaTransfers;
         }
     }
 
