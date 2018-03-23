@@ -279,7 +279,7 @@ SwissRailRaptor supports transfer costs based on the total travel of a route:
    </module>
    ```
 
-If the `transferPenaltyTravelTimeTimeToCostFactor` is configured differently from `0.0`,
+If the `transferPenaltyTravelTimeToCostFactor` is configured differently from `0.0`,
 transfer costs during route search are calculated as:
 
 ```
