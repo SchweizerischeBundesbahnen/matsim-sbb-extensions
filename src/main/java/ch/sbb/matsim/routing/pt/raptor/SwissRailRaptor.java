@@ -17,7 +17,7 @@ import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.GenericRouteImpl;
-import org.matsim.core.router.TripRouter;
+import org.matsim.core.router.RoutingModule;
 import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.facilities.Facility;
@@ -49,7 +49,7 @@ public class SwissRailRaptor implements TransitRouter {
     private final RaptorRouteSelector defaultRouteSelector;
     private final String subpopulationAttribute;
     private final ObjectAttributes personAttributes;
-    private final TripRouter tripRouter;
+    private final Map<String, RoutingModule> routingModules;
 
     public SwissRailRaptor(final SwissRailRaptorData data, RaptorParametersForPerson parametersForPerson, RaptorRouteSelector routeSelector) {
         this(data, parametersForPerson, routeSelector, null, null, null);
@@ -57,7 +57,7 @@ public class SwissRailRaptor implements TransitRouter {
     }
 
     public SwissRailRaptor(final SwissRailRaptorData data, RaptorParametersForPerson parametersForPerson, RaptorRouteSelector routeSelector,
-                           String subpopulationAttribute, ObjectAttributes personAttributes, TripRouter tripRouter) {
+                           String subpopulationAttribute, ObjectAttributes personAttributes, Map<String, RoutingModule> routingModules) {
         this.data = data;
         this.config = data.config;
         this.raptor = new SwissRailRaptorCore(data);
@@ -65,7 +65,7 @@ public class SwissRailRaptor implements TransitRouter {
         this.defaultRouteSelector = routeSelector;
         this.subpopulationAttribute = subpopulationAttribute;
         this.personAttributes = personAttributes;
-        this.tripRouter = tripRouter;
+        this.routingModules = routingModules;
     }
 
     @Override
@@ -226,11 +226,13 @@ public class SwissRailRaptor implements TransitRouter {
 
                         List<? extends PlanElement> routeParts;
                         if (direction == Direction.Access) {
-                            routeParts = this.tripRouter.calcRoute(mode, facility, stopFacility, departureTime, person);
+                            RoutingModule module = this.routingModules.get(mode);
+                            routeParts = module.calcRoute(facility, stopFacility, departureTime, person);
                         } else { // it's Egress
                             // We don't know the departure time for the egress trip, so just use the original departureTime,
                             // although it is wrong and might result in a wrong traveltime and thus wrong route.
-                            routeParts = this.tripRouter.calcRoute(mode, stopFacility, facility, departureTime, person);
+                            RoutingModule module = this.routingModules.get(mode);
+                            routeParts = module.calcRoute(stopFacility, facility, departureTime, person);
                             // clear the (wrong) departureTime so users don't get confused
                             for (PlanElement pe : routeParts) {
                                 if (pe instanceof Leg) {
