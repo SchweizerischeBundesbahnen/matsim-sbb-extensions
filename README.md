@@ -85,13 +85,14 @@ the following config module to your `config.xml`:
     <paramset type="intermodalAccessEgress">
       <param name="mode" value="walk" />
       <param name="radius" value="1000" />
-      <param name="subpopulations" value="" /> <!-- an empty value applies to every agent, comma-separated list of multiple subpopulations possible -->
     </paramset>
     <paramset type="intermodalAccessEgress">
       <param name="mode" value="bike" />
       <param name="radius" value="3000" />
       <param name="subpopulations" value="cyclists,bikers" />
       <param name="linkIdAttribute" value="accessLinkId_bike" />
+      <param name="personFilterAttribute" value="hasBike" />
+      <param name="personFilterValue" value="true" />
       <param name="stopFilterAttribute" value="bikeAccessible" />
       <param name="stopFilterValue" value="true" />
     </paramset>
@@ -99,9 +100,9 @@ the following config module to your `config.xml`:
   ```
 In the above example, intermodal access and egress is enabled (`useIntermodalAccessEgress=true`)
 and two modes are configured for it: `walk` and `bike`. Walk can be used by all agents 
-(`subpopulation=null`) and uses all transit stops (no `stopFilterAttribute` defined) within a radius 
-of 1000 around the start or destination coordinates. Bike can only be used by agents in the 
-subpopulation `cyclists`, and uses only transit stops that have an attribute named 
+(no `personFilterAttribute` defined) and uses all transit stops (no `stopFilterAttribute` defined) within a radius 
+of 1000 around the start or destination coordinates. Bike can only be used by agents having a person
+attribute `hasBike` with the value of `true`, and uses only transit stops that have an attribute named 
 `bikeAccessible` with the value `true`. If bike is routed on the network, it's possible that
 no route can be calculated from an activity's link to the transit stop links, e.g. if the transit
 stop is a train station and the assigned link refers to a "rail"-link which is not connected to 

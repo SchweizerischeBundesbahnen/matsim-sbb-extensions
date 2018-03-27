@@ -206,26 +206,27 @@ public class SwissRailRaptor implements TransitRouter {
             if (mode.equals(TransportMode.walk) || mode.equals(TransportMode.transit_walk)) {
                 overrideMode = direction == Direction.Access ? TransportMode.access_walk : TransportMode.egress_walk;
             }
-            Set<String> subPops = paramset.getSubpopulations();
             String linkIdAttribute = paramset.getLinkIdAttribute();
-            String filterAttribute = paramset.getStopFilterAttribute();
-            String filterValue = paramset.getStopFilterValue();
+            String personFilterAttribute = paramset.getPersonFilterAttribute();
+            String personFilterValue = paramset.getPersonFilterValue();
+            String stopFilterAttribute = paramset.getStopFilterAttribute();
+            String stopFilterValue = paramset.getStopFilterValue();
 
-            boolean subpopMatches = true;
-            if (subPops != null && !subPops.isEmpty() && this.subpopulationAttribute != null) {
-                Object attr = this.personAttributes.getAttribute(personId, this.subpopulationAttribute);
+            boolean personMatches = true;
+            if (personFilterAttribute != null) {
+                Object attr = this.personAttributes.getAttribute(personId, personFilterAttribute);
                 String attrValue = attr == null ? null : attr.toString();
-                subpopMatches = subPops.contains(attrValue);
+                personMatches = personFilterValue.equals(attrValue);
             }
 
-            if (subpopMatches) {
+            if (personMatches) {
                 Collection<TransitStopFacility> stopFacilities = this.data.stopsQT.getDisk(x, y, radius);
                 for (TransitStopFacility stop : stopFacilities) {
                     boolean filterMatches = true;
-                    if (filterAttribute != null) {
-                        Object attr = stop.getAttributes().getAttribute(filterAttribute);
+                    if (stopFilterAttribute != null) {
+                        Object attr = stop.getAttributes().getAttribute(stopFilterAttribute);
                         String attrValue = attr == null ? null : attr.toString();
-                        filterMatches = filterValue.equals(attrValue);
+                        filterMatches = stopFilterValue.equals(attrValue);
                     }
                     if (filterMatches) {
                         Facility<TransitStopFacility> stopFacility = stop;

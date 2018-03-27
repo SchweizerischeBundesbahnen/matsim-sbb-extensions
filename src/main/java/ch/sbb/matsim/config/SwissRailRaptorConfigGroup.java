@@ -307,41 +307,24 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
 
         private static final String TYPE = "intermodalAccessEgress";
 
-        private static final String PARAM_SUBPOPS = "subpopulations";
         private static final String PARAM_MODE = "mode";
         private static final String PARAM_RADIUS = "radius";
         private static final String PARAM_LINKID_ATTRIBUTE = "linkIdAttribute";
+        private static final String PARAM_PERSON_FILTER_ATTRIBUTE = "personFilterAttribute";
+        private static final String PARAM_PERSON_FILTER_VALUE = "personFilterValue";
         private static final String PARAM_STOP_FILTER_ATTRIBUTE = "stopFilterAttribute";
         private static final String PARAM_STOP_FILTER_VALUE = "stopFilterValue";
 
-        private final Set<String> subpopulations = new HashSet<>();
         private String mode;
         private double radius;
         private String linkIdAttribute;
+        private String personFilterAttribute;
+        private String personFilterValue;
         private String stopFilterAttribute;
         private String stopFilterValue;
 
         public IntermodalAccessEgressParameterSet() {
             super(TYPE);
-        }
-
-        @StringGetter(PARAM_SUBPOPS)
-        public String getSubpopulationsAsString() {
-            return CollectionUtils.setToString(this.subpopulations);
-        }
-
-        public Set<String> getSubpopulations() {
-            return this.subpopulations;
-        }
-
-        @StringSetter(PARAM_SUBPOPS)
-        public void setSubpopulations(String subpopulations) {
-            this.setSubpopulations(CollectionUtils.stringToSet(subpopulations));
-        }
-
-        public void setSubpopulations(Set subpopulations) {
-            this.subpopulations.clear();
-            this.subpopulations.addAll(subpopulations);
         }
 
         @StringGetter(PARAM_MODE)
@@ -374,6 +357,26 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
             this.linkIdAttribute = linkIdAttribute;
         }
 
+        @StringGetter(PARAM_PERSON_FILTER_ATTRIBUTE)
+        public String getPersonFilterAttribute() {
+            return this.personFilterAttribute;
+        }
+
+        @StringSetter(PARAM_PERSON_FILTER_ATTRIBUTE)
+        public void setPersonFilterAttribute(String personFilterAttribute) {
+            this.personFilterAttribute = personFilterAttribute;
+        }
+
+        @StringGetter(PARAM_PERSON_FILTER_VALUE)
+        public String getPersonFilterValue() {
+            return this.personFilterValue;
+        }
+
+        @StringSetter(PARAM_PERSON_FILTER_VALUE)
+        public void setPersonFilterValue(String personFilterValue) {
+            this.personFilterValue = personFilterValue;
+        }
+
         @StringGetter(PARAM_STOP_FILTER_ATTRIBUTE)
         public String getStopFilterAttribute() {
             return stopFilterAttribute;
@@ -397,10 +400,11 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
         @Override
         public Map<String, String> getComments() {
             Map<String, String> map = super.getComments();
-            map.put(PARAM_SUBPOPS, "Comma-separated list of names of subpopulations to which this mode is available. Leaving it empty applies to all agents.");
+            map.put(PARAM_LINKID_ATTRIBUTE, "If the mode is routed on the network, specify which linkId acts as access link to this stop in the transport modes sub-network.");
             map.put(PARAM_STOP_FILTER_ATTRIBUTE, "Name of the transit stop attribute used to filter stops that should be included in the set of potential stops for access and egress. The attribute should be of type String. 'null' disables the filter and all stops within the specified radius will be used.");
             map.put(PARAM_STOP_FILTER_VALUE, "Only stops where the filter attribute has the value specified here will be considered as access or egress stops.");
-            map.put(PARAM_LINKID_ATTRIBUTE, "If the mode is routed on the network, specify which linkId acts as access link to this stop in the transport modes sub-network.");
+            map.put(PARAM_PERSON_FILTER_ATTRIBUTE, "Name of the person attribute used to figure out if this access/egress mode is available to the person.");
+            map.put(PARAM_PERSON_FILTER_VALUE, "Only persons where the filter attribute has the value specified here can use this mode for access or egress. The attribute should be of type String.");
             return map;
         }
     }
