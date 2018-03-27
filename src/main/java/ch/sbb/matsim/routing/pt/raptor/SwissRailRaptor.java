@@ -127,6 +127,18 @@ public class SwissRailRaptor implements TransitRouter {
             foundRoute = directWalk;
         }
         List<Leg> legs = RaptorUtils.convertRouteToLegs(foundRoute);
+        // TODO adapt the activity end time of the activity right before this trip
+        /* Sadly, it's not that easy to find the previous activity, as we only have from- and to-facility
+         * and the departure time. One would have to search through the person's selectedPlan to find
+         * a matching activity, but what if an agent travels twice a day between from- and to-activity
+         * and it only sets the activity duration, but not the end-time?
+         * One could try to come up with some heuristic, but that would be very error-prone and
+         * not satisfying. The clean solution would be to implement our own PlanRouter which
+         * uses our own TripRouter which would take care of adapting the departure time,
+         * but sadly PlanRouter is hardcoded in several places (e.g. PrepareForSimImpl), so it
+         * cannot easily be replaced. So I fear I currently don't see a simple solution for that.
+         * mrieser / march 2018.
+         */
         return legs;
     }
 
