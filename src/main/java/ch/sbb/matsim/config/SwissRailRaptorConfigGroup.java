@@ -35,6 +35,7 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     private double transferPenaltyTravelTimeToCostFactor = 0.0;
 
     private final Map<String, RangeQuerySettingsParameterSet> rangeQuerySettingsPerSubpop = new HashMap<>();
+    private final Map<String, RouteSelectorParameterSet> routeSelectorPerSubpop = new HashMap<>();
     private final List<IntermodalAccessEgressParameterSet> intermodalAccessEgressSettings = new ArrayList<>();
     private final Map<String, ModeMappingForPassengersParameterSet> modeMappingForPassengersByRouteMode = new HashMap<>();
 
@@ -86,6 +87,8 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     public ConfigGroup createParameterSet(String type) {
         if (RangeQuerySettingsParameterSet.TYPE.equals(type)) {
             return new RangeQuerySettingsParameterSet();
+        } else if (RouteSelectorParameterSet.TYPE.equals(type)) {
+            return new RouteSelectorParameterSet();
         } else if (IntermodalAccessEgressParameterSet.TYPE.equals(type)) {
             return new IntermodalAccessEgressParameterSet();
         } else if (ModeMappingForPassengersParameterSet.TYPE.equals(type)) {
@@ -99,6 +102,8 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     public void addParameterSet(ConfigGroup set) {
         if (set instanceof RangeQuerySettingsParameterSet) {
             addRangeQuerySettings((RangeQuerySettingsParameterSet) set);
+        } else if (set instanceof RouteSelectorParameterSet) {
+            addRouteSelector((RouteSelectorParameterSet) set);
         } else if (set instanceof IntermodalAccessEgressParameterSet) {
             addIntermodalAccessEgress((IntermodalAccessEgressParameterSet) set);
         } else if (set instanceof ModeMappingForPassengersParameterSet) {
@@ -126,6 +131,28 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
 
     public RangeQuerySettingsParameterSet removeRangeQuerySettings(String subpopulation) {
         RangeQuerySettingsParameterSet paramSet = this.rangeQuerySettingsPerSubpop.remove(subpopulation);
+        super.removeParameterSet(paramSet);
+        return paramSet;
+    }
+
+    public void addRouteSelector(RouteSelectorParameterSet settings) {
+        Set<String> subpops = settings.getSubpopulations();
+        if (subpops.isEmpty()) {
+            this.routeSelectorPerSubpop.put(null, settings);
+        } else {
+            for (String subpop : subpops) {
+                this.routeSelectorPerSubpop.put(subpop, settings);
+            }
+        }
+        super.addParameterSet(settings);
+    }
+
+    public RouteSelectorParameterSet getRouteSelector(String subpopulation) {
+        return this.routeSelectorPerSubpop.get(subpopulation);
+    }
+
+    public RouteSelectorParameterSet removeRouteSelector(String subpopulation) {
+        RouteSelectorParameterSet paramSet = this.routeSelectorPerSubpop.remove(subpopulation);
         super.removeParameterSet(paramSet);
         return paramSet;
     }
@@ -208,25 +235,21 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
         }
     }
 
-    public static class IntermodalAccessEgressParameterSet extends ReflectiveConfigGroup {
+    public static class RouteSelectorParameterSet extends ReflectiveConfigGroup {
 
-        private static final String TYPE = "intermodalAccessEgress";
+        private static final String TYPE = "routeSelector";
 
         private static final String PARAM_SUBPOPS = "subpopulations";
-        private static final String PARAM_MODE = "mode";
-        private static final String PARAM_RADIUS = "radius";
-        private static final String PARAM_LINKID_ATTRIBUTE = "linkIdAttribute";
-        private static final String PARAM_FILTER_ATTRIBUTE = "filterAttribute";
-        private static final String PARAM_FILTER_VALUE = "filterValue";
+        private static final String PARAM_BETA_TRAVELTIME = "betaTravelTime";
+        private static final String PARAM_BETA_DEPARTURETIME = "betaDepartureTime";
+        private static final String PARAM_BETA_TRANSFERS = "betaTransferCount";
 
         private final Set<String> subpopulations = new HashSet<>();
-        private String mode;
-        private double radius;
-        private String linkIdAttribute;
-        private String filterAttribute;
-        private String filterValue;
+        private double betaTravelTime = 1;
+        private double betaDepartureTime = 1;
+        private double betaTransfers = 300;
 
-        public IntermodalAccessEgressParameterSet() {
+        public RouteSelectorParameterSet() {
             super(TYPE);
         }
 
@@ -240,13 +263,68 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
         }
 
         @StringSetter(PARAM_SUBPOPS)
-        public void setSubpopulations(String subpopulations) {
-            this.setSubpopulations(CollectionUtils.stringToSet(subpopulations));
+        public void setSubpopulations(String subpopulation) {
+            this.setSubpopulations(CollectionUtils.stringToSet(subpopulation));
         }
 
-        public void setSubpopulations(Set subpopulations) {
+        public void setSubpopulations(Set<String> subpopulations) {
             this.subpopulations.clear();
             this.subpopulations.addAll(subpopulations);
+        }
+
+        @StringGetter(PARAM_BETA_TRAVELTIME)
+        public double getBetaTravelTime() {
+            return this.betaTravelTime;
+        }
+
+        @StringSetter(PARAM_BETA_TRAVELTIME)
+        public void setBetaTravelTime(double betaTravelTime) {
+            this.betaTravelTime = betaTravelTime;
+        }
+
+        @StringGetter(PARAM_BETA_DEPARTURETIME)
+        public double getBetaDepartureTime() {
+            return betaDepartureTime;
+        }
+
+        @StringSetter(PARAM_BETA_DEPARTURETIME)
+        public void setBetaDepartureTime(double betaDepartureTime) {
+            this.betaDepartureTime = betaDepartureTime;
+        }
+
+        @StringGetter(PARAM_BETA_TRANSFERS)
+        public double getBetaTransfers() {
+            return betaTransfers;
+        }
+
+        @StringSetter(PARAM_BETA_TRANSFERS)
+        public void setBetaTransfers(double betaTransfers) {
+            this.betaTransfers = betaTransfers;
+        }
+    }
+
+    public static class IntermodalAccessEgressParameterSet extends ReflectiveConfigGroup {
+
+        private static final String TYPE = "intermodalAccessEgress";
+
+        private static final String PARAM_MODE = "mode";
+        private static final String PARAM_RADIUS = "radius";
+        private static final String PARAM_LINKID_ATTRIBUTE = "linkIdAttribute";
+        private static final String PARAM_PERSON_FILTER_ATTRIBUTE = "personFilterAttribute";
+        private static final String PARAM_PERSON_FILTER_VALUE = "personFilterValue";
+        private static final String PARAM_STOP_FILTER_ATTRIBUTE = "stopFilterAttribute";
+        private static final String PARAM_STOP_FILTER_VALUE = "stopFilterValue";
+
+        private String mode;
+        private double radius;
+        private String linkIdAttribute;
+        private String personFilterAttribute;
+        private String personFilterValue;
+        private String stopFilterAttribute;
+        private String stopFilterValue;
+
+        public IntermodalAccessEgressParameterSet() {
+            super(TYPE);
         }
 
         @StringGetter(PARAM_MODE)
@@ -279,33 +357,54 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
             this.linkIdAttribute = linkIdAttribute;
         }
 
-        @StringGetter(PARAM_FILTER_ATTRIBUTE)
-        public String getFilterAttribute() {
-            return filterAttribute;
+        @StringGetter(PARAM_PERSON_FILTER_ATTRIBUTE)
+        public String getPersonFilterAttribute() {
+            return this.personFilterAttribute;
         }
 
-        @StringSetter(PARAM_FILTER_ATTRIBUTE)
-        public void setFilterAttribute(String filterAttribute) {
-            this.filterAttribute = filterAttribute;
+        @StringSetter(PARAM_PERSON_FILTER_ATTRIBUTE)
+        public void setPersonFilterAttribute(String personFilterAttribute) {
+            this.personFilterAttribute = personFilterAttribute;
         }
 
-        @StringGetter(PARAM_FILTER_VALUE)
-        public String getFilterValue() {
-            return filterValue;
+        @StringGetter(PARAM_PERSON_FILTER_VALUE)
+        public String getPersonFilterValue() {
+            return this.personFilterValue;
         }
 
-        @StringSetter(PARAM_FILTER_VALUE)
-        public void setFilterValue(String filterValue) {
-            this.filterValue = filterValue;
+        @StringSetter(PARAM_PERSON_FILTER_VALUE)
+        public void setPersonFilterValue(String personFilterValue) {
+            this.personFilterValue = personFilterValue;
+        }
+
+        @StringGetter(PARAM_STOP_FILTER_ATTRIBUTE)
+        public String getStopFilterAttribute() {
+            return stopFilterAttribute;
+        }
+
+        @StringSetter(PARAM_STOP_FILTER_ATTRIBUTE)
+        public void setStopFilterAttribute(String stopFilterAttribute) {
+            this.stopFilterAttribute = stopFilterAttribute;
+        }
+
+        @StringGetter(PARAM_STOP_FILTER_VALUE)
+        public String getStopFilterValue() {
+            return stopFilterValue;
+        }
+
+        @StringSetter(PARAM_STOP_FILTER_VALUE)
+        public void setStopFilterValue(String stopFilterValue) {
+            this.stopFilterValue = stopFilterValue;
         }
 
         @Override
         public Map<String, String> getComments() {
             Map<String, String> map = super.getComments();
-            map.put(PARAM_SUBPOPS, "Comma-separated list of names of subpopulations to which this mode is available. Leaving it empty applies to all agents.");
-            map.put(PARAM_FILTER_ATTRIBUTE, "Name of the transit stop attribute used to filter stops that should be included in the set of potential stops for access and egress. The attribute should be of type String. 'null' disables the filter and all stops within the specified radius will be used.");
-            map.put(PARAM_FILTER_VALUE, "Only stops where the filter attribute has the value specified here will be considered as access or egress stops.");
             map.put(PARAM_LINKID_ATTRIBUTE, "If the mode is routed on the network, specify which linkId acts as access link to this stop in the transport modes sub-network.");
+            map.put(PARAM_STOP_FILTER_ATTRIBUTE, "Name of the transit stop attribute used to filter stops that should be included in the set of potential stops for access and egress. The attribute should be of type String. 'null' disables the filter and all stops within the specified radius will be used.");
+            map.put(PARAM_STOP_FILTER_VALUE, "Only stops where the filter attribute has the value specified here will be considered as access or egress stops.");
+            map.put(PARAM_PERSON_FILTER_ATTRIBUTE, "Name of the person attribute used to figure out if this access/egress mode is available to the person.");
+            map.put(PARAM_PERSON_FILTER_VALUE, "Only persons where the filter attribute has the value specified here can use this mode for access or egress. The attribute should be of type String.");
             return map;
         }
     }

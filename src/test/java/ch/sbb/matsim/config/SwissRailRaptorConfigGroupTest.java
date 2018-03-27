@@ -7,6 +7,7 @@ package ch.sbb.matsim.config;
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.IntermodalAccessEgressParameterSet;
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.ModeMappingForPassengersParameterSet;
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.RangeQuerySettingsParameterSet;
+import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.RouteSelectorParameterSet;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -91,6 +92,48 @@ public class SwissRailRaptorConfigGroupTest {
     }
 
     @Test
+    public void testConfigIO_routeSelector() {
+        SwissRailRaptorConfigGroup config1 = new SwissRailRaptorConfigGroup();
+
+        { // prepare config1
+            config1.setUseRangeQuery(true);
+
+            RouteSelectorParameterSet selector1 = new RouteSelectorParameterSet();
+            selector1.setSubpopulations("");
+            selector1.setBetaTransfers(600);
+            selector1.setBetaDepartureTime(1.6);
+            selector1.setBetaTravelTime(1.3);
+            config1.addRouteSelector(selector1);
+
+            RouteSelectorParameterSet selector2 = new RouteSelectorParameterSet();
+            selector2.setSubpopulations("inflexible");
+            selector2.setBetaTransfers(500);
+            selector2.setBetaDepartureTime(5);
+            selector2.setBetaTravelTime(1.2);
+            config1.addRouteSelector(selector2);
+        }
+
+        SwissRailRaptorConfigGroup config2 = writeRead(config1);
+
+        // do checks
+        Assert.assertTrue(config2.isUseRangeQuery());
+
+        RouteSelectorParameterSet selector1 = config2.getRouteSelector(null);
+        Assert.assertNotNull(selector1);
+        Assert.assertEquals(0, selector1.getSubpopulations().size());
+        Assert.assertEquals(600, selector1.getBetaTransfers(), 0.0);
+        Assert.assertEquals(1.6, selector1.getBetaDepartureTime(), 0.0);
+        Assert.assertEquals(1.3, selector1.getBetaTravelTime(), 0.0);
+
+        RouteSelectorParameterSet selector2 = config2.getRouteSelector("inflexible");
+        Assert.assertNotNull(selector2);
+        Assert.assertEquals(1, selector2.getSubpopulations().size());
+        Assert.assertEquals(500, selector2.getBetaTransfers(), 0.0);
+        Assert.assertEquals(5, selector2.getBetaDepartureTime(), 0.0);
+        Assert.assertEquals(1.2, selector2.getBetaTravelTime(), 0.0);
+    }
+
+    @Test
     public void testConfigIO_intermodalAccessEgress() {
         SwissRailRaptorConfigGroup config1 = new SwissRailRaptorConfigGroup();
 
@@ -100,18 +143,19 @@ public class SwissRailRaptorConfigGroupTest {
             IntermodalAccessEgressParameterSet paramset1 = new IntermodalAccessEgressParameterSet();
             paramset1.setMode(TransportMode.bike);
             paramset1.setRadius(2000);
-            paramset1.setSubpopulations("");
-            paramset1.setFilterAttribute("bikeAndRail");
-            paramset1.setFilterValue("true");
+            paramset1.setPersonFilterAttribute(null);
+            paramset1.setStopFilterAttribute("bikeAndRail");
+            paramset1.setStopFilterValue("true");
             config1.addIntermodalAccessEgress(paramset1);
 
             IntermodalAccessEgressParameterSet paramset2 = new IntermodalAccessEgressParameterSet();
             paramset2.setMode("sff");
             paramset2.setRadius(5000);
-            paramset2.setSubpopulations("sff_users,sff_passengers");
+            paramset2.setPersonFilterAttribute("sff_user");
+            paramset2.setPersonFilterValue("true");
             paramset2.setLinkIdAttribute("linkId_sff");
-            paramset2.setFilterAttribute("stop-type");
-            paramset2.setFilterValue("hub");
+            paramset2.setStopFilterAttribute("stop-type");
+            paramset2.setStopFilterValue("hub");
             config1.addIntermodalAccessEgress(paramset2);
         }
 
@@ -127,21 +171,20 @@ public class SwissRailRaptorConfigGroupTest {
         IntermodalAccessEgressParameterSet paramSet1 = parameterSets.get(0);
         Assert.assertEquals(TransportMode.bike, paramSet1.getMode());
         Assert.assertEquals(2000, paramSet1.getRadius(), 0.0);
-        Assert.assertEquals(0, paramSet1.getSubpopulations().size());
+        Assert.assertNull(paramSet1.getPersonFilterAttribute());
+        Assert.assertNull(paramSet1.getPersonFilterValue());
         Assert.assertNull(paramSet1.getLinkIdAttribute());
-        Assert.assertEquals("bikeAndRail", paramSet1.getFilterAttribute());
-        Assert.assertEquals("true", paramSet1.getFilterValue());
+        Assert.assertEquals("bikeAndRail", paramSet1.getStopFilterAttribute());
+        Assert.assertEquals("true", paramSet1.getStopFilterValue());
 
         IntermodalAccessEgressParameterSet paramSet2 = parameterSets.get(1);
         Assert.assertEquals("sff", paramSet2.getMode());
         Assert.assertEquals(5000, paramSet2.getRadius(), 0.0);
-        Assert.assertEquals(2, paramSet2.getSubpopulations().size());
-        Assert.assertTrue(paramSet2.getSubpopulations().contains("sff_users"));
-        Assert.assertTrue(paramSet2.getSubpopulations().contains("sff_passengers"));
-        Assert.assertFalse(paramSet2.getSubpopulations().contains("sff_drivers"));
+        Assert.assertEquals("sff_user", paramSet2.getPersonFilterAttribute());
+        Assert.assertEquals("true", paramSet2.getPersonFilterValue());
         Assert.assertEquals("linkId_sff", paramSet2.getLinkIdAttribute());
-        Assert.assertEquals("stop-type", paramSet2.getFilterAttribute());
-        Assert.assertEquals("hub", paramSet2.getFilterValue());
+        Assert.assertEquals("stop-type", paramSet2.getStopFilterAttribute());
+        Assert.assertEquals("hub", paramSet2.getStopFilterValue());
     }
 
     @Test
