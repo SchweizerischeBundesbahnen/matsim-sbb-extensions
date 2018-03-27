@@ -311,15 +311,15 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
         private static final String PARAM_MODE = "mode";
         private static final String PARAM_RADIUS = "radius";
         private static final String PARAM_LINKID_ATTRIBUTE = "linkIdAttribute";
-        private static final String PARAM_FILTER_ATTRIBUTE = "filterAttribute";
-        private static final String PARAM_FILTER_VALUE = "filterValue";
+        private static final String PARAM_STOP_FILTER_ATTRIBUTE = "stopFilterAttribute";
+        private static final String PARAM_STOP_FILTER_VALUE = "stopFilterValue";
 
         private final Set<String> subpopulations = new HashSet<>();
         private String mode;
         private double radius;
         private String linkIdAttribute;
-        private String filterAttribute;
-        private String filterValue;
+        private String stopFilterAttribute;
+        private String stopFilterValue;
 
         public IntermodalAccessEgressParameterSet() {
             super(TYPE);
@@ -374,32 +374,32 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
             this.linkIdAttribute = linkIdAttribute;
         }
 
-        @StringGetter(PARAM_FILTER_ATTRIBUTE)
-        public String getFilterAttribute() {
-            return filterAttribute;
+        @StringGetter(PARAM_STOP_FILTER_ATTRIBUTE)
+        public String getStopFilterAttribute() {
+            return stopFilterAttribute;
         }
 
-        @StringSetter(PARAM_FILTER_ATTRIBUTE)
-        public void setFilterAttribute(String filterAttribute) {
-            this.filterAttribute = filterAttribute;
+        @StringSetter(PARAM_STOP_FILTER_ATTRIBUTE)
+        public void setStopFilterAttribute(String stopFilterAttribute) {
+            this.stopFilterAttribute = stopFilterAttribute;
         }
 
-        @StringGetter(PARAM_FILTER_VALUE)
-        public String getFilterValue() {
-            return filterValue;
+        @StringGetter(PARAM_STOP_FILTER_VALUE)
+        public String getStopFilterValue() {
+            return stopFilterValue;
         }
 
-        @StringSetter(PARAM_FILTER_VALUE)
-        public void setFilterValue(String filterValue) {
-            this.filterValue = filterValue;
+        @StringSetter(PARAM_STOP_FILTER_VALUE)
+        public void setStopFilterValue(String stopFilterValue) {
+            this.stopFilterValue = stopFilterValue;
         }
 
         @Override
         public Map<String, String> getComments() {
             Map<String, String> map = super.getComments();
             map.put(PARAM_SUBPOPS, "Comma-separated list of names of subpopulations to which this mode is available. Leaving it empty applies to all agents.");
-            map.put(PARAM_FILTER_ATTRIBUTE, "Name of the transit stop attribute used to filter stops that should be included in the set of potential stops for access and egress. The attribute should be of type String. 'null' disables the filter and all stops within the specified radius will be used.");
-            map.put(PARAM_FILTER_VALUE, "Only stops where the filter attribute has the value specified here will be considered as access or egress stops.");
+            map.put(PARAM_STOP_FILTER_ATTRIBUTE, "Name of the transit stop attribute used to filter stops that should be included in the set of potential stops for access and egress. The attribute should be of type String. 'null' disables the filter and all stops within the specified radius will be used.");
+            map.put(PARAM_STOP_FILTER_VALUE, "Only stops where the filter attribute has the value specified here will be considered as access or egress stops.");
             map.put(PARAM_LINKID_ATTRIBUTE, "If the mode is routed on the network, specify which linkId acts as access link to this stop in the transport modes sub-network.");
             return map;
         }

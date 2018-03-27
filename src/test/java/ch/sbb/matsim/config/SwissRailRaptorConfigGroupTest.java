@@ -144,8 +144,8 @@ public class SwissRailRaptorConfigGroupTest {
             paramset1.setMode(TransportMode.bike);
             paramset1.setRadius(2000);
             paramset1.setSubpopulations("");
-            paramset1.setFilterAttribute("bikeAndRail");
-            paramset1.setFilterValue("true");
+            paramset1.setStopFilterAttribute("bikeAndRail");
+            paramset1.setStopFilterValue("true");
             config1.addIntermodalAccessEgress(paramset1);
 
             IntermodalAccessEgressParameterSet paramset2 = new IntermodalAccessEgressParameterSet();
@@ -153,8 +153,8 @@ public class SwissRailRaptorConfigGroupTest {
             paramset2.setRadius(5000);
             paramset2.setSubpopulations("sff_users,sff_passengers");
             paramset2.setLinkIdAttribute("linkId_sff");
-            paramset2.setFilterAttribute("stop-type");
-            paramset2.setFilterValue("hub");
+            paramset2.setStopFilterAttribute("stop-type");
+            paramset2.setStopFilterValue("hub");
             config1.addIntermodalAccessEgress(paramset2);
         }
 
@@ -172,8 +172,8 @@ public class SwissRailRaptorConfigGroupTest {
         Assert.assertEquals(2000, paramSet1.getRadius(), 0.0);
         Assert.assertEquals(0, paramSet1.getSubpopulations().size());
         Assert.assertNull(paramSet1.getLinkIdAttribute());
-        Assert.assertEquals("bikeAndRail", paramSet1.getFilterAttribute());
-        Assert.assertEquals("true", paramSet1.getFilterValue());
+        Assert.assertEquals("bikeAndRail", paramSet1.getStopFilterAttribute());
+        Assert.assertEquals("true", paramSet1.getStopFilterValue());
 
         IntermodalAccessEgressParameterSet paramSet2 = parameterSets.get(1);
         Assert.assertEquals("sff", paramSet2.getMode());
@@ -183,8 +183,8 @@ public class SwissRailRaptorConfigGroupTest {
         Assert.assertTrue(paramSet2.getSubpopulations().contains("sff_passengers"));
         Assert.assertFalse(paramSet2.getSubpopulations().contains("sff_drivers"));
         Assert.assertEquals("linkId_sff", paramSet2.getLinkIdAttribute());
-        Assert.assertEquals("stop-type", paramSet2.getFilterAttribute());
-        Assert.assertEquals("hub", paramSet2.getFilterValue());
+        Assert.assertEquals("stop-type", paramSet2.getStopFilterAttribute());
+        Assert.assertEquals("hub", paramSet2.getStopFilterValue());
     }
 
     @Test

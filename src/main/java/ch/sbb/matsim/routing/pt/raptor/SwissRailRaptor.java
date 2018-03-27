@@ -208,8 +208,8 @@ public class SwissRailRaptor implements TransitRouter {
             }
             Set<String> subPops = paramset.getSubpopulations();
             String linkIdAttribute = paramset.getLinkIdAttribute();
-            String filterAttribute = paramset.getFilterAttribute();
-            String filterValue = paramset.getFilterValue();
+            String filterAttribute = paramset.getStopFilterAttribute();
+            String filterValue = paramset.getStopFilterValue();
 
             boolean subpopMatches = true;
             if (subPops != null && !subPops.isEmpty() && this.subpopulationAttribute != null) {
