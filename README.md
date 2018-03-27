@@ -171,6 +171,12 @@ to be flexible in their departure time choice, while others are not.
 
 ***Be aware that range queries infer a large performance penalty!***
 
+***Note that the original departure time for this trip will not be adapted!*** It may thus
+happen that an agent misses the planned pt departure if it departs earlier than the desired
+departure time, or that the agents waits too  long at a stop. This is currently due to some 
+limitations in MATSim and we hope to be able to optimally adjust the previous activity's end
+time (and thus the departure time) in the future.
+
 Instead of using the built-in, configurable route selection algorithm, a custom implementation
 of the interface `ch.sbb.matsim.routing.pt.raptor.RaptorRouteSelector` can be provided:
 
