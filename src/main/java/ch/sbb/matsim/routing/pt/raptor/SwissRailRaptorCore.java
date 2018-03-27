@@ -226,16 +226,12 @@ public class SwissRailRaptorCore {
                 RRouteStop toRouteStop = depAtRouteStop.routeStop;
                 int routeStopIndex = depAtRouteStop.routeStopIndex;
                 PathElement pe = new PathElement(null, toRouteStop, depAtRouteStop.depTime, arrivalTime, arrivalCost, 0, depAtRouteStop.accessStop.distance, 0, true, depAtRouteStop.accessStop);
-//                if (this.arrivalPathPerRouteStop[routeStopIndex] == null || this.arrivalPathPerRouteStop[routeStopIndex].arrivalCost > pe.arrivalCost) {
-                    this.arrivalPathPerRouteStop[routeStopIndex] = pe;
-                    this.leastArrivalCostAtRouteStop[routeStopIndex] = arrivalCost;
-//                    if (this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] == null || this.arrivalPathPerStop[toRouteStop.stopFacilityIndex].arrivalCost > pe.arrivalCost) {
-                        this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
-                        this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = arrivalCost;
-//                    }
-                    this.improvedRouteStopIndices.set(routeStopIndex);
-                    initialStopsPerStartPath.put(pe, depAtRouteStop.accessStop);
-//                }
+                this.arrivalPathPerRouteStop[routeStopIndex] = pe;
+                this.leastArrivalCostAtRouteStop[routeStopIndex] = arrivalCost;
+                this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
+                this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = arrivalCost;
+                this.improvedRouteStopIndices.set(routeStopIndex);
+                initialStopsPerStartPath.put(pe, depAtRouteStop.accessStop);
             }
 
             // the main loop
@@ -573,12 +569,12 @@ public class SwissRailRaptorCore {
                 raptorRoute.addPlanElements(time, travelTime, pe.initialStop.planElements);
             } else if (pe.isTransfer) {
                 boolean differentFromTo = (fromStop == null || toStop == null) || (fromStop != toStop);
+                // do not create a transfer-leg if we stay at the same stop facility
                 if (differentFromTo) {
                     if (i == peCount - 2) {
                         // the second last element is a transfer, skip it so it gets merged into the egress_walk
                         continue;
                     }
-                    // do not create a transfer-leg if we stay at the same stop facility
                     String mode = TransportMode.transit_walk;
                     if (fromStop == null && toStop != null) {
                         mode = TransportMode.access_walk;
