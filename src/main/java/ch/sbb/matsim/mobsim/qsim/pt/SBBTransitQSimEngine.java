@@ -207,6 +207,11 @@ public class SBBTransitQSimEngine extends TransitQSimEngine /*implements Departu
         if (!commonModes.isEmpty()) {
             throw new RuntimeException("There are modes configured to be pt passenger modes as well as deterministic service modes. This will not work! common modes = " + CollectionUtils.setToString(commonModes));
         }
+        Set<String> mainModes = new HashSet<>(this.qSim.getScenario().getConfig().qsim().getMainModes());
+        mainModes.retainAll(deterministicModes);
+        if (!mainModes.isEmpty()) {
+            throw new RuntimeException("There are modes configured to be deterministic service modes as well as qsim main modes. This will not work! common modes = " + CollectionUtils.setToString(mainModes));
+        }
 
         for (TransitLine line : schedule.getTransitLines().values()) {
             for (TransitRoute route : line.getRoutes().values()) {
