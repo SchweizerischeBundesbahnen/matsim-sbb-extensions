@@ -112,8 +112,8 @@ public final class RaptorUtils {
                 Leg walkLeg = PopulationUtils.createLeg(part.mode);
                 walkLeg.setDepartureTime(part.depTime);
                 walkLeg.setTravelTime(part.travelTime);
-                Id<Link> startLinkId = part.fromStop == null ? null : part.fromStop.getLinkId();
-                Id<Link> endLinkId =  part.toStop == null ? null : part.toStop.getLinkId();
+                Id<Link> startLinkId = part.fromStop == null ? (route.fromFacility == null ? null : route.fromFacility.getLinkId()) : part.fromStop.getLinkId();
+                Id<Link> endLinkId =  part.toStop == null ? (route.toFacility == null ? null : route.toFacility.getLinkId()) : part.toStop.getLinkId();
                 Route walkRoute = new GenericRouteImpl(startLinkId, endLinkId);
                 walkRoute.setTravelTime(part.travelTime);
                 walkRoute.setDistance(part.distance);
