@@ -34,7 +34,6 @@ import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.facilities.ActivityFacilities;
 import org.matsim.facilities.ActivityFacility;
-import org.matsim.pt.router.FakeFacility;
 import org.matsim.pt.router.TransitRouter;
 import org.matsim.pt.routes.ExperimentalTransitRoute;
 import org.matsim.pt.transitSchedule.api.Departure;
@@ -81,6 +80,38 @@ public class SwissRailRaptorTest {
         assertEquals(TransportMode.access_walk, legs.get(0).getMode());
         assertEquals(TransportMode.pt, legs.get(1).getMode());
         assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+        assertTrue("expected TransitRoute in leg.", legs.get(1).getRoute() instanceof ExperimentalTransitRoute);
+        ExperimentalTransitRoute ptRoute = (ExperimentalTransitRoute) legs.get(1).getRoute();
+        assertEquals(Id.create("0", TransitStopFacility.class), ptRoute.getAccessStopId());
+        assertEquals(Id.create("6", TransitStopFacility.class), ptRoute.getEgressStopId());
+        assertEquals(f.blueLine.getId(), ptRoute.getLineId());
+        assertEquals(Id.create("blue A > I", TransitRoute.class), ptRoute.getRouteId());
+        double actualTravelTime = 0.0;
+        for (Leg leg : legs) {
+            actualTravelTime += leg.getTravelTime();
+        }
+        double expectedTravelTime = 29.0 * 60 + // agent takes the *:06 course, arriving in D at *:29
+                CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorParams.getBeelineWalkSpeed();
+        assertEquals(Math.ceil(expectedTravelTime), actualTravelTime, MatsimTestCase.EPSILON);
+    }
+
+    @Test
+    public void testSingleLine_linkIds() {
+        Fixture f = new Fixture();
+        f.init();
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+        TransitRouter router = createTransitRouter(f.schedule, f.config, f.network);
+        Coord fromCoord = new Coord(3800, 5100);
+        Coord toCoord = new Coord(16100, 5050);
+        Id<Link> fromLinkId = Id.create("ffrroomm", Link.class);
+        Id<Link> toLinkId = Id.create("ttoo", Link.class);
+        List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord, fromLinkId), new FakeFacility(toCoord, toLinkId), 5.0*3600, null);
+        assertEquals(3, legs.size());
+        assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+        assertEquals(fromLinkId, legs.get(0).getRoute().getStartLinkId());
+        assertEquals(TransportMode.pt, legs.get(1).getMode());
+        assertEquals(TransportMode.egress_walk, legs.get(2).getMode());
+        assertEquals(toLinkId, legs.get(2).getRoute().getEndLinkId());
         assertTrue("expected TransitRoute in leg.", legs.get(1).getRoute() instanceof ExperimentalTransitRoute);
         ExperimentalTransitRoute ptRoute = (ExperimentalTransitRoute) legs.get(1).getRoute();
         assertEquals(Id.create("0", TransitStopFacility.class), ptRoute.getAccessStopId());

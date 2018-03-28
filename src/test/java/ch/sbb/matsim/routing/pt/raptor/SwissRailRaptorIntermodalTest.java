@@ -243,30 +243,4 @@ public class SwissRailRaptorIntermodalTest {
         Assert.assertEquals(5000, leg.getRoute().getDistance(), 0.0);
     }
 
-    public static final class FakeFacility implements Facility {
-        private final Coord coord;
-        private final Id<Link> linkId;
-
-        FakeFacility(Coord coord, Id<Link> linkId) {
-            this.coord = coord;
-            this.linkId = linkId;
-        }
-
-        public Coord getCoord() {
-            return this.coord;
-        }
-
-        public Id getId() {
-            throw new RuntimeException("not implemented");
-        }
-
-        public Map<String, Object> getCustomAttributes() {
-            throw new RuntimeException("not implemented");
-        }
-
-        public Id getLinkId() {
-            return this.linkId;
-        }
-    }
-
 }
