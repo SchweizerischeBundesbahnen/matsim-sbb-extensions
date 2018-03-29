@@ -476,6 +476,7 @@ public class SwissRailRaptorCore {
         this.improvedRouteStopIndices.clear();
         this.tmpImprovedStops.clear();
 
+        double transferPenaltyFixed = raptorParams.getTransferPenaltyFixCostPerTransfer();
         double transferPenaltyTravelTimeToCostFactor = raptorParams.getTransferPenaltyTravelTimeToCostFactor();
 
         for (int stopIndex = this.improvedStops.nextSetBit(0); stopIndex >= 0; stopIndex = this.improvedStops.nextSetBit(stopIndex + 1)) {
@@ -494,7 +495,7 @@ public class SwissRailRaptorCore {
                 RTransfer transfer = this.data.transfers[transferIndex];
                 int toRouteStopIndex = transfer.toRouteStop;
                 double newArrivalTime = arrivalTime + transfer.transferTime;
-                double newArrivalTravelCost = arrivalTravelCost + transfer.transferCost;
+                double newArrivalTravelCost = arrivalTravelCost + transfer.transferCost + transferPenaltyFixed;
                 double newArrivalTransferCost = ((newArrivalTime - fromPE.firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (fromPE.transferCount + 1);
                 double newTotalArrivalCost = newArrivalTravelCost + newArrivalTransferCost;
                 double prevLeastArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];

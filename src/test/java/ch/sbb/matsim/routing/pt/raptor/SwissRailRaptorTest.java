@@ -329,8 +329,8 @@ public class SwissRailRaptorTest {
         Config config = ConfigUtils.createConfig();
         double transferUtility = 300.0 * raptorParams.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt); // corresponds to 5 minutes transit travel time
         config.planCalcScore().setUtilityOfLineSwitch(transferUtility);
-        RaptorStaticConfig raptorConfig = RaptorUtils.createStaticConfig(config);
-        Assert.assertEquals(-transferUtility, raptorConfig.getTransferPenaltyCost(), 0.0);
+        raptorParams = RaptorUtils.createParameters(config);
+        Assert.assertEquals(-transferUtility, raptorParams.getTransferPenaltyFixCostPerTransfer(), 0.0);
         router = createTransitRouter(f.schedule, config, f.network);
         legs = router.calcRoute(new FakeFacility(new Coord(11900, 5100)), new FakeFacility(new Coord(24100, 4950)), 6.0*3600 - 5.0*60, null);
         assertEquals(3, legs.size());

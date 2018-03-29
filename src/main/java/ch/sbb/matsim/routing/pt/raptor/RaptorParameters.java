@@ -40,6 +40,7 @@ public class RaptorParameters {
 
     private double marginalUtilityOfWaitingPt_utl_s;
 
+    private double transferPenaltyFixCostPerTransfer = 0.0;
     private double transferPenaltyTravelTimeToCostFactor = 0.0;
 
     private final SwissRailRaptorConfigGroup config;
@@ -94,6 +95,14 @@ public class RaptorParameters {
 
     public void setMarginalUtilityOfWaitingPt_utl_s(double marginalUtilityOfWaitingPt_utl_s) {
         this.marginalUtilityOfWaitingPt_utl_s = marginalUtilityOfWaitingPt_utl_s;
+    }
+
+    public double getTransferPenaltyFixCostPerTransfer() {
+        return transferPenaltyFixCostPerTransfer;
+    }
+
+    public void setTransferPenaltyFixCostPerTransfer(double transferPenaltyFixCostPerTransfer) {
+        this.transferPenaltyFixCostPerTransfer = transferPenaltyFixCostPerTransfer;
     }
 
     public double getTransferPenaltyTravelTimeToCostFactor() {

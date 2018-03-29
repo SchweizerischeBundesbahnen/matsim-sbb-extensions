@@ -28,7 +28,6 @@ public class RaptorStaticConfig {
     private double marginalUtilityOfTravelTimeEgressWalk_utl_s;
 
     private double minimalTransferTime = 60;
-    private double transferPenaltyCost = 0;
 
     private boolean useModeMappingForPassengers = false;
     private final Map<String, String> passengerModeMappings = new HashMap<>();
@@ -80,14 +79,6 @@ public class RaptorStaticConfig {
 
     public void setMinimalTransferTime(double minimalTransferTime) {
         this.minimalTransferTime = minimalTransferTime;
-    }
-
-    public double getTransferPenaltyCost() {
-        return this.transferPenaltyCost;
-    }
-
-    public void setTransferPenaltyCost(double transferPenaltyCost) {
-        this.transferPenaltyCost = transferPenaltyCost;
     }
 
     public boolean isUseModeMappingForPassengers() {
