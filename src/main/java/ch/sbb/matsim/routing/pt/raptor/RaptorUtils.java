@@ -16,7 +16,7 @@ import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
 import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
 import org.matsim.core.population.PopulationUtils;
-import org.matsim.core.population.routes.GenericRouteImpl;
+import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.pt.router.TransitRouterConfig;
 import org.matsim.pt.routes.ExperimentalTransitRoute;
 
@@ -114,7 +114,7 @@ public final class RaptorUtils {
                 walkLeg.setTravelTime(part.travelTime);
                 Id<Link> startLinkId = part.fromStop == null ? (route.fromFacility == null ? null : route.fromFacility.getLinkId()) : part.fromStop.getLinkId();
                 Id<Link> endLinkId =  part.toStop == null ? (route.toFacility == null ? null : route.toFacility.getLinkId()) : part.toStop.getLinkId();
-                Route walkRoute = new GenericRouteImpl(startLinkId, endLinkId);
+                Route walkRoute = RouteUtils.createGenericRouteImpl(startLinkId, endLinkId);
                 walkRoute.setTravelTime(part.travelTime);
                 walkRoute.setDistance(part.distance);
                 walkLeg.setRoute(walkRoute);

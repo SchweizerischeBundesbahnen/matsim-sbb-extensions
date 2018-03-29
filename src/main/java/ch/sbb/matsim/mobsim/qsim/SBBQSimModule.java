@@ -17,6 +17,8 @@ import org.matsim.core.mobsim.qsim.PopulationPlugin;
 import org.matsim.core.mobsim.qsim.TeleportationPlugin;
 import org.matsim.core.mobsim.qsim.changeeventsengine.NetworkChangeEventsPlugin;
 import org.matsim.core.mobsim.qsim.messagequeueengine.MessageQueuePlugin;
+import org.matsim.core.mobsim.qsim.pt.ComplexTransitStopHandlerFactory;
+import org.matsim.core.mobsim.qsim.pt.TransitStopHandlerFactory;
 import org.matsim.core.mobsim.qsim.qnetsimengine.QNetsimEnginePlugin;
 
 import com.google.inject.Provides;
@@ -30,6 +32,8 @@ public class SBBQSimModule extends AbstractModule {
 
     @Override
     public void install() {
+        bind(TransitStopHandlerFactory.class).to(ComplexTransitStopHandlerFactory.class).asEagerSingleton();
+
         // make sure the config is registered before the simulation starts
         // https://github.com/SchweizerischeBundesbahnen/matsim-sbb-extensions/issues/3
         ConfigUtils.addOrGetModule(getConfig(), SBBTransitConfigGroup.class);

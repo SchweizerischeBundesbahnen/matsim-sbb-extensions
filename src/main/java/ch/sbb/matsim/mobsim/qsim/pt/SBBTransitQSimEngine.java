@@ -327,7 +327,7 @@ public class SBBTransitQSimEngine extends TransitQSimEngine /*implements Departu
         TransitRouteStop nextStop = event.context.advanceStop();
         if (nextStop != null) {
             double arrOffset = nextStop.getArrivalOffset();
-            if (arrOffset == Time.UNDEFINED_TIME) {
+            if (Time.isUndefinedTime(arrOffset)) {
                 arrOffset = nextStop.getDepartureOffset();
             }
             double arrTime = driver.getDeparture().getDepartureTime() + arrOffset;

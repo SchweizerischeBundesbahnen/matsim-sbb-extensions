@@ -15,7 +15,8 @@ import org.matsim.api.core.v01.network.Node;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
-import org.matsim.core.population.routes.LinkNetworkRouteImpl;
+import org.matsim.core.population.routes.NetworkRoute;
+import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.pt.transitSchedule.api.Departure;
 import org.matsim.pt.transitSchedule.api.TransitLine;
@@ -135,7 +136,7 @@ class IntermodalFixture {
             double departureTime = arrivalTime + 60;
             rStops.add(sf.createTransitRouteStop(stops[i], arrivalTime, departureTime));
         }
-        LinkNetworkRouteImpl networkRoute = new LinkNetworkRouteImpl(ptLinkIds[0], Arrays.copyOfRange(ptLinkIds, 1, 7), ptLinkIds[7]);
+        NetworkRoute networkRoute = RouteUtils.createLinkNetworkRouteImpl(ptLinkIds[0], Arrays.copyOfRange(ptLinkIds, 1, 7), ptLinkIds[7]);
         TransitRoute route = sf.createTransitRoute(Id.create("goEast", TransitRoute.class), networkRoute, rStops, "train");
 
         for (int i = 0; i < 13; i++) {

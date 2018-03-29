@@ -16,7 +16,7 @@ import org.matsim.api.core.v01.population.Person;
 import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.population.PopulationUtils;
-import org.matsim.core.population.routes.GenericRouteImpl;
+import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.core.router.RoutingModule;
 import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.misc.Time;
@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -249,7 +248,7 @@ public class SwissRailRaptor implements TransitRouter {
                             // clear the (wrong) departureTime so users don't get confused
                             for (PlanElement pe : routeParts) {
                                 if (pe instanceof Leg) {
-                                    ((Leg) pe).setDepartureTime(Time.UNDEFINED_TIME);
+                                    ((Leg) pe).setDepartureTime(Time.getUndefinedTime());
                                 }
                             }
                         }
@@ -263,7 +262,7 @@ public class SwissRailRaptor implements TransitRouter {
                         if (stopFacility != stop) {
                             if (direction == Direction.Access) {
                                 Leg transferLeg = PopulationUtils.createLeg(TransportMode.transit_walk);
-                                Route transferRoute = new GenericRouteImpl(stopFacility.getLinkId(), stop.getLinkId());
+                                Route transferRoute = RouteUtils.createGenericRouteImpl(stopFacility.getLinkId(), stop.getLinkId());
                                 transferRoute.setTravelTime(0);
                                 transferRoute.setDistance(0);
                                 transferLeg.setRoute(transferRoute);
@@ -275,7 +274,7 @@ public class SwissRailRaptor implements TransitRouter {
                                 routeParts = tmp;
                             } else {
                                 Leg transferLeg = PopulationUtils.createLeg(TransportMode.transit_walk);
-                                Route transferRoute = new GenericRouteImpl(stop.getLinkId(), stopFacility.getLinkId());
+                                Route transferRoute = RouteUtils.createGenericRouteImpl(stop.getLinkId(), stopFacility.getLinkId());
                                 transferRoute.setTravelTime(0);
                                 transferRoute.setDistance(0);
                                 transferLeg.setRoute(transferRoute);
@@ -304,7 +303,7 @@ public class SwissRailRaptor implements TransitRouter {
         for (PlanElement pe : legs) {
             if (pe instanceof Leg) {
                 double tTime = ((Leg) pe).getTravelTime();
-                if (Time.UNDEFINED_TIME != tTime) {
+                if (!Time.isUndefinedTime(tTime)) {
                     travelTime += tTime;
                 }
             }

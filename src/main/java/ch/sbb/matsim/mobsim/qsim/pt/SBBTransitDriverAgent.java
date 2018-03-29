@@ -52,7 +52,7 @@ public class SBBTransitDriverAgent extends TransitDriverAgentImpl {
         if (stopTime <= 0.0) {
             // figure out if it's already time to depart or not
             double departureOffset = this.currentStop.getDepartureOffset();
-            if (departureOffset == Time.UNDEFINED_TIME) {
+            if (Time.isUndefinedTime(departureOffset)) {
                 departureOffset = this.currentStop.getArrivalOffset();
             }
             double scheduledDepartureTime = this.getDeparture().getDepartureTime() + departureOffset;

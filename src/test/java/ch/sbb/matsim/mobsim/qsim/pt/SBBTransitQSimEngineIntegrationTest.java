@@ -50,9 +50,15 @@ public class SBBTransitQSimEngineIntegrationTest {
         Assert.assertNotNull(mobsim);
         Assert.assertEquals(QSim.class, mobsim.getClass());
 
-        QSim qSim = (QSim) mobsim;
-        TransitQSimEngine trEngine = qSim.getTransitEngine();
-        Assert.assertEquals(SBBTransitQSimEngine.class, trEngine.getClass());
+        QSim qsim = (QSim) mobsim;
+        TransitQSimEngine trEngine = qsim.getChildInjector().getInstance(SBBTransitQSimEngine.class);
+        Assert.assertNotNull(trEngine);
+        try {
+            trEngine = qsim.getChildInjector().getInstance(TransitQSimEngine.class);
+            Assert.fail("expected exception, got none. " + trEngine);
+        } catch (RuntimeException expected) {
+            // ignore
+        }
     }
 
     @Test
