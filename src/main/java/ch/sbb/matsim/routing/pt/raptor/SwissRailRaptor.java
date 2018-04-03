@@ -27,9 +27,9 @@ import org.matsim.utils.objectattributes.ObjectAttributes;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -157,6 +157,28 @@ public class SwissRailRaptor implements TransitRouter {
             foundRoutes.add(directWalk); // add direct walk if it seems plausible
         }
         return foundRoutes;
+    }
+
+    public Map<Id<TransitStopFacility>, SwissRailRaptorCore.TravelInfo> calcTree(TransitStopFacility fromStop, double departureTime, RaptorParameters parameters) {
+        return this.calcTree(Collections.singletonList(fromStop), departureTime, parameters);
+    }
+
+    public Map<Id<TransitStopFacility>, SwissRailRaptorCore.TravelInfo> calcTree(List<TransitStopFacility> fromStops, double departureTime, RaptorParameters parameters) {
+        List<InitialStop> accessStops = new ArrayList<>();
+        for (TransitStopFacility stop : fromStops) {
+            accessStops.add(new InitialStop(stop, 0, 0, 0, null));
+        }
+        return this.calcLeastCostTree(accessStops, departureTime, parameters);
+    }
+
+    public Map<Id<TransitStopFacility>, SwissRailRaptorCore.TravelInfo> calcTree(Facility<?> fromFacility, double departureTime, Person person) {
+        RaptorParameters parameters = this.parametersForPerson.getRaptorParameters(person);
+        List<InitialStop> accessStops = findAccessStops(fromFacility, person, departureTime, parameters);
+        return this.calcLeastCostTree(accessStops, departureTime, parameters);
+    }
+
+    private Map<Id<TransitStopFacility>, SwissRailRaptorCore.TravelInfo> calcLeastCostTree(List<InitialStop> accessStops, double departureTime, RaptorParameters parameters) {
+        return this.raptor.calcLeastCostTree(departureTime, accessStops, parameters);
     }
 
     private List<InitialStop> findAccessStops(Facility<?> facility, Person person, double departureTime, RaptorParameters parameters) {
