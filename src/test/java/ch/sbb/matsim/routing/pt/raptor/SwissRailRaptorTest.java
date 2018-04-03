@@ -609,6 +609,34 @@ public class SwissRailRaptorTest {
     }
 
     @Test
+    public void testCircularLine() {
+        Fixture f = new Fixture();
+        f.init();
+
+        SwissRailRaptor raptor = createTransitRouter(f.schedule, f.config, f.network);
+
+        Coord fromCoord = new Coord(16000, 100); // stop N
+        Coord toCoord = new Coord(24000, 9950); // stop L
+        double depTime = 5.0 * 3600 + 50 * 60;
+        List<Leg> legs = raptor.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime,null);
+
+        for (Leg leg : legs) {
+            System.out.println(leg);
+        }
+
+        Assert.assertEquals(4, legs.size());
+        Assert.assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+        Assert.assertEquals(TransportMode.pt, legs.get(1).getMode());
+        Assert.assertEquals(TransportMode.pt, legs.get(2).getMode());
+        Assert.assertEquals(TransportMode.egress_walk, legs.get(3).getMode());
+
+        Assert.assertEquals(f.greenLine.getId(), ((ExperimentalTransitRoute) legs.get(1).getRoute()).getLineId());
+        Assert.assertEquals(Id.create(23, TransitStopFacility.class), ((ExperimentalTransitRoute) legs.get(1).getRoute()).getAccessStopId());
+        Assert.assertEquals(f.greenLine.getId(), ((ExperimentalTransitRoute) legs.get(2).getRoute()).getLineId());
+        Assert.assertEquals(Id.create(20, TransitStopFacility.class), ((ExperimentalTransitRoute) legs.get(2).getRoute()).getEgressStopId());
+    }
+
+    @Test
     public void testRangeQuery() {
         Fixture f = new Fixture();
         f.init();
