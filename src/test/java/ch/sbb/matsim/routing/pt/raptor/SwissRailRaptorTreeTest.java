@@ -37,11 +37,6 @@ public class SwissRailRaptorTreeTest {
         double depTime = 7*3600 + 40*60;
         Map<Id<TransitStopFacility>, TravelInfo> map = raptor.calcTree(fromStop, depTime, raptorParams);
 
-        for (Map.Entry<Id<TransitStopFacility>, TravelInfo> e : map.entrySet()) {
-            TravelInfo info = e.getValue();
-            System.out.println(e.getKey() + " " + Time.writeTime(info.arrivalTime) + " " + info.travelTime + " " + info.transferCount + " " + info.totalCost);
-        }
-
         Assert.assertEquals("wrong number of reached stops.", 20, map.size());
 
         Assert.assertNull(map.get(Id.create(0, TransitStopFacility.class))); // unreachable
@@ -84,11 +79,6 @@ public class SwissRailRaptorTreeTest {
         TransitStopFacility fromStop = f.schedule.getFacilities().get(Id.create(23, TransitStopFacility.class));
         double depTime = 7*3600 + 50*60;
         Map<Id<TransitStopFacility>, TravelInfo> map = raptor.calcTree(fromStop, depTime, raptorParams);
-
-        for (Map.Entry<Id<TransitStopFacility>, TravelInfo> e : map.entrySet()) {
-            TravelInfo info = e.getValue();
-            System.out.println(e.getKey() + " " + Time.writeTime(info.arrivalTime) + " " + info.travelTime + " " + info.transferCount + " " + info.totalCost);
-        }
 
         // latest departure on green line is at 07:51, so we'll miss some stops!
         Assert.assertEquals("wrong number of reached stops.", 14, map.size());
@@ -137,11 +127,6 @@ public class SwissRailRaptorTreeTest {
         fromStops.add(fromStopB);
         fromStops.add(fromStopH);
         Map<Id<TransitStopFacility>, TravelInfo> map = raptor.calcTree(fromStops, depTime, raptorParams);
-
-        for (Map.Entry<Id<TransitStopFacility>, TravelInfo> e : map.entrySet()) {
-            TravelInfo info = e.getValue();
-            System.out.println(e.getKey() + " " + Time.writeTime(info.arrivalTime) + " " + info.travelTime + " " + info.transferCount + " " + info.totalCost);
-        }
 
         Assert.assertEquals("wrong number of reached stops.", 22, map.size());
 
