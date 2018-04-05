@@ -17,6 +17,7 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -347,9 +348,11 @@ public class SwissRailRaptorCore {
         return routesToKeep;
     }
 
-    public Map<Id<TransitStopFacility>, TravelInfo> calcLeastCostTree(double depTime, List<InitialStop> startStops, RaptorParameters parameters) {
+    public Map<Id<TransitStopFacility>, TravelInfo> calcLeastCostTree(double depTime, Collection<InitialStop> startStops, RaptorParameters parameters) {
         reset();
 
+        BitSet initialRouteStopIndices = new BitSet();
+        BitSet initialStopIndices = new BitSet();
         for (InitialStop stop : startStops) {
             int[] routeStopIndices = this.data.routeStopsPerStopFacility.get(stop.stop);
             for (int routeStopIndex : routeStopIndices) {
@@ -362,6 +365,9 @@ public class SwissRailRaptorCore {
                 this.leastArrivalCostAtRouteStop[routeStopIndex] = arrivalCost;
                 this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = arrivalCost;
                 this.improvedRouteStopIndices.set(routeStopIndex);
+                // this is special: make sure we can transfer even at the start stop
+                initialRouteStopIndices.set(routeStopIndex);
+                initialStopIndices.set(toRouteStop.stopFacilityIndex);
             }
         }
 
@@ -375,6 +381,13 @@ public class SwissRailRaptorCore {
 
             if (this.improvedStops.isEmpty()) {
                 break;
+            }
+
+            if (initialRouteStopIndices != null) {
+                this.improvedRouteStopIndices.or(initialRouteStopIndices);
+                this.improvedStops.or(initialStopIndices);
+                initialRouteStopIndices = null;
+                initialStopIndices = null;
             }
 
             // third stage (according to paper): handle footpaths / transfers
@@ -567,7 +580,7 @@ public class SwissRailRaptorCore {
                 int toRouteStopIndex = transfer.toRouteStop;
                 double newArrivalTime = arrivalTime + transfer.transferTime;
                 double newArrivalTravelCost = arrivalTravelCost + transfer.transferCost + transferPenaltyFixed;
-                double newArrivalTransferCost = ((newArrivalTime - fromPE.firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (fromPE.transferCount + 1);
+                double newArrivalTransferCost = Double.isFinite(fromPE.firstDepartureTime) ? ((newArrivalTime - fromPE.firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (fromPE.transferCount + 1) : 0;
                 double newTotalArrivalCost = newArrivalTravelCost + newArrivalTransferCost;
                 double prevLeastArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];
                 if (newTotalArrivalCost < prevLeastArrivalCost || (!strict && newTotalArrivalCost <= prevLeastArrivalCost)) {
@@ -713,12 +726,12 @@ public class SwissRailRaptorCore {
     }
 
     public static class TravelInfo {
-        final double arrivalTime;
-        final double departureTime;
-        final double travelTime;
-        final double totalCost;
-        final int transferCount;
-        final Id<TransitStopFacility> departureStop;
+        public final double arrivalTime;
+        public final double departureTime;
+        public final double travelTime;
+        public final double totalCost;
+        public final int transferCount;
+        public final Id<TransitStopFacility> departureStop;
 
         public TravelInfo(double arrivalTime, double departureTime, double totalCost, int transferCount, Id<TransitStopFacility> departureStop) {
             this.arrivalTime = arrivalTime;

@@ -271,7 +271,7 @@ public class SwissRailRaptorData {
                     RRouteStop fromRouteStop = routeStops[fromRouteStopIndex];
                     for (int toRouteStopIndex : toRouteStopIndices) {
                         RRouteStop toRouteStop = routeStops[toRouteStopIndex];
-                        if (isUsefulTransfer(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance)) {
+                        if (isUsefulTransfer(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance, config.getOptimization())) {
                             transfers.compute(fromRouteStopIndex, (routeStopIndex, currentTransfers) -> {
                                 RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, transferCost, distance);
                                 if (currentTransfers == null) {
@@ -290,7 +290,7 @@ public class SwissRailRaptorData {
         return transfers;
     }
 
-    private static boolean isUsefulTransfer(RRouteStop fromRouteStop, RRouteStop toRouteStop, double maxBeelineWalkConnectionDistance) {
+    private static boolean isUsefulTransfer(RRouteStop fromRouteStop, RRouteStop toRouteStop, double maxBeelineWalkConnectionDistance, RaptorStaticConfig.RaptorOptimization optimization) {
         if (fromRouteStop == toRouteStop) {
             return false;
         }
@@ -317,10 +317,16 @@ public class SwissRailRaptorData {
         if (cannotReachAdditionalStops(fromRouteStop, toRouteStop)) {
             return false;
         }
-        // If one could have transferred to the same route one stop before, it does not make sense
-        // to transfer here.
-        if (couldHaveTransferredOneStopEarlierInOppositeDirection(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance)) {
-            return false;
+        if (optimization == RaptorStaticConfig.RaptorOptimization.OneToOneRouting) {
+            // If one could have transferred to the same route one stop before, it does not make sense
+            // to transfer here.
+            // This optimization may lead to unexpected results in the case of OneToAllRouting ("tree"),
+            // e.g. when starting at a single stop, users would expect that the stop facility
+            // in the opposite direction could be reached within a minute or so by walk. But the algorithm
+            // would find this if the transfers are missing.
+            if (couldHaveTransferredOneStopEarlierInOppositeDirection(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance)) {
+                return false;
+            }
         }
         // if we failed all other checks, it looks like this transfer is useful
         return true;
@@ -450,6 +456,14 @@ public class SwissRailRaptorData {
 
         double distance = CoordUtils.calcEuclideanDistance(previousRouteStop.getStopFacility().getCoord(), toStop.getStopFacility().getCoord());
         return distance < maxBeelineWalkConnectionDistance;
+    }
+
+    public Collection<TransitStopFacility> findNearbyStops(double x, double y, double distance) {
+        return this.stopsQT.getDisk(x, y, distance);
+    }
+
+    public TransitStopFacility findNearestStop(double x, double y) {
+        return this.stopsQT.getClosest(x, y);
     }
 
     static final class RRoute {
