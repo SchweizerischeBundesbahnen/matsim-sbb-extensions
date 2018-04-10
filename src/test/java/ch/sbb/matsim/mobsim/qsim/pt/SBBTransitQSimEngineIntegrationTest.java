@@ -17,6 +17,9 @@ import org.matsim.testcases.MatsimTestUtils;
 
 import ch.sbb.matsim.mobsim.qsim.SBBQSimModule;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * @author mrieser / SBB
  */
@@ -50,6 +53,33 @@ public class SBBTransitQSimEngineIntegrationTest {
         QSim qSim = (QSim) mobsim;
         TransitQSimEngine trEngine = qSim.getTransitEngine();
         Assert.assertEquals(SBBTransitQSimEngine.class, trEngine.getClass());
+    }
+
+    @Test
+    public void testIntegration_misconfiguration() {
+        TestFixture f = new TestFixture();
+
+        Set<String> mainModes = new HashSet<>();
+        mainModes.add("car");
+        mainModes.add("train");
+        f.config.qsim().setMainModes(mainModes);
+        f.config.controler().setOutputDirectory(this.utils.getOutputDirectory());
+        f.config.controler().setLastIteration(0);
+
+        Controler controler = new Controler(f.scenario);
+        controler.addOverridingModule(new AbstractModule() {
+            @Override
+            public void install() {
+                install(new SBBQSimModule());
+            }
+        });
+
+        try {
+            controler.run();
+            Assert.fail("Expected exception, got none.");
+        } catch (RuntimeException e) {
+            Assert.assertTrue(e.getMessage().endsWith("This will not work! common modes = train"));
+        }
     }
 
 }

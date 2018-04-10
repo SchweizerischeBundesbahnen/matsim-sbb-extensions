@@ -31,11 +31,11 @@ public class SwissRailRaptorModule extends AbstractModule {
 
             SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(getConfig(), SwissRailRaptorConfigGroup.class);
 
-//            if (srrConfig.isUseRangeQuery()) {
-//                bind(RaptorRouteSelector.class).to(ConfigurableRaptorRouteSelector.class);
-//            } else {
+            if (srrConfig.isUseRangeQuery()) {
+                bind(RaptorRouteSelector.class).to(ConfigurableRaptorRouteSelector.class);
+            } else {
                 bind(RaptorRouteSelector.class).to(LeastCostRaptorRouteSelector.class); // just a simple default in case it ever gets used.
-//            }
+            }
 
             if (srrConfig.isUseIntermodalAccessEgress()) {
                 bind(MainModeIdentifier.class).to(IntermodalAwareRouterModeIdentifier.class);

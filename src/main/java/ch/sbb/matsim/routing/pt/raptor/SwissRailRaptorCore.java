@@ -8,6 +8,7 @@ import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RRoute;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RRouteStop;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RTransfer;
 import org.matsim.api.core.v01.TransportMode;
+import org.matsim.facilities.Facility;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
@@ -71,7 +72,7 @@ public class SwissRailRaptorCore {
         this.bestArrivalCost = Double.POSITIVE_INFINITY;
     }
 
-    public RaptorRoute calcLeastCostRoute(double depTime, List<InitialStop> accessStops, List<InitialStop> egressStops, RaptorParameters parameters) {
+    public RaptorRoute calcLeastCostRoute(double depTime, Facility<?> fromFacility, Facility<?> toFacility, List<InitialStop> accessStops, List<InitialStop> egressStops, RaptorParameters parameters) {
         final int maxTransfers = 20; // sensible defaults, could be made configurable if there is a need for it.
         final int maxTransfersAfterFirstArrival = 2;
 
@@ -136,11 +137,11 @@ public class SwissRailRaptorCore {
 
         // create RaptorRoute based on PathElements
         PathElement leastCostPath = findLeastCostArrival(destinationStops);
-        RaptorRoute raptorRoute = createRaptorRoute(leastCostPath, depTime);
+        RaptorRoute raptorRoute = createRaptorRoute(fromFacility, toFacility, leastCostPath, depTime);
         return raptorRoute;
     }
 
-    public List<RaptorRoute> calcRoutes(double earliestDepTime, double desiredDepTime, double latestDepTime, List<InitialStop> accessStops, List<InitialStop> egressStops, RaptorParameters parameters) {
+    public List<RaptorRoute> calcRoutes(double earliestDepTime, double desiredDepTime, double latestDepTime, Facility<?> fromFacility, Facility<?> toFacility, List<InitialStop> accessStops, List<InitialStop> egressStops, RaptorParameters parameters) {
         List<RaptorRoute> foundRoutes = new ArrayList<>();
         int maxTransfers = 20; // sensible defaults, could be made configurable if there is a need for it.
         final int maxTransfersAfterFirstArrival = 2;
@@ -226,16 +227,12 @@ public class SwissRailRaptorCore {
                 RRouteStop toRouteStop = depAtRouteStop.routeStop;
                 int routeStopIndex = depAtRouteStop.routeStopIndex;
                 PathElement pe = new PathElement(null, toRouteStop, depAtRouteStop.depTime, arrivalTime, arrivalCost, 0, depAtRouteStop.accessStop.distance, 0, true, depAtRouteStop.accessStop);
-//                if (this.arrivalPathPerRouteStop[routeStopIndex] == null || this.arrivalPathPerRouteStop[routeStopIndex].arrivalCost > pe.arrivalCost) {
-                    this.arrivalPathPerRouteStop[routeStopIndex] = pe;
-                    this.leastArrivalCostAtRouteStop[routeStopIndex] = arrivalCost;
-//                    if (this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] == null || this.arrivalPathPerStop[toRouteStop.stopFacilityIndex].arrivalCost > pe.arrivalCost) {
-                        this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
-                        this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = arrivalCost;
-//                    }
-                    this.improvedRouteStopIndices.set(routeStopIndex);
-                    initialStopsPerStartPath.put(pe, depAtRouteStop.accessStop);
-//                }
+                this.arrivalPathPerRouteStop[routeStopIndex] = pe;
+                this.leastArrivalCostAtRouteStop[routeStopIndex] = arrivalCost;
+                this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
+                this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = arrivalCost;
+                this.improvedRouteStopIndices.set(routeStopIndex);
+                initialStopsPerStartPath.put(pe, depAtRouteStop.accessStop);
             }
 
             // the main loop
@@ -252,7 +249,7 @@ public class SwissRailRaptorCore {
 
                     double depTime = calculateOptimalDepartureTime(leastCostPath, initialStopsPerStartPath);
                     leastCostPath.arrivalTravelCost -= depAtRouteStop.costOffset;
-                    RaptorRoute raptorRoute = createRaptorRoute(leastCostPath, depTime);
+                    RaptorRoute raptorRoute = createRaptorRoute(fromFacility, toFacility, leastCostPath, depTime);
                     leastCostPath.arrivalTravelCost += depAtRouteStop.costOffset;
                     foundRoutes.add(raptorRoute);
 
@@ -540,14 +537,14 @@ public class SwissRailRaptorCore {
                 double totalCost = arrivalTravelCost + pe.arrivalTransferCost;
                 if ((totalCost < leastCost) || (totalCost == leastCost && pe.transferCount < leastCostPath.transferCount)) {
                     leastCost = totalCost;
-                    leastCostPath = new PathElement(pe, null, pe.firstDepartureTime, arrivalTime, arrivalTravelCost, pe.arrivalTransferCost, pe.distance, pe.transferCount, true, egressStop); // this is the egress leg
+                    leastCostPath = new PathElement(pe, null, pe.firstDepartureTime, arrivalTime, arrivalTravelCost, pe.arrivalTransferCost, egressStop.distance, pe.transferCount, true, egressStop); // this is the egress leg
                 }
             }
         }
         return leastCostPath;
     }
 
-    private RaptorRoute createRaptorRoute(PathElement destinationPathElement, double departureTime) {
+    private RaptorRoute createRaptorRoute(Facility<?> fromFacility, Facility<?> toFacility, PathElement destinationPathElement, double departureTime) {
         LinkedList<PathElement> pes = new LinkedList<>();
         double arrivalCost = Double.POSITIVE_INFINITY;
         if (destinationPathElement != null) {
@@ -560,7 +557,7 @@ public class SwissRailRaptorCore {
             pes.addFirst(pe);
         }
 
-        RaptorRoute raptorRoute = new RaptorRoute(null, null, arrivalCost);
+        RaptorRoute raptorRoute = new RaptorRoute(fromFacility, toFacility, arrivalCost);
         double time = departureTime;
         TransitStopFacility fromStop = null;
         int peCount = pes.size();
@@ -573,12 +570,12 @@ public class SwissRailRaptorCore {
                 raptorRoute.addPlanElements(time, travelTime, pe.initialStop.planElements);
             } else if (pe.isTransfer) {
                 boolean differentFromTo = (fromStop == null || toStop == null) || (fromStop != toStop);
+                // do not create a transfer-leg if we stay at the same stop facility
                 if (differentFromTo) {
                     if (i == peCount - 2) {
                         // the second last element is a transfer, skip it so it gets merged into the egress_walk
                         continue;
                     }
-                    // do not create a transfer-leg if we stay at the same stop facility
                     String mode = TransportMode.transit_walk;
                     if (fromStop == null && toStop != null) {
                         mode = TransportMode.access_walk;
