@@ -537,7 +537,7 @@ public class SwissRailRaptorCore {
                 double totalCost = arrivalTravelCost + pe.arrivalTransferCost;
                 if ((totalCost < leastCost) || (totalCost == leastCost && pe.transferCount < leastCostPath.transferCount)) {
                     leastCost = totalCost;
-                    leastCostPath = new PathElement(pe, null, pe.firstDepartureTime, arrivalTime, arrivalTravelCost, pe.arrivalTransferCost, pe.distance, pe.transferCount, true, egressStop); // this is the egress leg
+                    leastCostPath = new PathElement(pe, null, pe.firstDepartureTime, arrivalTime, arrivalTravelCost, pe.arrivalTransferCost, egressStop.distance, pe.transferCount, true, egressStop); // this is the egress leg
                 }
             }
         }
