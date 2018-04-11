@@ -87,12 +87,16 @@ public class SwissRailRaptorTest {
         assertEquals(f.blueLine.getId(), ptRoute.getLineId());
         assertEquals(Id.create("blue A > I", TransitRoute.class), ptRoute.getRouteId());
         double actualTravelTime = 0.0;
+        double distance = 0.0;
         for (Leg leg : legs) {
+            System.out.println(leg+" "+leg.getRoute().getDistance());
             actualTravelTime += leg.getTravelTime();
+            distance += leg.getRoute().getDistance();
         }
         double expectedTravelTime = 29.0 * 60 + // agent takes the *:06 course, arriving in D at *:29
                 CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(Math.ceil(expectedTravelTime), actualTravelTime, MatsimTestCase.EPSILON);
+        assertEquals(Math.ceil(distance), 15334, MatsimTestCase.EPSILON);
     }
 
     @Test
