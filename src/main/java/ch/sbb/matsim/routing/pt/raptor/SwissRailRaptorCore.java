@@ -7,6 +7,7 @@ package ch.sbb.matsim.routing.pt.raptor;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RRoute;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RRouteStop;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RTransfer;
+import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.TransportMode;
 import org.matsim.facilities.Facility;
 import org.matsim.pt.transitSchedule.api.TransitLine;
@@ -16,6 +17,7 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -80,7 +82,12 @@ public class SwissRailRaptorCore {
 
         Map<TransitStopFacility, InitialStop> destinationStops = new HashMap<>();
         for (InitialStop egressStop : egressStops) {
-            destinationStops.put(egressStop.stop, egressStop);
+            InitialStop alternative = destinationStops.get(egressStop.stop);
+            if (alternative == null || egressStop.accessCost < alternative.accessCost) {
+                destinationStops.put(egressStop.stop, egressStop);
+            }
+        }
+        for (InitialStop egressStop : destinationStops.values()) {
             int[] routeStopIndices = this.data.routeStopsPerStopFacility.get(egressStop.stop);
             if (routeStopIndices != null) {
                 for (int routeStopIndex : routeStopIndices) {
@@ -95,13 +102,47 @@ public class SwissRailRaptorCore {
             for (int routeStopIndex : routeStopIndices) {
                 double arrivalTime = depTime + stop.accessTime;
                 double arrivalCost = stop.accessCost;
-                RRouteStop toRouteStop = this.data.routeStops[routeStopIndex];
-                PathElement pe = new PathElement(null, toRouteStop, Double.NaN, arrivalTime, arrivalCost, 0, stop.distance, 0, true, stop);
-                this.arrivalPathPerRouteStop[routeStopIndex] = pe;
-                this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
-                this.leastArrivalCostAtRouteStop[routeStopIndex] = arrivalCost;
-                this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = arrivalCost;
-                this.improvedRouteStopIndices.set(routeStopIndex);
+
+                RRouteStop routeStop = this.data.routeStops[routeStopIndex];
+                if (routeStop.routeStop == routeStop.route.getStops().get(routeStop.route.getStops().size() - 1)) {
+                    // this is the last stop of a route
+                    continue;
+                }
+                RRoute route = this.data.routes[routeStop.transitRouteIndex];
+                double depOffset = routeStop.departureOffset;
+
+                int departureIndex = findNextDepartureIndex(route, routeStop, arrivalTime);
+                if (departureIndex >= 0) {
+                    double nextDepartureTimeAtStop = this.data.departures[departureIndex] + depOffset;
+                    double waitingTime = nextDepartureTimeAtStop - arrivalTime;
+                    double waitingCost = waitingTime * -parameters.getMarginalUtilityOfWaitingPt_utl_s();
+
+                    RRouteStop toRouteStop = this.data.routeStops[routeStopIndex];
+                    PathElement pe = new PathElement(null, toRouteStop, Double.NaN, arrivalTime, arrivalCost, 0, stop.distance, 0, true, stop);
+
+                    /* okay, the following is not very nice...
+                     * we want to find the least-cost access leg including the waiting time
+                     * until the next departure. But that waiting time should not be included anywhere else,
+                     * just to figure out which is the best access way.
+                     * So we calculate that total cost, including the waiting time, and use that
+                     * to compare the different access legs. We write these total costs to
+                     * this.leastArrivalCostAtRouteStop[], although it should only contain the arrival
+                     * cost. This works because updates to this value are calculated based on the
+                     * time and cost in arrivalPathPerRouteStop, so the additional waitingCost at that
+                     * first stop gets ignored/overwritten in the further run of the routing algorithm.
+                     */
+                    double xCost = arrivalCost + waitingCost;
+
+                    if (xCost < this.leastArrivalCostAtRouteStop[routeStopIndex]) {
+                        this.arrivalPathPerRouteStop[routeStopIndex] = pe;
+                        this.leastArrivalCostAtRouteStop[routeStopIndex] = xCost;
+                        this.improvedRouteStopIndices.set(routeStopIndex);
+                        if (xCost < this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex]) {
+                            this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
+                            this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = xCost;
+                        }
+                    }
+                }
             }
         }
 
@@ -207,7 +248,12 @@ public class SwissRailRaptorCore {
 
         Map<TransitStopFacility, InitialStop> destinationStops = new HashMap<>();
         for (InitialStop egressStop : egressStops) {
-            destinationStops.put(egressStop.stop, egressStop);
+            InitialStop alternative = destinationStops.get(egressStop.stop);
+            if (alternative == null || egressStop.accessCost < alternative.accessCost) {
+                destinationStops.put(egressStop.stop, egressStop);
+            }
+        }
+        for (InitialStop egressStop : destinationStops.values()) {
             int[] routeStopIndices = this.data.routeStopsPerStopFacility.get(egressStop.stop);
             if (routeStopIndices != null) {
                 for (int routeStopIndex : routeStopIndices) {
@@ -346,6 +392,88 @@ public class SwissRailRaptorCore {
         return routesToKeep;
     }
 
+    public Map<Id<TransitStopFacility>, TravelInfo> calcLeastCostTree(double depTime, Collection<InitialStop> startStops, RaptorParameters parameters) {
+        reset();
+
+        BitSet initialRouteStopIndices = new BitSet();
+        BitSet initialStopIndices = new BitSet();
+        for (InitialStop stop : startStops) {
+            int[] routeStopIndices = this.data.routeStopsPerStopFacility.get(stop.stop);
+            for (int routeStopIndex : routeStopIndices) {
+                double arrivalTime = depTime + stop.accessTime;
+                double arrivalCost = stop.accessCost;
+                RRouteStop toRouteStop = this.data.routeStops[routeStopIndex];
+                PathElement pe = new PathElement(null, toRouteStop, Double.NaN, arrivalTime, arrivalCost, 0, stop.distance, 0, true, stop);
+                this.arrivalPathPerRouteStop[routeStopIndex] = pe;
+                this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
+                this.leastArrivalCostAtRouteStop[routeStopIndex] = arrivalCost;
+                this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = arrivalCost;
+                this.improvedRouteStopIndices.set(routeStopIndex);
+                // this is special: make sure we can transfer even at the start stop
+                initialRouteStopIndices.set(routeStopIndex);
+                initialStopIndices.set(toRouteStop.stopFacilityIndex);
+            }
+        }
+
+        // the main loop
+        while (true) {
+            // first stage (according to paper) is to set earliestArrivalTime_k(stop) = earliestArrivalTime_k-1(stop)
+            // but because we re-use the earliestArrivalTime-array, we don't have to do anything.
+
+            // second stage: process routes
+            exploreRoutes(parameters);
+
+            if (this.improvedStops.isEmpty()) {
+                break;
+            }
+
+            if (initialRouteStopIndices != null) {
+                this.improvedRouteStopIndices.or(initialRouteStopIndices);
+                this.improvedStops.or(initialStopIndices);
+                initialRouteStopIndices = null;
+                initialStopIndices = null;
+            }
+
+            // third stage (according to paper): handle footpaths / transfers
+            handleTransfers(true, parameters);
+
+            // final stage: check stop criterion
+            if (this.improvedRouteStopIndices.isEmpty()) {
+                break;
+            }
+        }
+
+        // collect information for each stop
+        Map<Id<TransitStopFacility>, TravelInfo> result = new HashMap<>();
+        for (Map.Entry<TransitStopFacility, Integer> e : this.data.stopFacilityIndices.entrySet()) {
+            TransitStopFacility stop = e.getKey();
+            int index = e.getValue();
+            PathElement destination = this.arrivalPathPerStop[index];
+            PathElement path = destination;
+            PathElement prevLast = null;
+            if (path != null) {
+                while (path.comingFrom != null) {
+                    prevLast = path;
+                    path = path.comingFrom;
+                }
+                double arrivalTime = destination.arrivalTime;
+                double departureTime = path.arrivalTime;
+                double totalCost = destination.arrivalTravelCost + destination.arrivalTransferCost;
+                int transferCount = destination.transferCount;
+                if (destination.isTransfer && transferCount > 0) {
+                    transferCount--; // do not count this as transfer, as the router would merge it with the egress walk
+                }
+                if (prevLast != null && prevLast.isTransfer && transferCount > 0) {
+                    transferCount--; // the first "leg" is a transfer, do not count it as such as the router would merge it with the access walk
+                }
+                Id<TransitStopFacility> departureStopId = path.toRouteStop.routeStop.getStopFacility().getId();
+                TravelInfo ti = new TravelInfo(arrivalTime, departureTime, totalCost, transferCount, departureStopId);
+                result.put(stop.getId(), ti);
+            }
+        }
+        return result;
+    }
+
     private void exploreRoutes(RaptorParameters parameters) {
         this.improvedStops.clear();
         this.reachedRouteStopIndices.clear();
@@ -476,6 +604,7 @@ public class SwissRailRaptorCore {
         this.improvedRouteStopIndices.clear();
         this.tmpImprovedStops.clear();
 
+        double transferPenaltyFixed = raptorParams.getTransferPenaltyFixCostPerTransfer();
         double transferPenaltyTravelTimeToCostFactor = raptorParams.getTransferPenaltyTravelTimeToCostFactor();
 
         for (int stopIndex = this.improvedStops.nextSetBit(0); stopIndex >= 0; stopIndex = this.improvedStops.nextSetBit(stopIndex + 1)) {
@@ -494,8 +623,8 @@ public class SwissRailRaptorCore {
                 RTransfer transfer = this.data.transfers[transferIndex];
                 int toRouteStopIndex = transfer.toRouteStop;
                 double newArrivalTime = arrivalTime + transfer.transferTime;
-                double newArrivalTravelCost = arrivalTravelCost + transfer.transferCost;
-                double newArrivalTransferCost = ((newArrivalTime - fromPE.firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (fromPE.transferCount + 1);
+                double newArrivalTravelCost = arrivalTravelCost + transfer.transferCost + transferPenaltyFixed;
+                double newArrivalTransferCost = Double.isFinite(fromPE.firstDepartureTime) ? ((newArrivalTime - fromPE.firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (fromPE.transferCount + 1) : 0;
                 double newTotalArrivalCost = newArrivalTravelCost + newArrivalTransferCost;
                 double prevLeastArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];
                 if (newTotalArrivalCost < prevLeastArrivalCost || (!strict && newTotalArrivalCost <= prevLeastArrivalCost)) {
@@ -637,6 +766,24 @@ public class SwissRailRaptorCore {
             this.depTime = depTime;
             this.costOffset = costOffset;
             this.accessStop = accessStop;
+        }
+    }
+
+    public static class TravelInfo {
+        public final double arrivalTime;
+        public final double departureTime;
+        public final double travelTime;
+        public final double totalCost;
+        public final int transferCount;
+        public final Id<TransitStopFacility> departureStop;
+
+        public TravelInfo(double arrivalTime, double departureTime, double totalCost, int transferCount, Id<TransitStopFacility> departureStop) {
+            this.arrivalTime = arrivalTime;
+            this.departureTime = departureTime;
+            this.travelTime = arrivalTime - departureTime;
+            this.totalCost = totalCost;
+            this.transferCount = transferCount;
+            this.departureStop = departureStop;
         }
     }
 }

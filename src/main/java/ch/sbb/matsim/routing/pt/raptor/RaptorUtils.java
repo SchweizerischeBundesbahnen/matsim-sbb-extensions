@@ -50,7 +50,6 @@ public final class RaptorUtils {
         staticConfig.setMarginalUtilityOfTravelTimeEgressWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
 
         staticConfig.setMinimalTransferTime(config.transitRouter().getAdditionalTransferTime());
-        staticConfig.setTransferPenaltyCost(-pcsConfig.getUtilityOfLineSwitch());
 
         staticConfig.setUseModeMappingForPassengers(srrConfig.isUseModeMappingForPassengers());
         if (srrConfig.isUseModeMappingForPassengers()) {
@@ -83,6 +82,7 @@ public final class RaptorUtils {
             raptorParams.setMarginalUtilityOfTravelTime_utl_s(mode, marginalUtility_utl_s);
         }
 
+        raptorParams.setTransferPenaltyFixCostPerTransfer(-trConfig.getUtilityOfLineSwitch_utl());
         raptorParams.setTransferPenaltyTravelTimeToCostFactor(advancedConfig.getTransferPenaltyTravelTimeToCostFactor());
 
         return raptorParams;

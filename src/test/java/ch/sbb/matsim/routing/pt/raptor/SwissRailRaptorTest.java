@@ -333,8 +333,8 @@ public class SwissRailRaptorTest {
         Config config = ConfigUtils.createConfig();
         double transferUtility = 300.0 * raptorParams.getMarginalUtilityOfTravelTime_utl_s(TransportMode.pt); // corresponds to 5 minutes transit travel time
         config.planCalcScore().setUtilityOfLineSwitch(transferUtility);
-        RaptorStaticConfig raptorConfig = RaptorUtils.createStaticConfig(config);
-        Assert.assertEquals(-transferUtility, raptorConfig.getTransferPenaltyCost(), 0.0);
+        raptorParams = RaptorUtils.createParameters(config);
+        Assert.assertEquals(-transferUtility, raptorParams.getTransferPenaltyFixCostPerTransfer(), 0.0);
         router = createTransitRouter(f.schedule, config, f.network);
         legs = router.calcRoute(new FakeFacility(new Coord(11900, 5100)), new FakeFacility(new Coord(24100, 4950)), 6.0*3600 - 5.0*60, null);
         assertEquals(3, legs.size());
@@ -610,6 +610,34 @@ public class SwissRailRaptorTest {
         assertEquals(f.stop2.getId(), ptRoute.getAccessStopId());
         assertEquals(f.stop3.getId(), ptRoute.getEgressStopId());
         assertEquals(f.lineId3, ptRoute.getLineId());
+    }
+
+    @Test
+    public void testCircularLine() {
+        Fixture f = new Fixture();
+        f.init();
+
+        SwissRailRaptor raptor = createTransitRouter(f.schedule, f.config, f.network);
+
+        Coord fromCoord = new Coord(16000, 100); // stop N
+        Coord toCoord = new Coord(24000, 9950); // stop L
+        double depTime = 5.0 * 3600 + 50 * 60;
+        List<Leg> legs = raptor.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), depTime,null);
+
+        for (Leg leg : legs) {
+            System.out.println(leg);
+        }
+
+        Assert.assertEquals(4, legs.size());
+        Assert.assertEquals(TransportMode.access_walk, legs.get(0).getMode());
+        Assert.assertEquals(TransportMode.pt, legs.get(1).getMode());
+        Assert.assertEquals(TransportMode.pt, legs.get(2).getMode());
+        Assert.assertEquals(TransportMode.egress_walk, legs.get(3).getMode());
+
+        Assert.assertEquals(f.greenLine.getId(), ((ExperimentalTransitRoute) legs.get(1).getRoute()).getLineId());
+        Assert.assertEquals(Id.create(23, TransitStopFacility.class), ((ExperimentalTransitRoute) legs.get(1).getRoute()).getAccessStopId());
+        Assert.assertEquals(f.greenLine.getId(), ((ExperimentalTransitRoute) legs.get(2).getRoute()).getLineId());
+        Assert.assertEquals(Id.create(20, TransitStopFacility.class), ((ExperimentalTransitRoute) legs.get(2).getRoute()).getEgressStopId());
     }
 
     @Test
