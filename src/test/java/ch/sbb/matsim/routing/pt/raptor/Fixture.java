@@ -30,6 +30,7 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 
 /**
  * THIS IS A COPY OF org.matsim.pt.router.Fixture.
+ * but slightly modified for additional features of SwissRailRaptor.
  *
  *
  * Network:

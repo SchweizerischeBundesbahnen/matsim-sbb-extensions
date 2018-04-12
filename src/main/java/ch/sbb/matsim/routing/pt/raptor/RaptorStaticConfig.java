@@ -17,6 +17,18 @@ import java.util.Map;
  */
 public class RaptorStaticConfig {
 
+    public enum RaptorOptimization {
+        /**
+         * Use this option if you plan to calculate simple from-to routes
+         * (see {@link SwissRailRaptor#calcRoute(org.matsim.facilities.Facility, org.matsim.facilities.Facility, double, org.matsim.api.core.v01.population.Person)}).
+         */
+        OneToOneRouting,
+        /**
+         * Use this option if you plan to calculate one-to-all least-cost-path-trees
+         * (see {@link SwissRailRaptor#calcTree(org.matsim.pt.transitSchedule.api.TransitStopFacility, double, RaptorParameters)}).
+         */
+        OneToAllRouting }
+
     /**
      * The distance in meters that agents can walk to get from one stop to
      * another stop of a nearby transit line.
@@ -28,11 +40,11 @@ public class RaptorStaticConfig {
     private double marginalUtilityOfTravelTimeEgressWalk_utl_s;
 
     private double minimalTransferTime = 60;
-    private double transferPenaltyCost = 0;
 
     private boolean useModeMappingForPassengers = false;
     private final Map<String, String> passengerModeMappings = new HashMap<>();
 
+    private RaptorOptimization optimization = RaptorOptimization.OneToOneRouting;
 
     public double getBeelineWalkConnectionDistance() {
         return this.beelineWalkConnectionDistance;
@@ -82,14 +94,6 @@ public class RaptorStaticConfig {
         this.minimalTransferTime = minimalTransferTime;
     }
 
-    public double getTransferPenaltyCost() {
-        return this.transferPenaltyCost;
-    }
-
-    public void setTransferPenaltyCost(double transferPenaltyCost) {
-        this.transferPenaltyCost = transferPenaltyCost;
-    }
-
     public boolean isUseModeMappingForPassengers() {
         return this.useModeMappingForPassengers;
     }
@@ -104,5 +108,13 @@ public class RaptorStaticConfig {
 
     public String getPassengerMode(String routeMode) {
         return this.passengerModeMappings.get(routeMode);
+    }
+
+    public RaptorOptimization getOptimization() {
+        return this.optimization;
+    }
+
+    public void setOptimization(RaptorOptimization optimization) {
+        this.optimization = optimization;
     }
 }

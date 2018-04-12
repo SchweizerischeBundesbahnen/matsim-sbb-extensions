@@ -89,7 +89,6 @@ the following config module to your `config.xml`:
     <paramset type="intermodalAccessEgress">
       <param name="mode" value="bike" />
       <param name="radius" value="3000" />
-      <param name="subpopulations" value="cyclists,bikers" />
       <param name="linkIdAttribute" value="accessLinkId_bike" />
       <param name="personFilterAttribute" value="hasBike" />
       <param name="personFilterValue" value="true" />
