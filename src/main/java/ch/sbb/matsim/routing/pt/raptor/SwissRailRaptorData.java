@@ -221,7 +221,6 @@ public class SwissRailRaptorData {
         double maxBeelineWalkConnectionDistance = config.getBeelineWalkConnectionDistance();
         double beelineWalkSpeed = config.getBeelineWalkSpeed();
         double transferUtilPerS = config.getMarginalUtilityOfTravelTimeWalk_utl_s();
-        double transferPenalty = config.getTransferPenaltyCost();
         double minimalTransferTime = config.getMinimalTransferTime();
 
         Map<TransitStopFacility, List<TransitStopFacility>> stopToStopsTransfers = new HashMap<>();
@@ -265,14 +264,14 @@ public class SwissRailRaptorData {
                 transferTime = mtt.get(fromStop.getId(), toStop.getId(), transferTime);
 
                 double transferUtil = transferTime * transferUtilPerS;
-                double transferCost = -transferUtil + transferPenalty;
+                double transferCost = -transferUtil;
                 final double fixedTransferTime = transferTime; // variables must be effective final to be used in lambdas (below)
 
                 for (int fromRouteStopIndex : fromRouteStopIndices) {
                     RRouteStop fromRouteStop = routeStops[fromRouteStopIndex];
                     for (int toRouteStopIndex : toRouteStopIndices) {
                         RRouteStop toRouteStop = routeStops[toRouteStopIndex];
-                        if (isUsefulTransfer(fromRouteStop, toRouteStop)) {
+                        if (isUsefulTransfer(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance, config.getOptimization())) {
                             transfers.compute(fromRouteStopIndex, (routeStopIndex, currentTransfers) -> {
                                 RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, transferCost, distance);
                                 if (currentTransfers == null) {
@@ -291,7 +290,7 @@ public class SwissRailRaptorData {
         return transfers;
     }
 
-    private static boolean isUsefulTransfer(RRouteStop fromRouteStop, RRouteStop toRouteStop) {
+    private static boolean isUsefulTransfer(RRouteStop fromRouteStop, RRouteStop toRouteStop, double maxBeelineWalkConnectionDistance, RaptorStaticConfig.RaptorOptimization optimization) {
         if (fromRouteStop == toRouteStop) {
             return false;
         }
@@ -318,10 +317,16 @@ public class SwissRailRaptorData {
         if (cannotReachAdditionalStops(fromRouteStop, toRouteStop)) {
             return false;
         }
-        // If one could have transferred to the same route one stop before, it does not make sense
-        // to transfer here.
-        if (couldHaveTransferredOneStopEarlierInOppositeDirection(fromRouteStop, toRouteStop)) {
-            return false;
+        if (optimization == RaptorStaticConfig.RaptorOptimization.OneToOneRouting) {
+            // If one could have transferred to the same route one stop before, it does not make sense
+            // to transfer here.
+            // This optimization may lead to unexpected results in the case of OneToAllRouting ("tree"),
+            // e.g. when starting at a single stop, users would expect that the stop facility
+            // in the opposite direction could be reached within a minute or so by walk. But the algorithm
+            // would find this if the transfers are missing.
+            if (couldHaveTransferredOneStopEarlierInOppositeDirection(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance)) {
+                return false;
+            }
         }
         // if we failed all other checks, it looks like this transfer is useful
         return true;
@@ -420,7 +425,7 @@ public class SwissRailRaptorData {
         }
     }
 
-    private static boolean couldHaveTransferredOneStopEarlierInOppositeDirection(RRouteStop fromRouteStop, RRouteStop toRouteStop) {
+    private static boolean couldHaveTransferredOneStopEarlierInOppositeDirection(RRouteStop fromRouteStop, RRouteStop toRouteStop, double maxBeelineWalkConnectionDistance) {
         TransitRouteStop previousRouteStop = null;
         for (TransitRouteStop routeStop : fromRouteStop.route.getStops()) {
             if (fromRouteStop.routeStop == routeStop) {
@@ -445,7 +450,20 @@ public class SwissRailRaptorData {
         }
 
         TransitRouteStop toStop = toIter.next();
-        return previousRouteStop.getStopFacility() == toStop.getStopFacility();
+        if (previousRouteStop.getStopFacility() == toStop.getStopFacility()) {
+            return true;
+        }
+
+        double distance = CoordUtils.calcEuclideanDistance(previousRouteStop.getStopFacility().getCoord(), toStop.getStopFacility().getCoord());
+        return distance < maxBeelineWalkConnectionDistance;
+    }
+
+    public Collection<TransitStopFacility> findNearbyStops(double x, double y, double distance) {
+        return this.stopsQT.getDisk(x, y, distance);
+    }
+
+    public TransitStopFacility findNearestStop(double x, double y) {
+        return this.stopsQT.getClosest(x, y);
     }
 
     static final class RRoute {

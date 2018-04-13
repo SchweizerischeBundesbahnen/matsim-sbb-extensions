@@ -27,6 +27,7 @@ import org.matsim.utils.objectattributes.ObjectAttributes;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,6 +50,8 @@ public class SwissRailRaptor implements TransitRouter {
     private final String subpopulationAttribute;
     private final ObjectAttributes personAttributes;
     private final Map<String, RoutingModule> routingModules;
+
+    private boolean treeWarningShown = false;
 
     public SwissRailRaptor(final SwissRailRaptorData data, RaptorParametersForPerson parametersForPerson, RaptorRouteSelector routeSelector) {
         this(data, parametersForPerson, routeSelector, null, null, null);
@@ -156,6 +159,36 @@ public class SwissRailRaptor implements TransitRouter {
             foundRoutes.add(directWalk); // add direct walk if it seems plausible
         }
         return foundRoutes;
+    }
+
+    public Map<Id<TransitStopFacility>, SwissRailRaptorCore.TravelInfo> calcTree(TransitStopFacility fromStop, double departureTime, RaptorParameters parameters) {
+        return this.calcTree(Collections.singletonList(fromStop), departureTime, parameters);
+    }
+
+    public Map<Id<TransitStopFacility>, SwissRailRaptorCore.TravelInfo> calcTree(Collection<TransitStopFacility> fromStops, double departureTime, RaptorParameters parameters) {
+        if (this.data.config.getOptimization() != RaptorStaticConfig.RaptorOptimization.OneToAllRouting && !this.treeWarningShown) {
+            log.warn("SwissRailRaptorData was not initialized with full support for tree calculations and may result in unexpected results. Use `RaptorStaticConfig.setOptimization(RaptorOptimization.OneToAllRouting)` to fix this issue.");
+            this.treeWarningShown = true;
+        }
+        List<InitialStop> accessStops = new ArrayList<>();
+        for (TransitStopFacility stop : fromStops) {
+            accessStops.add(new InitialStop(stop, 0, 0, 0, null));
+        }
+        return this.calcLeastCostTree(accessStops, departureTime, parameters);
+    }
+
+    public Map<Id<TransitStopFacility>, SwissRailRaptorCore.TravelInfo> calcTree(Facility<?> fromFacility, double departureTime, Person person) {
+        RaptorParameters parameters = this.parametersForPerson.getRaptorParameters(person);
+        List<InitialStop> accessStops = findAccessStops(fromFacility, person, departureTime, parameters);
+        return this.calcLeastCostTree(accessStops, departureTime, parameters);
+    }
+
+    private Map<Id<TransitStopFacility>, SwissRailRaptorCore.TravelInfo> calcLeastCostTree(Collection<InitialStop> accessStops, double departureTime, RaptorParameters parameters) {
+        return this.raptor.calcLeastCostTree(departureTime, accessStops, parameters);
+    }
+
+    public SwissRailRaptorData getUnderlyingData() {
+        return this.data;
     }
 
     private List<InitialStop> findAccessStops(Facility<?> facility, Person person, double departureTime, RaptorParameters parameters) {
