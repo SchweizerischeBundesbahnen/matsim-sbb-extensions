@@ -697,6 +697,11 @@ public class SwissRailRaptorCore {
             }
             pes.addFirst(pe);
         }
+        if (pes.size() == 2 && pes.get(0).isTransfer && pes.get(1).isTransfer) {
+            // it's only access and egress, no real pt trip
+            arrivalCost = Double.POSITIVE_INFINITY;
+            pes.clear();
+        }
 
         RaptorRoute raptorRoute = new RaptorRoute(fromFacility, toFacility, arrivalCost);
         double time = departureTime;
