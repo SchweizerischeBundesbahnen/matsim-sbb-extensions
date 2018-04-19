@@ -556,6 +556,18 @@ public class SwissRailRaptorCore {
                             if (alternativeTotalCostWhenBoarding < totalArrivalCost) {
                                 currentDepartureIndex = alternativeDepartureIndex;
                                 currentDepartureTime = alternativeDepartureTime;
+                                if (!alternativeBoardingPE.isTransfer) {
+                                    // we improve to a line/route we entered at some earlier stop, do not create a new transfer for this,
+                                    // but set the boarding info back to the original boarding of this route
+                                    alternativeBoardingPE = alternativeBoardingPE.comingFrom;
+                                    alternativeAgentFirstArrivalTime = alternativeBoardingPE.arrivalTime;
+                                    alternativeVehicleArrivalTime = alternativeDepartureTime + alternativeBoardingPE.toRouteStop.arrivalOffset;
+                                    alternativeAgentBoardingTime = (alternativeAgentFirstArrivalTime < alternativeVehicleArrivalTime) ? alternativeVehicleArrivalTime : alternativeAgentFirstArrivalTime;
+
+                                    alternativeWaitingTime = alternativeAgentBoardingTime - alternativeAgentFirstArrivalTime;
+                                    alternativeWaitingCost = -marginalUtilityOfWaitingPt_utl_s * alternativeWaitingTime;
+                                    alternativeTravelCostWhenBoarding = alternativeBoardingPE.arrivalTravelCost + alternativeWaitingCost;
+                                }
                                 currentAgentBoardingTime = alternativeAgentBoardingTime;
                                 currentTravelCostWhenBoarding = alternativeTravelCostWhenBoarding;
                                 currentTransferCostWhenBoarding = alternativeBoardingPE.arrivalTransferCost;
