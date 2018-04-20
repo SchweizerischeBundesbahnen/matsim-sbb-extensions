@@ -82,8 +82,8 @@ public class SBBTransitQSimEngineTest {
     private void assertNextStop(SBBTransitDriverAgent driver, TransitRouteStop stop, double routeDepTime) {
         double arrOffset = stop.getArrivalOffset();
         double depOffset = stop.getDepartureOffset();
-        if (arrOffset == Time.UNDEFINED_TIME) arrOffset = depOffset;
-        if (depOffset == Time.UNDEFINED_TIME) depOffset = arrOffset;
+        if (Time.isUndefinedTime(arrOffset)) arrOffset = depOffset;
+        if (Time.isUndefinedTime(depOffset)) depOffset = arrOffset;
         TransitStopFacility f = stop.getStopFacility();
 
         Assert.assertEquals(stop, driver.getNextRouteStop());
@@ -115,8 +115,6 @@ public class SBBTransitQSimEngineTest {
 //        plugins.add(new QNetsimEnginePlugin(f.config));
 
         QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
-
-        Assert.assertEquals(SBBTransitQSimEngine.class, qSim.getTransitEngine().getClass());
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -165,8 +163,6 @@ public class SBBTransitQSimEngineTest {
 //        plugins.add(new QNetsimEnginePlugin(f.config));
 
         QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
-
-        Assert.assertEquals(SBBTransitQSimEngine.class, qSim.getTransitEngine().getClass());
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -219,8 +215,6 @@ public class SBBTransitQSimEngineTest {
 //        plugins.add(new QNetsimEnginePlugin(f.config));
 
         QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
-
-        Assert.assertEquals(SBBTransitQSimEngine.class, qSim.getTransitEngine().getClass());
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -287,8 +281,6 @@ public class SBBTransitQSimEngineTest {
 
         QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
 
-        Assert.assertEquals(SBBTransitQSimEngine.class, qSim.getTransitEngine().getClass());
-
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
         qSim.run();
@@ -342,8 +334,6 @@ public class SBBTransitQSimEngineTest {
 
         QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
 
-        Assert.assertEquals(SBBTransitQSimEngine.class, qSim.getTransitEngine().getClass());
-
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
         qSim.run();
@@ -395,8 +385,6 @@ public class SBBTransitQSimEngineTest {
 
         QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
 
-        Assert.assertEquals(SBBTransitQSimEngine.class, qSim.getTransitEngine().getClass());
-
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
         qSim.run();
@@ -444,8 +432,6 @@ public class SBBTransitQSimEngineTest {
 //        plugins.add(new QNetsimEnginePlugin(f.config));
 
         QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
-
-        Assert.assertEquals(SBBTransitQSimEngine.class, qSim.getTransitEngine().getClass());
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -502,8 +488,6 @@ public class SBBTransitQSimEngineTest {
 //        plugins.add(new QNetsimEnginePlugin(f.config));
 
         QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
-
-        Assert.assertEquals(SBBTransitQSimEngine.class, qSim.getTransitEngine().getClass());
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
