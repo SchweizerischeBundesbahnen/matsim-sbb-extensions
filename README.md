@@ -22,7 +22,7 @@ To use the extensions along your MATSim code, follow these two steps:
 	<dependency>
 	    <groupId>com.github.SchweizerischeBundesbahnen</groupId>
 	    <artifactId>matsim-sbb-extensions</artifactId>
-	    <version>0.9.x</version>
+	    <version>0.10.x</version>
 	</dependency>
   ``` 
 
@@ -302,6 +302,18 @@ Assuming a travel time disutility of 6 utils per hour, combined with opportunity
 The configured value of 0.0003 in the example above would thus correspond to a single transfer 
 having a (non-fixed) cost comparable to 9% of the total travel time.
 
+
+#### PT Least Cost Path Tree (one-to-all routing)
+
+In some cases, one might be interested in the travel times not only between two coordinates,
+but from one (or a few) stop to all others. SwissRailRaptor provides the method 
+`SwissRailRaptor.calcTree(...)` for this purpose which returns a map containing for each
+transit stop a number of inicators like travel time or number of transfers to reach that
+stop from the originating stop.
+
+If you plan to use this method, make sure to set 
+`RaptorStaticConfig.setOptimization(RaptorOptimization.OneToAllRouting)` before
+calling `SwissRailRaptorData.create(...)`.
 
 ## Deterministic Public Transport Simulation <span id="detPTSim" />
 

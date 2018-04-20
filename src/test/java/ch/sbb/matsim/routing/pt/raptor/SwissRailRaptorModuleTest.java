@@ -108,8 +108,12 @@ public class SwissRailRaptorModuleTest {
 
         // prepare scoring
         Config config = f.config;
-        f.config.planCalcScore().addActivityParams(new PlanCalcScoreConfigGroup.ActivityParams("home"));
-        f.config.planCalcScore().addActivityParams(new PlanCalcScoreConfigGroup.ActivityParams("work"));
+        PlanCalcScoreConfigGroup.ActivityParams homeScoring = new PlanCalcScoreConfigGroup.ActivityParams("home");
+        homeScoring.setTypicalDuration(16*3600);
+        f.config.planCalcScore().addActivityParams(homeScoring);
+        PlanCalcScoreConfigGroup.ActivityParams workScoring = new PlanCalcScoreConfigGroup.ActivityParams("work");
+        workScoring.setTypicalDuration(8*3600);
+        f.config.planCalcScore().addActivityParams(workScoring);
 
         // prepare rest of config
 

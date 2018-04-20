@@ -12,8 +12,6 @@ import org.matsim.core.mobsim.framework.AgentSource;
 import org.matsim.core.mobsim.qsim.AbstractQSimPlugin;
 import org.matsim.core.mobsim.qsim.interfaces.DepartureHandler;
 import org.matsim.core.mobsim.qsim.interfaces.MobsimEngine;
-import org.matsim.core.mobsim.qsim.pt.ComplexTransitStopHandlerFactory;
-import org.matsim.core.mobsim.qsim.pt.TransitStopHandlerFactory;
 
 import com.google.inject.Module;
 
@@ -29,7 +27,6 @@ public class SBBTransitEnginePlugin extends AbstractQSimPlugin {
             @Override
             protected void configure() {
                 bind(SBBTransitQSimEngine.class).asEagerSingleton();
-				bind(TransitStopHandlerFactory.class).to(ComplexTransitStopHandlerFactory.class).asEagerSingleton();
             }
         });
     }

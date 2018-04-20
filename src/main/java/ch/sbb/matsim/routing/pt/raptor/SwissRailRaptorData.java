@@ -507,7 +507,7 @@ public class SwissRailRaptorData {
         }
 
         private static boolean isUndefinedTime(double time) {
-            return time == Time.UNDEFINED_TIME || Double.isNaN(time);
+            return Time.isUndefinedTime(time) || Double.isNaN(time);
         }
     }
 
