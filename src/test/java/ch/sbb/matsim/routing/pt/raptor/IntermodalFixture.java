@@ -106,8 +106,8 @@ class IntermodalFixture {
             schedule.addStopFacility(stop);
         }
 
-        stops[0].getAttributes().putAttribute("bikeAccessible", "false");
-        stops[1].getAttributes().putAttribute("bikeAccessible", "true");
+        stops[0].getAttributes().putAttribute("bikeAccessible", "true");
+        stops[1].getAttributes().putAttribute("bikeAccessible", "false");
         stops[2].getAttributes().putAttribute("bikeAccessible", "false");
         stops[3].getAttributes().putAttribute("bikeAccessible", "true");
         stops[4].getAttributes().putAttribute("bikeAccessible", "false");

@@ -556,6 +556,18 @@ public class SwissRailRaptorCore {
                             if (alternativeTotalCostWhenBoarding < totalArrivalCost) {
                                 currentDepartureIndex = alternativeDepartureIndex;
                                 currentDepartureTime = alternativeDepartureTime;
+                                if (!alternativeBoardingPE.isTransfer) {
+                                    // we improve to a line/route we entered at some earlier stop, do not create a new transfer for this,
+                                    // but set the boarding info back to the original boarding of this route
+                                    alternativeBoardingPE = alternativeBoardingPE.comingFrom;
+                                    alternativeAgentFirstArrivalTime = alternativeBoardingPE.arrivalTime;
+                                    alternativeVehicleArrivalTime = alternativeDepartureTime + alternativeBoardingPE.toRouteStop.arrivalOffset;
+                                    alternativeAgentBoardingTime = (alternativeAgentFirstArrivalTime < alternativeVehicleArrivalTime) ? alternativeVehicleArrivalTime : alternativeAgentFirstArrivalTime;
+
+                                    alternativeWaitingTime = alternativeAgentBoardingTime - alternativeAgentFirstArrivalTime;
+                                    alternativeWaitingCost = -marginalUtilityOfWaitingPt_utl_s * alternativeWaitingTime;
+                                    alternativeTravelCostWhenBoarding = alternativeBoardingPE.arrivalTravelCost + alternativeWaitingCost;
+                                }
                                 currentAgentBoardingTime = alternativeAgentBoardingTime;
                                 currentTravelCostWhenBoarding = alternativeTravelCostWhenBoarding;
                                 currentTransferCostWhenBoarding = alternativeBoardingPE.arrivalTransferCost;
@@ -684,6 +696,11 @@ public class SwissRailRaptorCore {
                 pe = pe.comingFrom;
             }
             pes.addFirst(pe);
+        }
+        if (pes.size() == 2 && pes.get(0).isTransfer && pes.get(1).isTransfer) {
+            // it's only access and egress, no real pt trip
+            arrivalCost = Double.POSITIVE_INFINITY;
+            pes.clear();
         }
 
         RaptorRoute raptorRoute = new RaptorRoute(fromFacility, toFacility, arrivalCost);
