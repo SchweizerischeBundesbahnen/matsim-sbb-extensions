@@ -214,13 +214,9 @@ public class SwissRailRaptorIntermodalTest {
                 new TeleportationRoutingModule(TransportMode.bike, f.scenario.getPopulation().getFactory(), 3, 1.4));
 
         f.srrConfig.setUseIntermodalAccessEgress(true);
-        IntermodalAccessEgressParameterSet walkAccess = new IntermodalAccessEgressParameterSet();
-        walkAccess.setMode(TransportMode.walk);
-        walkAccess.setRadius(1000);
-        f.srrConfig.addIntermodalAccessEgress(walkAccess);
         IntermodalAccessEgressParameterSet bikeAccess = new IntermodalAccessEgressParameterSet();
         bikeAccess.setMode(TransportMode.bike);
-        bikeAccess.setRadius(1500);
+        bikeAccess.setRadius(1200);
         bikeAccess.setStopFilterAttribute("bikeAccessible");
         bikeAccess.setLinkIdAttribute("accessLinkId_bike");
         bikeAccess.setStopFilterValue("true");
@@ -229,8 +225,8 @@ public class SwissRailRaptorIntermodalTest {
         SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), RaptorUtils.createStaticConfig(f.config), f.scenario.getNetwork());
         SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()), new LeastCostRaptorRouteSelector(), null, null, routingModules);
 
-        Facility fromFac = new FakeFacility(new Coord(8000, 10500), Id.create("from", Link.class));
-        Facility toFac = new FakeFacility(new Coord(13000, 10500), Id.create("to", Link.class));
+        Facility fromFac = new FakeFacility(new Coord(10000, 9000), Id.create("from", Link.class));
+        Facility toFac = new FakeFacility(new Coord(11000, 11000), Id.create("to", Link.class));
 
         List<Leg> legs = raptor.calcRoute(fromFac, toFac, 7*3600, f.dummyPerson);
         for (Leg leg : legs) {
@@ -240,7 +236,7 @@ public class SwissRailRaptorIntermodalTest {
         Assert.assertEquals("wrong number of legs.", 1, legs.size());
         Leg leg = legs.get(0);
         Assert.assertEquals(TransportMode.transit_walk, leg.getMode());
-        Assert.assertEquals(5000, leg.getRoute().getDistance(), 0.0);
+        Assert.assertEquals(Math.sqrt(1000*1000+2000*2000), leg.getRoute().getDistance(), 1e-7);
     }
 
     @Test
