@@ -22,7 +22,7 @@ To use the extensions along your MATSim code, follow these two steps:
 	<dependency>
 	    <groupId>com.github.SchweizerischeBundesbahnen</groupId>
 	    <artifactId>matsim-sbb-extensions</artifactId>
-	    <version>0.9.x</version>
+	    <version>0.10.x</version>
 	</dependency>
   ``` 
 
