@@ -31,6 +31,7 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
     private final RaptorStaticConfig raptorConfig;
     private final RaptorParametersForPerson raptorParametersForPerson;
     private final RaptorRouteSelector routeSelector;
+    private final RaptorIntermodalAccessEgress intermodalAE;
 
     private final Network network;
     private final PlansConfigGroup plansConfigGroup;
@@ -40,12 +41,14 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
     @Inject
     public SwissRailRaptorFactory(final TransitSchedule schedule, final Config config, final Network network,
                                   RaptorParametersForPerson raptorParametersForPerson, RaptorRouteSelector routeSelector,
-                                  PlansConfigGroup plansConfigGroup, Population population, Map<String, Provider<RoutingModule>> routingModules) {
+                                  RaptorIntermodalAccessEgress intermodalAE, PlansConfigGroup plansConfigGroup, Population population,
+                                  Map<String, Provider<RoutingModule>> routingModules) {
         this.schedule = schedule;
         this.raptorConfig = RaptorUtils.createStaticConfig(config);
         this.network = network;
         this.raptorParametersForPerson = raptorParametersForPerson;
         this.routeSelector = routeSelector;
+        this.intermodalAE = intermodalAE;
         this.plansConfigGroup = plansConfigGroup;
         this.population = population;
 
@@ -68,7 +71,7 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
             RoutingModule module = e.getValue().get();
             neededRoutingModules.put(mode, module);
         }
-        return new SwissRailRaptor(data, this.raptorParametersForPerson, this.routeSelector,
+        return new SwissRailRaptor(data, this.raptorParametersForPerson, this.routeSelector, this.intermodalAE,
                 this.plansConfigGroup.getSubpopulationAttributeName(), this.population.getPersonAttributes(), neededRoutingModules);
     }
 

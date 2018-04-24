@@ -47,24 +47,28 @@ public class SwissRailRaptor implements TransitRouter {
     private final RaptorStaticConfig config;
     private final RaptorParametersForPerson parametersForPerson;
     private final RaptorRouteSelector defaultRouteSelector;
+    private final RaptorIntermodalAccessEgress intermodalAE;
     private final String subpopulationAttribute;
     private final ObjectAttributes personAttributes;
     private final Map<String, RoutingModule> routingModules;
 
     private boolean treeWarningShown = false;
 
-    public SwissRailRaptor(final SwissRailRaptorData data, RaptorParametersForPerson parametersForPerson, RaptorRouteSelector routeSelector) {
-        this(data, parametersForPerson, routeSelector, null, null, null);
+    public SwissRailRaptor(final SwissRailRaptorData data, RaptorParametersForPerson parametersForPerson,
+                           RaptorRouteSelector routeSelector, RaptorIntermodalAccessEgress intermodalAE) {
+        this(data, parametersForPerson, routeSelector, intermodalAE, null, null, null);
         log.info("SwissRailRaptor was initialized without support for subpopulations or intermodal access/egress legs.");
     }
 
-    public SwissRailRaptor(final SwissRailRaptorData data, RaptorParametersForPerson parametersForPerson, RaptorRouteSelector routeSelector,
+    public SwissRailRaptor(final SwissRailRaptorData data, RaptorParametersForPerson parametersForPerson,
+                           RaptorRouteSelector routeSelector, RaptorIntermodalAccessEgress intermodalAE,
                            String subpopulationAttribute, ObjectAttributes personAttributes, Map<String, RoutingModule> routingModules) {
         this.data = data;
         this.config = data.config;
         this.raptor = new SwissRailRaptorCore(data);
         this.parametersForPerson = parametersForPerson;
         this.defaultRouteSelector = routeSelector;
+        this.intermodalAE = intermodalAE;
         this.subpopulationAttribute = subpopulationAttribute;
         this.personAttributes = personAttributes;
         this.routingModules = routingModules;
@@ -319,29 +323,14 @@ public class SwissRailRaptor implements TransitRouter {
                                 routeParts = tmp;
                             }
                         }
-                        double travelTime = getTravelTime(routeParts);
-                        double marginalUtilityTraveling = parameters.getMarginalUtilityOfTravelTime_utl_s(mode);
-                        double disutility = travelTime * -marginalUtilityTraveling;
-                        InitialStop iStop = new InitialStop(stop, disutility, travelTime, routeParts);
+                        RaptorIntermodalAccessEgress.RIntermodalAccessEgress accessEgress = this.intermodalAE.calcIntermodalAccessEgress(routeParts, parameters);
+                        InitialStop iStop = new InitialStop(stop, accessEgress.disutility, accessEgress.travelTime, accessEgress.routeParts);
                         initialStops.add(iStop);
                     }
                 }
             }
         }
         return initialStops;
-    }
-
-    private double getTravelTime(List<? extends PlanElement> legs) {
-        double travelTime = 0;
-        for (PlanElement pe : legs) {
-            if (pe instanceof Leg) {
-                double tTime = ((Leg) pe).getTravelTime();
-                if (!Time.isUndefinedTime(tTime)) {
-                    travelTime += tTime;
-                }
-            }
-        }
-        return travelTime;
     }
 
     private List<TransitStopFacility> findNearbyStops(Facility<?> facility, RaptorParameters parameters) {
