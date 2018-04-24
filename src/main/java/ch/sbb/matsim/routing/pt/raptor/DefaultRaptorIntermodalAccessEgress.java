@@ -4,12 +4,10 @@
 
 package ch.sbb.matsim.routing.pt.raptor;
 
-import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.core.utils.misc.Time;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,13 +18,10 @@ import java.util.List;
  */
 public class DefaultRaptorIntermodalAccessEgress implements RaptorIntermodalAccessEgress {
 
-    private static final Logger log = Logger.getLogger(DefaultRaptorIntermodalAccessEgress.class);
-
     @Override
     public RIntermodalAccessEgress calcIntermodalAccessEgress(final List<? extends PlanElement> legs, RaptorParameters params) {
         double disutility = 0.0;
         double tTime = 0.0;
-        final List<? extends PlanElement> routeParts = new ArrayList<>();
         for (PlanElement pe : legs) {
             if (pe instanceof Leg) {
                 String mode = ((Leg) pe).getMode();
