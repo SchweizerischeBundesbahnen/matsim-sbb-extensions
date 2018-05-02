@@ -40,6 +40,7 @@ public class SwissRailRaptorModule extends AbstractModule {
             if (srrConfig.isUseIntermodalAccessEgress()) {
                 bind(MainModeIdentifier.class).to(IntermodalAwareRouterModeIdentifier.class);
             }
+            bind(RaptorIntermodalAccessEgress.class).to(DefaultRaptorIntermodalAccessEgress.class);
         }
 
 
