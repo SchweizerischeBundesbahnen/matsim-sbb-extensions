@@ -97,7 +97,14 @@ public class SwissRailRaptorCore {
             }
         }
 
-        for (InitialStop stop : accessStops) {
+        Map<TransitStopFacility, InitialStop> initialStops = new HashMap<>();
+        for (InitialStop accessStop : accessStops) {
+            InitialStop alternative = initialStops.get(accessStop.stop);
+            if (alternative == null || accessStop.accessCost < alternative.accessCost) {
+                initialStops.put(accessStop.stop, accessStop);
+            }
+        }
+        for (InitialStop stop : initialStops.values()) {
             int[] routeStopIndices = this.data.routeStopsPerStopFacility.get(stop.stop);
             for (int routeStopIndex : routeStopIndices) {
                 double arrivalTime = depTime + stop.accessTime;
