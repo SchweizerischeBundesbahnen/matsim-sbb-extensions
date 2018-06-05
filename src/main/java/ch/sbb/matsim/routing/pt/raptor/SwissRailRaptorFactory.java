@@ -8,10 +8,12 @@ import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.IntermodalAccessEgressParameterSet;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Population;
+import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.groups.PlansConfigGroup;
 import org.matsim.core.router.RoutingModule;
+import org.matsim.pt.router.TransitScheduleChangedEventHandler;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import javax.inject.Inject;
@@ -42,7 +44,7 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
     public SwissRailRaptorFactory(final TransitSchedule schedule, final Config config, final Network network,
                                   RaptorParametersForPerson raptorParametersForPerson, RaptorRouteSelector routeSelector,
                                   RaptorIntermodalAccessEgress intermodalAE, PlansConfigGroup plansConfigGroup, Population population,
-                                  Map<String, Provider<RoutingModule>> routingModules) {
+                                  Map<String, Provider<RoutingModule>> routingModules, final EventsManager events) {
         this.schedule = schedule;
         this.raptorConfig = RaptorUtils.createStaticConfig(config);
         this.network = network;
@@ -60,6 +62,10 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
                 this.routingModuleProviders.put(mode, routingModules.get(mode));
             }
         }
+        
+		events.addHandler((TransitScheduleChangedEventHandler) event -> {
+			data = null;
+		});
     }
 
     @Override
