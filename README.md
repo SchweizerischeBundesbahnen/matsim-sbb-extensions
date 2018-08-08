@@ -26,7 +26,7 @@ To use the extensions along your MATSim code, follow these two steps:
 	</dependency>
   ``` 
 
-## SwissRailRaptor <span id="swissRailRaptor" />
+## SwissRailRaptor <a id="swissRailRaptor" />
 
 The SwissRailRaptor is a fast public transport router. It is based on the RAPTOR algorithm
 (Delling et al, 2012, Round-Based Public Transit Routing), and applies several optimizations,
@@ -315,7 +315,7 @@ If you plan to use this method, make sure to set
 `RaptorStaticConfig.setOptimization(RaptorOptimization.OneToAllRouting)` before
 calling `SwissRailRaptorData.create(...)`.
 
-## Deterministic Public Transport Simulation <span id="detPTSim" />
+## Deterministic Public Transport Simulation <a id="detPTSim" />
 
 The deterministic pt simulation is a QSim engine, handling the movement of public transport vehicles
 in MATSim. The default `TransitQSimEngine` simulates all pt vehicles on the queue-based network. While
