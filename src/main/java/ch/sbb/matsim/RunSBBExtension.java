@@ -4,7 +4,8 @@
 
 package ch.sbb.matsim;
 
-import ch.sbb.matsim.mobsim.qsim.SBBQSimModule;
+import ch.sbb.matsim.mobsim.qsim.SBBTransitModule;
+import ch.sbb.matsim.mobsim.qsim.pt.SBBTransitEngineQSimModule;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorModule;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Scenario;
@@ -12,7 +13,11 @@ import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
+import org.matsim.core.mobsim.qsim.components.QSimComponents;
+import org.matsim.core.mobsim.qsim.components.StandardQSimComponentsConfigurator;
 import org.matsim.core.scenario.ScenarioUtils;
+
+import com.google.inject.Provides;
 
 /**
  * Example script that shows how to use the extensions
@@ -35,10 +40,18 @@ public class RunSBBExtension {
 			@Override
 			public void install() {
 				// To use the deterministic pt simulation:
-				install(new SBBQSimModule());
+				install(new SBBTransitModule());
 
 				// To use the fast pt router:
 				install(new SwissRailRaptorModule());
+			}
+			
+			@Provides
+			QSimComponents provideQSimComponents() {
+				QSimComponents components = new QSimComponents();
+				new StandardQSimComponentsConfigurator(config).configure(components);
+				SBBTransitEngineQSimModule.configure(components);
+				return components;
 			}
 		});
 

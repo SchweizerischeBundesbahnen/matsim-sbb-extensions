@@ -109,9 +109,11 @@ public class SwissRailRaptorIntermodalTest {
         routingModules.put(TransportMode.walk, walkRoutingModule);
         routingModules.put(TransportMode.bike, bikeRoutingModule);
 
-        TripRouter tripRouter = new TripRouter();
-        tripRouter.setRoutingModule(TransportMode.walk, walkRoutingModule);
-        tripRouter.setRoutingModule(TransportMode.bike, bikeRoutingModule);
+        TripRouter.Builder tripRouterBuilder = new TripRouter.Builder(f.config)
+        		.setRoutingModule(TransportMode.walk, walkRoutingModule)
+        		.setRoutingModule(TransportMode.bike, bikeRoutingModule);
+        
+        TripRouter tripRouter = tripRouterBuilder.build();
 
         f.srrConfig.setUseIntermodalAccessEgress(true);
         IntermodalAccessEgressParameterSet walkAccess = new IntermodalAccessEgressParameterSet();
@@ -141,7 +143,8 @@ public class SwissRailRaptorIntermodalTest {
                 new LeastCostRaptorRouteSelector(), new DefaultRaptorIntermodalAccessEgress(), null, null, routingModules);
 
         RoutingModule ptRoutingModule = new SwissRailRaptorRoutingModule(raptor, f.scenario.getTransitSchedule(), f.scenario.getNetwork(), walkRoutingModule);
-        tripRouter.setRoutingModule(TransportMode.pt, ptRoutingModule);
+        tripRouterBuilder.setRoutingModule(TransportMode.pt, ptRoutingModule);
+        tripRouter = tripRouterBuilder.build();
 
         Facility fromFac = new FakeFacility(new Coord(10000, 10500), Id.create("from", Link.class));
         Facility toFac = new FakeFacility(new Coord(50000, 10500), Id.create("to", Link.class));
