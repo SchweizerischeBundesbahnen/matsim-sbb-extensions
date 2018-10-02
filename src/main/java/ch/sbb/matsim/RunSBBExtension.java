@@ -39,13 +39,14 @@ public class RunSBBExtension {
 		controler.addOverridingModule(new AbstractModule() {
 			@Override
 			public void install() {
-				// To use the deterministic pt simulation:
+				// To use the deterministic pt simulation (Part 1 of 2):
 				install(new SBBTransitModule());
 
-				// To use the fast pt router:
+				// To use the fast pt router (Part 1 of 1)
 				install(new SwissRailRaptorModule());
 			}
-			
+
+			// To use the deterministic pt simulation (Part 2 of 2):
 			@Provides
 			QSimComponents provideQSimComponents() {
 				QSimComponents components = new QSimComponents();

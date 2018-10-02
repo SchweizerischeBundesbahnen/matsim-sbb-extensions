@@ -4,6 +4,8 @@
 
 package ch.sbb.matsim.mobsim.qsim.pt;
 
+import ch.sbb.matsim.mobsim.qsim.SBBTransitModule;
+import com.google.inject.Provides;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -13,10 +15,10 @@ import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.mobsim.framework.Mobsim;
 import org.matsim.core.mobsim.qsim.QSim;
+import org.matsim.core.mobsim.qsim.components.QSimComponents;
+import org.matsim.core.mobsim.qsim.components.StandardQSimComponentsConfigurator;
 import org.matsim.core.mobsim.qsim.pt.TransitQSimEngine;
 import org.matsim.testcases.MatsimTestUtils;
-
-import ch.sbb.matsim.mobsim.qsim.SBBTransitModule;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -64,7 +66,6 @@ public class SBBTransitQSimEngineIntegrationTest {
     }
 
     @Test
-    @Ignore // Unfortunately, this check does not work anymore. Something like QSim.getMobsimEngines() or similar would be useful. /sh sep'18
     public void testIntegration_misconfiguration() {
         TestFixture f = new TestFixture();
 
@@ -81,7 +82,16 @@ public class SBBTransitQSimEngineIntegrationTest {
             public void install() {
                 install(new SBBTransitModule());
             }
+
+            @Provides
+            QSimComponents provideQSimComponents() {
+                QSimComponents components = new QSimComponents();
+                new StandardQSimComponentsConfigurator(f.config).configure(components);
+                SBBTransitEngineQSimModule.configure(components);
+                return components;
+            }
         });
+
 
         try {
             controler.run();
