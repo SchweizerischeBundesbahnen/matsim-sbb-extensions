@@ -330,11 +330,11 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new ActivityEngineModule())
         		.addQSimModule(new SBBTransitEngineQSimModule())
         		.addQSimModule(new TestQSimModule(f.config))
-        		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
         			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
         			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
         		})
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.build(f.scenario, eventsManager);
 
         EventsCollector collector = new EventsCollector();
@@ -485,11 +485,11 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new ActivityEngineModule())
         		.addQSimModule(new SBBTransitEngineQSimModule())
         		.addQSimModule(new TestQSimModule(f.config))
-        		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
         			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
         			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
         		})
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.build(f.scenario, eventsManager);
 
         EventsCollector collector = new EventsCollector();
