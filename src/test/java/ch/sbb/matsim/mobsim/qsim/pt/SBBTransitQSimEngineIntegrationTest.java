@@ -8,7 +8,6 @@ import ch.sbb.matsim.mobsim.qsim.SBBTransitModule;
 import com.google.inject.Provides;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.matsim.core.controler.AbstractModule;
@@ -17,7 +16,7 @@ import org.matsim.core.mobsim.framework.Mobsim;
 import org.matsim.core.mobsim.qsim.QSim;
 import org.matsim.core.mobsim.qsim.components.QSimComponents;
 import org.matsim.core.mobsim.qsim.components.StandardQSimComponentsConfigurator;
-import org.matsim.core.mobsim.qsim.pt.TransitQSimEngine;
+import org.matsim.core.mobsim.qsim.pt.TransitEngineModule;
 import org.matsim.testcases.MatsimTestUtils;
 
 import java.util.HashSet;
@@ -33,7 +32,6 @@ public class SBBTransitQSimEngineIntegrationTest {
     private static final Logger log = Logger.getLogger(SBBTransitQSimEngineIntegrationTest.class);
 
     @Test
-    @Ignore // Unfortunately, this check does not work anymore. Something like QSim.getMobsimEngines() or similar would be useful. /sh sep'18
     public void testIntegration() {
         TestFixture f = new TestFixture();
 
@@ -46,6 +44,14 @@ public class SBBTransitQSimEngineIntegrationTest {
             public void install() {
                 install(new SBBTransitModule());
             }
+
+					@Provides
+					QSimComponents provideQSimComponents() {
+						QSimComponents components = new QSimComponents();
+						new StandardQSimComponentsConfigurator(f.config).configure(components);
+						SBBTransitEngineQSimModule.configure(components);
+						return components;
+					}
         });
 
         controler.run();
@@ -55,14 +61,9 @@ public class SBBTransitQSimEngineIntegrationTest {
         Assert.assertEquals(QSim.class, mobsim.getClass());
 
         QSim qsim = (QSim) mobsim;
-        TransitQSimEngine trEngine = qsim.getChildInjector().getInstance(SBBTransitQSimEngine.class);
-        Assert.assertNotNull(trEngine);
-        try {
-            trEngine = qsim.getChildInjector().getInstance(TransitQSimEngine.class);
-            Assert.fail("expected exception, got none. " + trEngine);
-        } catch (RuntimeException expected) {
-            // ignore
-        }
+        QSimComponents components = qsim.getChildInjector().getInstance(QSimComponents.class);
+        Assert.assertTrue(components.activeMobsimEngines.contains(SBBTransitEngineQSimModule.SBB_TRANSIT_ENGINE));
+        Assert.assertFalse(components.activeMobsimEngines.contains(TransitEngineModule.TRANSIT_ENGINE_NAME));
     }
 
     @Test
