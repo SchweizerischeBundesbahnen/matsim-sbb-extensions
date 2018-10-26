@@ -27,6 +27,10 @@ import org.matsim.pt.transitSchedule.api.TransitRouteStop;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.pt.transitSchedule.api.TransitScheduleFactory;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
+import org.matsim.vehicles.Vehicle;
+import org.matsim.vehicles.VehicleType;
+import org.matsim.vehicles.Vehicles;
+import org.matsim.vehicles.VehiclesFactory;
 
 /**
  * THIS IS A COPY OF org.matsim.pt.router.Fixture.
@@ -71,6 +75,7 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 	/*package*/ final Network network;
 	/*package*/ final TransitScheduleFactory builder;
 	/*package*/ final TransitSchedule schedule;
+	/*package*/ final Vehicles transitVehicles;
 	/*package*/ TransitLine redLine = null;
 	/*package*/ TransitLine blueLine = null;
 	/*package*/ TransitLine greenLine = null;
@@ -88,6 +93,7 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 		this.network = this.scenario.getNetwork();
 		this.schedule = this.scenario.getTransitSchedule();
 		this.builder = this.schedule.getFactory();
+		this.transitVehicles = this.scenario.getTransitVehicles();
 	}
 
 	protected void init() {
@@ -439,5 +445,24 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 			route.addDeparture(this.builder.createDeparture(Id.create("g>17", Departure.class), 7.0*3600 + 41.0*60));
 			route.addDeparture(this.builder.createDeparture(Id.create("g>18", Departure.class), 7.0*3600 + 51.0*60));
 		}
+	}
+	
+	protected void addVehicles() {
+        VehiclesFactory vf = transitVehicles.getFactory();
+        VehicleType trainType = vf.createVehicleType(Id.create("train", VehicleType.class));
+        trainType.setCapacity(vf.createVehicleCapacity());
+        trainType.getCapacity().setSeats(200);
+        trainType.getCapacity().setStandingRoom(100);
+        transitVehicles.addVehicleType(trainType);
+        
+        for (TransitLine line: schedule.getTransitLines().values()) {
+        	for (TransitRoute route: line.getRoutes().values()) {
+                for (Departure dep: route.getDepartures().values()) {
+                	Id<Vehicle> vehId = Id.createVehicleId(dep.getId().toString());
+                	transitVehicles.addVehicle(vf.createVehicle(vehId, trainType));
+                	dep.setVehicleId(vehId);
+                }
+        	}
+        }
 	}
 }
