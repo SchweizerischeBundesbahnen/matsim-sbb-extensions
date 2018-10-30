@@ -112,8 +112,7 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new TestQSimModule(f.config))
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
         		})
         		.build(f.scenario, eventsManager);
 
@@ -160,9 +159,8 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new PopulationModule())
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeAgentSources.add(PopulationModule.POPULATION_AGENT_SOURCE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        			configurator.addNamedComponent(PopulationModule.COMPONENT_NAME);
         		})
         		.build(f.scenario, eventsManager);
         		
@@ -213,9 +211,8 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new PopulationModule())
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeAgentSources.add(PopulationModule.POPULATION_AGENT_SOURCE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        			configurator.addNamedComponent(PopulationModule.COMPONENT_NAME);
         		})
         		.build(f.scenario, eventsManager);
 
@@ -279,8 +276,7 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new TestQSimModule(f.config))
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
         		})
         		.build(f.scenario, eventsManager);
 
@@ -331,8 +327,7 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new SBBTransitEngineQSimModule())
         		.addQSimModule(new TestQSimModule(f.config))
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
         		})
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.build(f.scenario, eventsManager);
@@ -383,8 +378,7 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new TestQSimModule(f.config))
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
         		})
         		.build(f.scenario, eventsManager);
 
@@ -431,8 +425,7 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new TestQSimModule(f.config))
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
         		})
         		.build(f.scenario, eventsManager);
 
@@ -486,8 +479,7 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new SBBTransitEngineQSimModule())
         		.addQSimModule(new TestQSimModule(f.config))
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
         		})
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.build(f.scenario, eventsManager);
@@ -542,8 +534,7 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(new TestQSimModule(f.config))
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
         		})
         		.build(f.scenario, eventsManager);
         
@@ -570,8 +561,7 @@ public class SBBTransitQSimEngineTest {
         		.addQSimModule(testModule)
         		.configureComponents(SBBTransitEngineQSimModule::configure)
         		.configureComponents(configurator -> {
-        			configurator.activeActivityHandlers.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
-        			configurator.activeMobsimEngines.add(ActivityEngineModule.ACTIVITY_ENGINE_NAME);
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
         		});
         
         for (int iteration = 0; iteration <= 10; iteration++) {
