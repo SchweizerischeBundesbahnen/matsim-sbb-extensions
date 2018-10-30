@@ -217,10 +217,10 @@ public class SwissRailRaptorModuleTest {
      */
     @Test
     public void testTransitScheduleUpdate() {
-    	Fixture f = new Fixture();
-    	f.init();
-    	f.addVehicles();
-    	
+        Fixture f = new Fixture();
+        f.init();
+        f.addVehicles();
+
         Population pop = f.scenario.getPopulation();
         PopulationFactory pf = pop.getFactory();
         Person p1 = pf.createPerson(Id.create(1, Person.class));
@@ -251,13 +251,13 @@ public class SwissRailRaptorModuleTest {
         PlanCalcScoreConfigGroup.ModeParams egressWalk = new PlanCalcScoreConfigGroup.ModeParams("egress_walk");
         egressWalk.setMarginalUtilityOfTraveling(0.0);
         f.config.planCalcScore().addModeParams(egressWalk);
-        
-		StrategySettings reRoute = new StrategySettings();
-		reRoute.setStrategyName("ReRoute");
-		reRoute.setWeight(1.0);
+
+        StrategySettings reRoute = new StrategySettings();
+        reRoute.setStrategyName("ReRoute");
+        reRoute.setWeight(1.0);
         config.strategy().addStrategySettings(reRoute);
         config.strategy().setMaxAgentPlanMemorySize(1);
-    	
+
         // prepare rest of config
         config.controler().setLastIteration(1);
         config.controler().setOutputDirectory(this.utils.getOutputDirectory());
@@ -314,67 +314,67 @@ public class SwissRailRaptorModuleTest {
 
     private static class ScheduleModifierControlerListener implements StartupListener, IterationStartsListener {
 
-		@Override
-		public void notifyIterationStarts(IterationStartsEvent event) {
-			int iteration = event.getIteration();
-			addLineAndStop(event, iteration);			
-			event.getServices().getEvents().processEvent(new TransitScheduleChangedEvent(0.0));
-		}
+        @Override
+        public void notifyIterationStarts(IterationStartsEvent event) {
+            int iteration = event.getIteration();
+            addLineAndStop(event, iteration);
+            event.getServices().getEvents().processEvent(new TransitScheduleChangedEvent(0.0));
+        }
 
-		@Override
-		public void notifyStartup(StartupEvent event) {
-			removeGreenLineAndStop(event);
-			event.getServices().getEvents().processEvent(new TransitScheduleChangedEvent(0.0));
-		}
-		
-		private void addLineAndStop(ControlerEvent event, int iteration) {
-			TransitSchedule schedule = event.getServices().getScenario().getTransitSchedule();
-			TransitScheduleFactory scheduleFactory = schedule.getFactory();
-			Vehicles transitVehicles = event.getServices().getScenario().getTransitVehicles();
-			VehiclesFactory vf = event.getServices().getScenario().getTransitVehicles().getFactory();
-			
-			// Add a stop near the stop to be removed from the green line and add a line serving that stop
-			TransitStopFacility addedStop = scheduleFactory.createTransitStopFacility(
-					Id.create("AddedStop" + iteration, TransitStopFacility.class), 
-					CoordUtils.createCoord(24000 + iteration * 10, 10000), false);
-			addedStop.setLinkId(Id.create( "3", Link.class));
-			TransitLine addedLine = scheduleFactory.createTransitLine(Id.create(
-					"AddedLine" + iteration, TransitLine.class));
-			
-			// Set some arbitrary NetworkRoute to obtain a valid TransitRoute
-			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(Id.create(
-					"15", Link.class), Id.create( "3", Link.class));
-			List<TransitRouteStop> stops = new ArrayList<>();
-			// Same travel time in vehicle as green line from stop 18 to stop 20
-			stops.add(scheduleFactory.createTransitRouteStop(schedule.getFacilities().get(Id.create(
-					"5", TransitStopFacility.class)), 0.0, 60.0));
-			stops.add(scheduleFactory.createTransitRouteStop(addedStop, 20*60.0, 21*60));
-			TransitRoute addedRoute = scheduleFactory.createTransitRoute(Id.create(
-					"AddedRoute" + iteration, TransitRoute.class), netRoute, stops, TransportMode.pt);
-			
-			// new line departs 5 mins after green line in Fixture -> router would return green line if it was not deleted
-			Departure addedDep = scheduleFactory.createDeparture(Id.create(
-					"AddedDeparture" + iteration, Departure.class), 7*60*60 + 5*60);
-			Id<Vehicle> vehicleId = Id.createVehicleId("AddedVehicle" + iteration);
-        	transitVehicles.addVehicle(vf.createVehicle(vehicleId, transitVehicles.getVehicleTypes().get(Id.create("train", VehicleType.class))));
-			addedDep.setVehicleId(vehicleId);
-			
-			addedRoute.addDeparture(addedDep);
-			addedLine.addRoute(addedRoute);
-			
-			schedule.addStopFacility(addedStop);
-			schedule.addTransitLine(addedLine);
-		}
-		
-		private void removeGreenLineAndStop(ControlerEvent event) {
-			TransitSchedule schedule = event.getServices().getScenario().getTransitSchedule();
-			
-			// Remove a line and a stop only served by that line
-			TransitLine greenLine = schedule.getTransitLines().get(Id.create("green", TransitLine.class));
-			schedule.removeTransitLine(greenLine);
-			schedule.removeStopFacility(schedule.getFacilities().get(Id.create("13", TransitStopFacility.class)));
-		}
-    	
+        @Override
+        public void notifyStartup(StartupEvent event) {
+            removeGreenLineAndStop(event);
+            event.getServices().getEvents().processEvent(new TransitScheduleChangedEvent(0.0));
+        }
+
+        private void addLineAndStop(ControlerEvent event, int iteration) {
+            TransitSchedule schedule = event.getServices().getScenario().getTransitSchedule();
+            TransitScheduleFactory scheduleFactory = schedule.getFactory();
+            Vehicles transitVehicles = event.getServices().getScenario().getTransitVehicles();
+            VehiclesFactory vf = event.getServices().getScenario().getTransitVehicles().getFactory();
+
+            // Add a stop near the stop to be removed from the green line and add a line serving that stop
+            TransitStopFacility addedStop = scheduleFactory.createTransitStopFacility(
+                Id.create("AddedStop" + iteration, TransitStopFacility.class),
+                CoordUtils.createCoord(24000 + iteration * 10, 10000), false);
+            addedStop.setLinkId(Id.create( "3", Link.class));
+            TransitLine addedLine = scheduleFactory.createTransitLine(Id.create(
+                "AddedLine" + iteration, TransitLine.class));
+
+            // Set some arbitrary NetworkRoute to obtain a valid TransitRoute
+            NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(Id.create(
+                "15", Link.class), Id.create( "3", Link.class));
+            List<TransitRouteStop> stops = new ArrayList<>();
+            // Same travel time in vehicle as green line from stop 18 to stop 20
+            stops.add(scheduleFactory.createTransitRouteStop(schedule.getFacilities().get(Id.create(
+                "5", TransitStopFacility.class)), 0.0, 60.0));
+            stops.add(scheduleFactory.createTransitRouteStop(addedStop, 20*60.0, 21*60));
+            TransitRoute addedRoute = scheduleFactory.createTransitRoute(Id.create(
+                "AddedRoute" + iteration, TransitRoute.class), netRoute, stops, TransportMode.pt);
+
+            // new line departs 5 mins after green line in Fixture -> router would return green line if it was not deleted
+            Departure addedDep = scheduleFactory.createDeparture(Id.create(
+                "AddedDeparture" + iteration, Departure.class), 7*60*60 + 5*60);
+            Id<Vehicle> vehicleId = Id.createVehicleId("AddedVehicle" + iteration);
+                transitVehicles.addVehicle(vf.createVehicle(vehicleId, transitVehicles.getVehicleTypes().get(Id.create("train", VehicleType.class))));
+            addedDep.setVehicleId(vehicleId);
+
+            addedRoute.addDeparture(addedDep);
+            addedLine.addRoute(addedRoute);
+
+            schedule.addStopFacility(addedStop);
+            schedule.addTransitLine(addedLine);
+        }
+
+        private void removeGreenLineAndStop(ControlerEvent event) {
+            TransitSchedule schedule = event.getServices().getScenario().getTransitSchedule();
+
+            // Remove a line and a stop only served by that line
+            TransitLine greenLine = schedule.getTransitLines().get(Id.create("green", TransitLine.class));
+            schedule.removeTransitLine(greenLine);
+            schedule.removeStopFacility(schedule.getFacilities().get(Id.create("13", TransitStopFacility.class)));
+        }
+
     }
     
 }

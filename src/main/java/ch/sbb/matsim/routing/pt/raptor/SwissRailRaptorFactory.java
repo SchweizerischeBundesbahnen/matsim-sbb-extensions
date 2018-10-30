@@ -63,9 +63,11 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
             }
         }
         
-		events.addHandler((TransitScheduleChangedEventHandler) event -> {
-			data = null;
-		});
+        if (events != null) {
+            events.addHandler((TransitScheduleChangedEventHandler) event -> {
+                this.data = null;
+            });
+        }
     }
 
     @Override
