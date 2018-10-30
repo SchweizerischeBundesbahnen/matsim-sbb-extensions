@@ -14,8 +14,8 @@ import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.mobsim.framework.Mobsim;
 import org.matsim.core.mobsim.qsim.QSim;
-import org.matsim.core.mobsim.qsim.components.QSimComponents;
-import org.matsim.core.mobsim.qsim.components.StandardQSimComponentsConfigurator;
+import org.matsim.core.mobsim.qsim.components.QSimComponentsConfig;
+import org.matsim.core.mobsim.qsim.components.StandardQSimComponentConfigurator;
 import org.matsim.core.mobsim.qsim.pt.TransitEngineModule;
 import org.matsim.testcases.MatsimTestUtils;
 
@@ -45,13 +45,13 @@ public class SBBTransitQSimEngineIntegrationTest {
                 install(new SBBTransitModule());
             }
 
-					@Provides
-					QSimComponents provideQSimComponents() {
-						QSimComponents components = new QSimComponents();
-						new StandardQSimComponentsConfigurator(f.config).configure(components);
-						SBBTransitEngineQSimModule.configure(components);
-						return components;
-					}
+			@Provides
+			QSimComponentsConfig provideQSimComponentsConfig() {
+				QSimComponentsConfig components = new QSimComponentsConfig();
+				new StandardQSimComponentConfigurator(f.config).configure(components);
+				SBBTransitEngineQSimModule.configure(components);
+				return components;
+			}
         });
 
         controler.run();
@@ -61,9 +61,9 @@ public class SBBTransitQSimEngineIntegrationTest {
         Assert.assertEquals(QSim.class, mobsim.getClass());
 
         QSim qsim = (QSim) mobsim;
-        QSimComponents components = qsim.getChildInjector().getInstance(QSimComponents.class);
-        Assert.assertTrue(components.activeMobsimEngines.contains(SBBTransitEngineQSimModule.SBB_TRANSIT_ENGINE));
-        Assert.assertFalse(components.activeMobsimEngines.contains(TransitEngineModule.TRANSIT_ENGINE_NAME));
+        QSimComponentsConfig components = qsim.getChildInjector().getInstance(QSimComponentsConfig.class);
+        Assert.assertTrue(components.hasNamedComponent(SBBTransitEngineQSimModule.COMPONENT_NAME));
+        Assert.assertFalse(components.hasNamedComponent(TransitEngineModule.TRANSIT_ENGINE_NAME));
     }
 
     @Test
@@ -85,9 +85,9 @@ public class SBBTransitQSimEngineIntegrationTest {
             }
 
             @Provides
-            QSimComponents provideQSimComponents() {
-                QSimComponents components = new QSimComponents();
-                new StandardQSimComponentsConfigurator(f.config).configure(components);
+            QSimComponentsConfig provideQSimComponentsConfig() {
+            	QSimComponentsConfig components = new QSimComponentsConfig();
+                new StandardQSimComponentConfigurator(f.config).configure(components);
                 SBBTransitEngineQSimModule.configure(components);
                 return components;
             }
