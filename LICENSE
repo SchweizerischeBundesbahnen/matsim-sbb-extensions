@@ -1,15 +1,28 @@
-MATSim-SBB-Extensions, provided by SBB (Swiss Federal Railways), is a collection of applications for the agent-based transport simulation framework "MATSim". 
+MATSim-SBB-Extensions, provided by SBB (Swiss Federal Railways), is a collection of
+applications for the agent-based transport simulation framework "MATSim".
+
 Copyright (C) 2018 Schweizerische Bundesbahnen (SBB)
 
-This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License,
+or (at your option) any later version.
 
-This licence does not grant permission to use the TRADE NAMES, TRADEMARKS, SERVICE MARKS, or names of the Licensor (SBB), except as required for reasonable and customary use in describing the origin of the work and reproducing the content of the copyright notice.
+This licence does not grant permission to use the TRADE NAMES, TRADEMARKS,
+SERVICE MARKS, or names of the Licensor (SBB), except as required for
+reasonable and customary use in describing the origin of the work and
+reproducing the content of the copyright notice.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+for more details.
 
-You should have received a copy of the GNU General Public License along with this software code; if not, download it under www.gnu.org/licenses/old-licenses/gpl-2.0.en.html.
+You should have received a copy of the GNU General Public License along
+with this software code; if not, download it under
+www.gnu.org/licenses/old-licenses/gpl-2.0.en.html.
 
-The MATSim team of SBB can be contacted under x003338@sbb.ch 
+The MATSim team of SBB can be contacted under x003338@sbb.ch
 
 
 ***************************************************************************
