@@ -42,9 +42,9 @@ public class SwissRailRaptorFactory implements Provider<SwissRailRaptor> {
     public SwissRailRaptorFactory(final TransitSchedule schedule, final Config config, final Network network,
                                   RaptorParametersForPerson raptorParametersForPerson, RaptorRouteSelector routeSelector,
                                   RaptorIntermodalAccessEgress intermodalAE, PlansConfigGroup plansConfigGroup, Population population,
-                                  Map<String, Provider<RoutingModule>> routingModules) {
+                                  Map<String, Provider<RoutingModule>> routingModules, RaptorStaticConfig raptorConfig) {
         this.schedule = schedule;
-        this.raptorConfig = RaptorUtils.createStaticConfig(config);
+        this.raptorConfig = raptorConfig;
         this.network = network;
         this.raptorParametersForPerson = raptorParametersForPerson;
         this.routeSelector = routeSelector;
