@@ -220,7 +220,6 @@ public class SwissRailRaptorData {
         Map<Integer, RTransfer[]> transfers = new HashMap<>(stopsQT.size() * 5);
         double maxBeelineWalkConnectionDistance = config.getBeelineWalkConnectionDistance();
         double beelineWalkSpeed = config.getBeelineWalkSpeed();
-        double transferUtilPerS = config.getMarginalUtilityOfTravelTimeWalk_utl_s();
         double minimalTransferTime = config.getMinimalTransferTime();
 
         Map<TransitStopFacility, List<TransitStopFacility>> stopToStopsTransfers = new HashMap<>();
@@ -263,8 +262,6 @@ public class SwissRailRaptorData {
 
                 transferTime = mtt.get(fromStop.getId(), toStop.getId(), transferTime);
 
-                double transferUtil = transferTime * transferUtilPerS;
-                double transferCost = -transferUtil;
                 final double fixedTransferTime = transferTime; // variables must be effective final to be used in lambdas (below)
 
                 for (int fromRouteStopIndex : fromRouteStopIndices) {
@@ -273,7 +270,7 @@ public class SwissRailRaptorData {
                         RRouteStop toRouteStop = routeStops[toRouteStopIndex];
                         if (isUsefulTransfer(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance, config.getOptimization())) {
                             transfers.compute(fromRouteStopIndex, (routeStopIndex, currentTransfers) -> {
-                                RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, transferCost, distance);
+                                RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, distance);
                                 if (currentTransfers == null) {
                                     return new RTransfer[] { newTransfer };
                                 }
@@ -515,14 +512,12 @@ public class SwissRailRaptorData {
         final int fromRouteStop;
         final int toRouteStop;
         final double transferTime;
-        final double transferCost;
         final double transferDistance;
 
-        RTransfer(int fromRouteStop, int toRouteStop, double transferTime, double transferCost, double transferDistance) {
+        RTransfer(int fromRouteStop, int toRouteStop, double transferTime, double transferDistance) {
             this.fromRouteStop = fromRouteStop;
             this.toRouteStop = toRouteStop;
             this.transferTime = transferTime;
-            this.transferCost = transferCost;
             this.transferDistance = transferDistance;
         }
     }

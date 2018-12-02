@@ -642,7 +642,7 @@ public class SwissRailRaptorCore {
                 RTransfer transfer = this.data.transfers[transferIndex];
                 int toRouteStopIndex = transfer.toRouteStop;
                 double newArrivalTime = arrivalTime + transfer.transferTime;
-                double newArrivalTravelCost = arrivalTravelCost + transfer.transferCost + transferPenaltyFixed;
+                double newArrivalTravelCost = arrivalTravelCost + transferPenaltyFixed - transfer.transferTime * raptorParams.getMarginalUtilityOfTravelTime_utl_s(TransportMode.transit_walk);
                 double newArrivalTransferCost = Double.isFinite(fromPE.firstDepartureTime) ? ((newArrivalTime - fromPE.firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (fromPE.transferCount + 1) : 0;
                 double newTotalArrivalCost = newArrivalTravelCost + newArrivalTransferCost;
                 double prevLeastArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];

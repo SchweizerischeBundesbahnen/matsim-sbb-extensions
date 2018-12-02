@@ -21,6 +21,7 @@ import org.matsim.pt.router.TransitRouterConfig;
 import org.matsim.pt.routes.ExperimentalTransitRoute;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +34,6 @@ public final class RaptorUtils {
     }
 
     public static RaptorStaticConfig createStaticConfig(Config config) {
-        PlanCalcScoreConfigGroup pcsConfig = config.planCalcScore();
         PlansCalcRouteConfigGroup pcrConfig = config.plansCalcRoute();
         SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(config, SwissRailRaptorConfigGroup.class);
 
@@ -43,11 +43,6 @@ public final class RaptorUtils {
 
         PlansCalcRouteConfigGroup.ModeRoutingParams walk = pcrConfig.getModeRoutingParams().get(TransportMode.walk);
         staticConfig.setBeelineWalkSpeed(walk.getTeleportedModeSpeed() / walk.getBeelineDistanceFactor());
-
-        double marginalUtilityOfTravelTimeWalk_utl_s = pcsConfig.getModes().get(TransportMode.walk).getMarginalUtilityOfTraveling() /3600.0 - pcsConfig.getPerforming_utils_hr()/3600. ;
-        staticConfig.setMarginalUtilityOfTravelTimeWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
-        staticConfig.setMarginalUtilityOfTravelTimeAccessWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
-        staticConfig.setMarginalUtilityOfTravelTimeEgressWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
 
         staticConfig.setMinimalTransferTime(config.transitRouter().getAdditionalTransferTime());
 
@@ -81,6 +76,16 @@ public final class RaptorUtils {
             double marginalUtility_utl_s = modeParams.getMarginalUtilityOfTraveling()/3600.0 - marginalUtilityPerforming;
             raptorParams.setMarginalUtilityOfTravelTime_utl_s(mode, marginalUtility_utl_s);
         }
+        
+		for (String fallbackMode : Arrays.asList(TransportMode.access_walk, TransportMode.egress_walk,
+				TransportMode.transit_walk)) {
+			if (!pcsConfig.getModes().containsKey(fallbackMode)) {
+				PlanCalcScoreConfigGroup.ModeParams modeParams = pcsConfig.getModes().get(TransportMode.walk);
+				double marginalUtility_utl_s = modeParams.getMarginalUtilityOfTraveling() / 3600.0
+						- marginalUtilityPerforming;
+				raptorParams.setMarginalUtilityOfTravelTime_utl_s(fallbackMode, marginalUtility_utl_s);
+			}
+		}
 
         raptorParams.setTransferPenaltyFixCostPerTransfer(-trConfig.getUtilityOfLineSwitch_utl());
         raptorParams.setTransferPenaltyTravelTimeToCostFactor(advancedConfig.getTransferPenaltyTravelTimeToCostFactor());
