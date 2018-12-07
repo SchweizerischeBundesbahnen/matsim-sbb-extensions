@@ -456,29 +456,43 @@ public class SwissRailRaptorCore {
             TransitStopFacility stop = e.getKey();
             int index = e.getValue();
             PathElement destination = this.arrivalPathPerStop[index];
-            PathElement path = destination;
-            PathElement prevLast = null;
-            if (path != null) {
-                while (path.comingFrom != null) {
-                    prevLast = path;
-                    path = path.comingFrom;
-                }
-                double arrivalTime = destination.arrivalTime;
-                double departureTime = path.arrivalTime;
-                double totalCost = destination.arrivalTravelCost + destination.arrivalTransferCost;
-                int transferCount = destination.transferCount;
-                if (destination.isTransfer && transferCount > 0) {
-                    transferCount--; // do not count this as transfer, as the router would merge it with the egress walk
-                }
-                if (prevLast != null && prevLast.isTransfer && transferCount > 0) {
-                    transferCount--; // the first "leg" is a transfer, do not count it as such as the router would merge it with the access walk
-                }
-                Id<TransitStopFacility> departureStopId = path.toRouteStop.routeStop.getStopFacility().getId();
-                TravelInfo ti = new TravelInfo(arrivalTime, departureTime, totalCost, transferCount, departureStopId);
+            if (destination != null) {
+                TravelInfo ti = getTravelInfo(destination, parameters);
                 result.put(stop.getId(), ti);
             }
         }
         return result;
+    }
+
+    private TravelInfo getTravelInfo(PathElement destination, RaptorParameters parameters) {
+        PathElement firstStage = destination;
+        PathElement secondStage = null;
+        while (firstStage.comingFrom != null) {
+            secondStage = firstStage;
+            firstStage = firstStage.comingFrom;
+        }
+        double arrivalTimeAtLastStop = destination.arrivalTime;
+        double departureTimeAtFirstStop = destination.firstDepartureTime;
+        if (Double.isNaN(departureTimeAtFirstStop)) {
+            // a trip with no actual pt-leg, likely the start-location
+            departureTimeAtFirstStop = arrivalTimeAtLastStop;
+        }
+        double accessTime = firstStage.initialStop.accessTime;
+        double accessCost = firstStage.initialStop.accessCost;
+
+        double waitingTime = departureTimeAtFirstStop - firstStage.arrivalTime;
+        double waitingCost = waitingTime * -parameters.getMarginalUtilityOfWaitingPt_utl_s();
+
+        double travelCost = destination.arrivalTravelCost - firstStage.arrivalTravelCost - waitingCost;
+        int transferCount = destination.transferCount;
+        if (destination.isTransfer && transferCount > 0) {
+            transferCount--; // do not count this as transfer, as the router would merge it with the egress walk
+        }
+        if (secondStage != null && secondStage.isTransfer && transferCount > 0) {
+            transferCount--; // the first "leg" is a transfer, do not count it as such as the router would merge it with the access walk
+        }
+        Id<TransitStopFacility> departureStopId = firstStage.toRouteStop.routeStop.getStopFacility().getId();
+        return new TravelInfo(departureStopId, departureTimeAtFirstStop, arrivalTimeAtLastStop, travelCost, accessTime, accessCost, transferCount, waitingTime, waitingCost);
     }
 
     private void exploreRoutes(RaptorParameters parameters) {
@@ -794,20 +808,38 @@ public class SwissRailRaptorCore {
     }
 
     public static class TravelInfo {
-        public final double arrivalTime;
-        public final double departureTime;
-        public final double travelTime;
-        public final double totalCost;
-        public final int transferCount;
         public final Id<TransitStopFacility> departureStop;
+        public final int transferCount;
 
-        public TravelInfo(double arrivalTime, double departureTime, double totalCost, int transferCount, Id<TransitStopFacility> departureStop) {
-            this.arrivalTime = arrivalTime;
-            this.departureTime = departureTime;
-            this.travelTime = arrivalTime - departureTime;
-            this.totalCost = totalCost;
-            this.transferCount = transferCount;
+        /** The departure time at the first stop */
+        public final double ptDepartureTime;
+        /** The arrival time at the last stop */
+        public final double ptArrivalTime;
+        /** The travel time between the first stop (departure) and the last stop (arrival). */
+        public final double ptTravelTime;
+        /** The cost for travelling from the first stop to the last stop. Not included are accessCost or cost for waiting at the first stop. */
+        public final double travelCost;
+
+        /** The time required to travel from the origin to the first stop. Not included in {@link #ptTravelTime}. */
+        public final double accessTime;
+        public final double accessCost;
+
+        /** the time an agent has to wait at the first stop until the first pt vehicle departs. */
+        public final double waitingTime;
+        /** the costs an agent accumulates due to waiting at the first stop until the first pt vehicle departs. */
+        public final double waitingCost;
+
+        TravelInfo(Id<TransitStopFacility> departureStop, double departureTime, double arrivalTime, double travelCost, double accessTime, double accessCost, int transferCount, double waitingTime, double waitingCost) {
             this.departureStop = departureStop;
+            this.ptDepartureTime = departureTime;
+            this.ptArrivalTime = arrivalTime;
+            this.ptTravelTime = arrivalTime - departureTime;
+            this.travelCost = travelCost;
+            this.accessTime = accessTime;
+            this.accessCost = accessCost;
+            this.transferCount = transferCount;
+            this.waitingTime = waitingTime;
+            this.waitingCost = waitingCost;
         }
     }
 }
