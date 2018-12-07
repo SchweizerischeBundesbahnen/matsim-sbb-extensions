@@ -31,11 +31,12 @@ import org.matsim.core.api.experimental.events.VehicleArrivesAtFacilityEvent;
 import org.matsim.core.api.experimental.events.VehicleDepartsAtFacilityEvent;
 import org.matsim.core.events.EventsUtils;
 import org.matsim.core.mobsim.framework.MobsimAgent;
-import org.matsim.core.mobsim.qsim.AbstractQSimPlugin;
-import org.matsim.core.mobsim.qsim.ActivityEnginePlugin;
-import org.matsim.core.mobsim.qsim.PopulationPlugin;
+import org.matsim.core.mobsim.qsim.ActivityEngine;
+import org.matsim.core.mobsim.qsim.ActivityEngineModule;
+import org.matsim.core.mobsim.qsim.PopulationModule;
 import org.matsim.core.mobsim.qsim.QSim;
-import org.matsim.core.mobsim.qsim.QSimUtils;
+import org.matsim.core.mobsim.qsim.QSimBuilder;
+import org.matsim.core.mobsim.qsim.pt.TransitEngineModule;
 import org.matsim.core.utils.collections.CollectionUtils;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
@@ -55,7 +56,7 @@ public class SBBTransitQSimEngineTest {
         TestFixture f = new TestFixture();
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        QSim qSim = QSimUtils.createDefaultQSim(f.scenario, eventsManager);
+        QSim qSim = new QSimBuilder(f.config).useDefaults().build(f.scenario, eventsManager);
         SBBTransitQSimEngine trEngine = new SBBTransitQSimEngine(qSim, null);
         qSim.addMobsimEngine(trEngine);
 
@@ -99,22 +100,21 @@ public class SBBTransitQSimEngineTest {
         Assert.assertEquals("last stop time should have been 0.0", 0.0, stopTime, 1e-7);
         driver.depart(f, routeDepTime + depOffset);
     }
-
+    
     @Test
     public void testEvents_withoutPassengers_withoutLinks() {
         TestFixture f = new TestFixture();
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
-        plugins.add(new TestQSimModule(f.config));
-
-        // to compare to original TransitQSimEngine, use the following two instead of the SBBTransitEnginePlugin
-//        plugins.add(new TransitEnginePlugin(f.config));
-//        plugins.add(new QNetsimEnginePlugin(f.config));
-
-        QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
+        QSim qSim = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(new TestQSimModule(f.config))
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        		})
+        		.build(f.scenario, eventsManager);
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -152,18 +152,18 @@ public class SBBTransitQSimEngineTest {
         f.addSingleTransitDemand();
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new PopulationPlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
-        plugins.add(new TestQSimModule(f.config));
-
-        // to compare to original TransitQSimEngine, use the following two instead of the SBBTransitEnginePlugin
-//        plugins.add(new TransitEnginePlugin(f.config));
-//        plugins.add(new QNetsimEnginePlugin(f.config));
-
-        QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
-
+        QSim qSim = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(new TestQSimModule(f.config))
+        		.addQSimModule(new PopulationModule())
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        			configurator.addNamedComponent(PopulationModule.COMPONENT_NAME);
+        		})
+        		.build(f.scenario, eventsManager);
+        		
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
         qSim.run();
@@ -204,17 +204,17 @@ public class SBBTransitQSimEngineTest {
         f.addTripleTransitDemand();
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new PopulationPlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
-        plugins.add(new TestQSimModule(f.config));
-
-        // to compare to original TransitQSimEngine, use the following two instead of the SBBTransitEnginePlugin
-//        plugins.add(new TransitEnginePlugin(f.config));
-//        plugins.add(new QNetsimEnginePlugin(f.config));
-
-        QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
+        QSim qSim = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(new TestQSimModule(f.config))
+        		.addQSimModule(new PopulationModule())
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        			configurator.addNamedComponent(PopulationModule.COMPONENT_NAME);
+        		})
+        		.build(f.scenario, eventsManager);
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -270,16 +270,15 @@ public class SBBTransitQSimEngineTest {
         f.sbbConfig.setCreateLinkEventsInterval(1);
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
-        plugins.add(new TestQSimModule(f.config));
-
-        // to compare to original TransitQSimEngine, use the following two instead of the SBBTransitEnginePlugin
-//        plugins.add(new TransitEnginePlugin(f.config));
-//        plugins.add(new QNetsimEnginePlugin(f.config));
-
-        QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
+        QSim qSim = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(new TestQSimModule(f.config))
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        		})
+        		.build(f.scenario, eventsManager);
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -323,16 +322,15 @@ public class SBBTransitQSimEngineTest {
         f.sbbConfig.setCreateLinkEventsInterval(1);
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
-        plugins.add(new TestQSimModule(f.config));
-
-        // to compare to original TransitQSimEngine, use the following two instead of the SBBTransitEnginePlugin
-//        plugins.add(new TransitEnginePlugin(f.config));
-//        plugins.add(new QNetsimEnginePlugin(f.config));
-
-        QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
+        QSim qSim = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(new TestQSimModule(f.config))
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        		})
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.build(f.scenario, eventsManager);
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -374,16 +372,15 @@ public class SBBTransitQSimEngineTest {
         f.sbbConfig.setCreateLinkEventsInterval(1);
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
-        plugins.add(new TestQSimModule(f.config));
-
-        // to compare to original TransitQSimEngine, use the following two instead of the SBBTransitEnginePlugin
-//        plugins.add(new TransitEnginePlugin(f.config));
-//        plugins.add(new QNetsimEnginePlugin(f.config));
-
-        QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
+        QSim qSim = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(new TestQSimModule(f.config))
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        		})
+        		.build(f.scenario, eventsManager);
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -422,16 +419,15 @@ public class SBBTransitQSimEngineTest {
         f.sbbConfig.setCreateLinkEventsInterval(1);
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
-        plugins.add(new TestQSimModule(f.config));
-
-        // to compare to original TransitQSimEngine, use the following two instead of the SBBTransitEnginePlugin
-//        plugins.add(new TransitEnginePlugin(f.config));
-//        plugins.add(new QNetsimEnginePlugin(f.config));
-
-        QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
+        QSim qSim = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(new TestQSimModule(f.config))
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        		})
+        		.build(f.scenario, eventsManager);
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -478,16 +474,15 @@ public class SBBTransitQSimEngineTest {
         f.sbbConfig.setCreateLinkEventsInterval(1);
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
-        plugins.add(new TestQSimModule(f.config));
-
-        // to compare to original TransitQSimEngine, use the following two instead of the SBBTransitEnginePlugin
-//        plugins.add(new TransitEnginePlugin(f.config));
-//        plugins.add(new QNetsimEnginePlugin(f.config));
-
-        QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
+        QSim qSim = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(new TestQSimModule(f.config))
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        		})
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.build(f.scenario, eventsManager);
 
         EventsCollector collector = new EventsCollector();
         eventsManager.addHandler(collector);
@@ -533,11 +528,16 @@ public class SBBTransitQSimEngineTest {
         f.sbbConfig.setDeterministicServiceModes(CollectionUtils.stringToSet("train,tram,ship"));
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
-        plugins.add(new TestQSimModule(f.config));
-        QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
+        QSim qSim = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(new TestQSimModule(f.config))
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        		})
+        		.build(f.scenario, eventsManager);
+        
         try {
             qSim.run();
             Assert.fail("Expected a RuntimeException due misconfiguration, but got none.");
@@ -553,15 +553,20 @@ public class SBBTransitQSimEngineTest {
         f.sbbConfig.setCreateLinkEventsInterval(3);
 
         EventsManager eventsManager = EventsUtils.createEventsManager(f.config);
-        List<AbstractQSimPlugin> plugins = new ArrayList<>();
-        plugins.add(new ActivityEnginePlugin(f.config));
-        plugins.add(new SBBTransitEnginePlugin(f.config));
         TestQSimModule testModule = new TestQSimModule(f.config);
-        plugins.add(testModule);
-
+        
+        QSimBuilder builder = new QSimBuilder(f.config) //
+        		.addQSimModule(new ActivityEngineModule())
+        		.addQSimModule(new SBBTransitEngineQSimModule())
+        		.addQSimModule(testModule)
+        		.configureComponents(SBBTransitEngineQSimModule::configure)
+        		.configureComponents(configurator -> {
+        			configurator.addNamedComponent(ActivityEngineModule.COMPONENT_NAME);
+        		});
+        
         for (int iteration = 0; iteration <= 10; iteration++) {
             testModule.context.setIteration(iteration);
-            QSim qSim = QSimUtils.createQSim(f.scenario, eventsManager, plugins);
+            QSim qSim = builder.build(f.scenario, eventsManager);
 
             EventsCollector collector = new EventsCollector();
             eventsManager.addHandler(collector);

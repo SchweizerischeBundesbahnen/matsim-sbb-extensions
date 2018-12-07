@@ -59,7 +59,7 @@ public class SBBQSimModuleTest {
         controler.addOverridingModule(new AbstractModule() {
             @Override
             public void install() {
-            install(new SBBQSimModule());
+            install(new SBBTransitModule());
             }
         });
         controler.run();

@@ -6,7 +6,7 @@ package ch.sbb.matsim.mobsim.qsim.pt;
 
 import com.google.inject.Module;
 import org.matsim.core.config.Config;
-import org.matsim.core.mobsim.qsim.AbstractQSimPlugin;
+import org.matsim.core.mobsim.qsim.AbstractQSimModule;
 import org.matsim.core.replanning.ReplanningContext;
 
 import java.util.Collection;
@@ -22,24 +22,17 @@ import java.util.Collections;
  *
  * @author mrieser / SBB
  */
-public class TestQSimModule extends AbstractQSimPlugin {
-
-    public final DummyReplanningContext context;
-
+public class TestQSimModule extends AbstractQSimModule {
+	public final DummyReplanningContext context;
+	
     public TestQSimModule(Config config) {
-        super(config);
         this.context = new DummyReplanningContext();
     }
-
-    @Override
-    public Collection<? extends Module> modules() {
-        return Collections.singletonList(new com.google.inject.AbstractModule() {
-            @Override
-            protected void configure() {
-                bind(ReplanningContext.class).toInstance(context);
-            }
-        });
-    }
+	
+	@Override
+	protected void configureQSim() {
+		bind(ReplanningContext.class).toInstance(context);
+	}
 
     public static final class DummyReplanningContext implements ReplanningContext {
 

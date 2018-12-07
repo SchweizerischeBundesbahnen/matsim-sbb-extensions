@@ -247,6 +247,7 @@ public class SwissRailRaptorData {
 
         // now calculate the transfers between the route stops
         MinimalTransferTimes mtt = schedule.getMinimalTransferTimes();
+        ArrayList<RTransfer> stopTransfers = new ArrayList<>();
         for (Map.Entry<TransitStopFacility, List<TransitStopFacility>> e : stopToStopsTransfers.entrySet()) {
             TransitStopFacility fromStop = e.getKey();
             Coord fromCoord = fromStop.getCoord();
@@ -266,21 +267,24 @@ public class SwissRailRaptorData {
 
                 for (int fromRouteStopIndex : fromRouteStopIndices) {
                     RRouteStop fromRouteStop = routeStops[fromRouteStopIndex];
+                    stopTransfers.clear();
                     for (int toRouteStopIndex : toRouteStopIndices) {
                         RRouteStop toRouteStop = routeStops[toRouteStopIndex];
                         if (isUsefulTransfer(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance, config.getOptimization())) {
-                            transfers.compute(fromRouteStopIndex, (routeStopIndex, currentTransfers) -> {
-                                RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, distance);
-                                if (currentTransfers == null) {
-                                    return new RTransfer[] { newTransfer };
-                                }
-                                RTransfer[] tmp = new RTransfer[currentTransfers.length + 1];
-                                System.arraycopy(currentTransfers, 0, tmp, 0, currentTransfers.length);
-                                tmp[currentTransfers.length] = newTransfer;
-                                return tmp;
-                            });
+                            RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, distance);
+                            stopTransfers.add(newTransfer);
                         }
                     }
+                    RTransfer[] newTransfers = stopTransfers.toArray(new RTransfer[0]);
+                    transfers.compute(fromRouteStopIndex, (routeStopIndex, currentTransfers) -> {
+                        if (currentTransfers == null) {
+                            return newTransfers;
+                        }
+                        RTransfer[] tmp = new RTransfer[currentTransfers.length + newTransfers.length];
+                        System.arraycopy(currentTransfers, 0, tmp, 0, currentTransfers.length);
+                        System.arraycopy(newTransfers, 0, tmp, currentTransfers.length, newTransfers.length);
+                        return tmp;
+                    });
                 }
             }
         }

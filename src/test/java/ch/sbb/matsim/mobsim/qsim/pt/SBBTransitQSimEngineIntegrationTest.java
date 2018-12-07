@@ -4,6 +4,8 @@
 
 package ch.sbb.matsim.mobsim.qsim.pt;
 
+import ch.sbb.matsim.mobsim.qsim.SBBTransitModule;
+import com.google.inject.Provides;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -12,10 +14,10 @@ import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.mobsim.framework.Mobsim;
 import org.matsim.core.mobsim.qsim.QSim;
-import org.matsim.core.mobsim.qsim.pt.TransitQSimEngine;
+import org.matsim.core.mobsim.qsim.components.QSimComponentsConfig;
+import org.matsim.core.mobsim.qsim.components.StandardQSimComponentConfigurator;
+import org.matsim.core.mobsim.qsim.pt.TransitEngineModule;
 import org.matsim.testcases.MatsimTestUtils;
-
-import ch.sbb.matsim.mobsim.qsim.SBBQSimModule;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -40,8 +42,16 @@ public class SBBTransitQSimEngineIntegrationTest {
         controler.addOverridingModule(new AbstractModule() {
             @Override
             public void install() {
-                install(new SBBQSimModule());
+                install(new SBBTransitModule());
             }
+
+			@Provides
+			QSimComponentsConfig provideQSimComponentsConfig() {
+				QSimComponentsConfig components = new QSimComponentsConfig();
+				new StandardQSimComponentConfigurator(f.config).configure(components);
+				SBBTransitEngineQSimModule.configure(components);
+				return components;
+			}
         });
 
         controler.run();
@@ -51,14 +61,9 @@ public class SBBTransitQSimEngineIntegrationTest {
         Assert.assertEquals(QSim.class, mobsim.getClass());
 
         QSim qsim = (QSim) mobsim;
-        TransitQSimEngine trEngine = qsim.getChildInjector().getInstance(SBBTransitQSimEngine.class);
-        Assert.assertNotNull(trEngine);
-        try {
-            trEngine = qsim.getChildInjector().getInstance(TransitQSimEngine.class);
-            Assert.fail("expected exception, got none. " + trEngine);
-        } catch (RuntimeException expected) {
-            // ignore
-        }
+        QSimComponentsConfig components = qsim.getChildInjector().getInstance(QSimComponentsConfig.class);
+        Assert.assertTrue(components.hasNamedComponent(SBBTransitEngineQSimModule.COMPONENT_NAME));
+        Assert.assertFalse(components.hasNamedComponent(TransitEngineModule.TRANSIT_ENGINE_NAME));
     }
 
     @Test
@@ -76,9 +81,18 @@ public class SBBTransitQSimEngineIntegrationTest {
         controler.addOverridingModule(new AbstractModule() {
             @Override
             public void install() {
-                install(new SBBQSimModule());
+                install(new SBBTransitModule());
+            }
+
+            @Provides
+            QSimComponentsConfig provideQSimComponentsConfig() {
+            	QSimComponentsConfig components = new QSimComponentsConfig();
+                new StandardQSimComponentConfigurator(f.config).configure(components);
+                SBBTransitEngineQSimModule.configure(components);
+                return components;
             }
         });
+
 
         try {
             controler.run();
