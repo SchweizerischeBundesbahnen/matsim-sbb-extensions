@@ -639,6 +639,7 @@ public class SwissRailRaptorCore {
 
         double transferPenaltyFixed = raptorParams.getTransferPenaltyFixCostPerTransfer();
         double transferPenaltyTravelTimeToCostFactor = raptorParams.getTransferPenaltyTravelTimeToCostFactor();
+        double margUtilityTransitWalk = raptorParams.getMarginalUtilityOfTravelTime_utl_s(TransportMode.transit_walk);
 
         for (int stopIndex = this.improvedStops.nextSetBit(0); stopIndex >= 0; stopIndex = this.improvedStops.nextSetBit(stopIndex + 1)) {
             PathElement fromPE = this.arrivalPathPerStop[stopIndex];
@@ -656,7 +657,7 @@ public class SwissRailRaptorCore {
                 RTransfer transfer = this.data.transfers[transferIndex];
                 int toRouteStopIndex = transfer.toRouteStop;
                 double newArrivalTime = arrivalTime + transfer.transferTime;
-                double newArrivalTravelCost = arrivalTravelCost + transferPenaltyFixed - transfer.transferTime * raptorParams.getMarginalUtilityOfTravelTime_utl_s(TransportMode.transit_walk);
+                double newArrivalTravelCost = arrivalTravelCost + transferPenaltyFixed - transfer.transferTime * margUtilityTransitWalk;
                 double newArrivalTransferCost = Double.isFinite(fromPE.firstDepartureTime) ? ((newArrivalTime - fromPE.firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (fromPE.transferCount + 1) : 0;
                 double newTotalArrivalCost = newArrivalTravelCost + newArrivalTransferCost;
                 double prevLeastArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];
