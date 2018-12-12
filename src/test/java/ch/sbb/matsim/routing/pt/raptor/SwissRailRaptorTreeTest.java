@@ -8,6 +8,7 @@ import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorCore.TravelInfo;
 import org.junit.Assert;
 import org.junit.Test;
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.TransportMode;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 
@@ -334,6 +335,62 @@ public class SwissRailRaptorTreeTest {
 
         Assert.assertEquals("waiting time should differ by 1 minute", info0740.waitingTime, info0739.waitingTime - 60, 0.0);
         Assert.assertTrue("waiting cost should differ", info0740.waitingCost < info0739.waitingCost);
+    }
+
+    @Test
+    public void testSingleStop_raptorroute_dep0740atN_optimized() {
+        Fixture f = new Fixture();
+        f.init();
+
+        RaptorStaticConfig config = RaptorUtils.createStaticConfig(f.config);
+        config.setOptimization(RaptorStaticConfig.RaptorOptimization.OneToAllRouting);
+        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), config, f.scenario.getNetwork());
+        SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()),
+                new LeastCostRaptorRouteSelector(), new DefaultRaptorIntermodalAccessEgress(), null, null, null);
+
+        RaptorParameters raptorParams = RaptorUtils.createParameters(f.config);
+
+        // start with a stop on the green line
+        TransitStopFacility fromStop = f.schedule.getFacilities().get(Id.create(23, TransitStopFacility.class));
+        double depTime = 7*3600 + 40*60;
+        Map<Id<TransitStopFacility>, TravelInfo> map = raptor.calcTree(fromStop, depTime, raptorParams);
+
+        Id<TransitStopFacility> stop2id = Id.create(2, TransitStopFacility.class);
+        assertTravelInfo(map, 2 , "23", 1, "07:41:00", "08:09:06"); // transfer at C, 7:50/8:02 blue, walk at B
+        TravelInfo info = map.get(stop2id);
+
+        RaptorRoute route = info.getRaptorRoute();
+        Assert.assertNotNull(route);
+        List<RaptorRoute.RoutePart> parts = new ArrayList<>();
+        for (RaptorRoute.RoutePart part : route.getParts()) {
+            parts.add(part);
+        }
+
+        Assert.assertEquals(5, parts.size());
+        RaptorRoute.RoutePart stage1 = parts.get(0);
+        RaptorRoute.RoutePart stage2 = parts.get(1);
+        RaptorRoute.RoutePart stage3 = parts.get(2);
+        RaptorRoute.RoutePart stage4 = parts.get(3);
+        RaptorRoute.RoutePart stage5 = parts.get(4);
+
+
+        Assert.assertNull(stage1.line); // access walk
+        Assert.assertEquals(0, stage1.distance, 0.0);
+        Assert.assertEquals(0, stage1.arrivalTime - stage1.depTime, 0.0);
+
+        Assert.assertEquals("green", stage2.line.getId().toString());
+        Assert.assertEquals(TransportMode.pt, stage2.mode);
+        Assert.assertEquals(540, stage2.arrivalTime - stage2.boardingTime, 1e-7);
+        Assert.assertEquals(10000, stage2.distance, 1e-7);
+
+        Assert.assertNull(stage3.line); // transfer
+
+        Assert.assertEquals("blue", stage4.line.getId().toString());
+        Assert.assertEquals(TransportMode.pt, stage4.mode);
+        Assert.assertEquals(660, stage4.arrivalTime - stage4.boardingTime, 1e-7);
+        Assert.assertEquals(5000, stage4.distance, 1e-7);
+
+        Assert.assertNull(stage5.line); // egress_walk
     }
 
     private void assertTravelInfo(Map<Id<TransitStopFacility>, TravelInfo> map, int stopId, String expectedDepartureStop, int expectedTransfers, String expectedDepartureTime, String expectedArrivalTime) {
