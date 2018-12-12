@@ -101,9 +101,9 @@ public final class RaptorUtils {
                 // a pt leg
                 Leg ptLeg = PopulationUtils.createLeg(part.mode);
                 ptLeg.setDepartureTime(part.depTime);
-                ptLeg.setTravelTime(part.travelTime);
+                ptLeg.setTravelTime(part.arrivalTime - part.depTime);
                 ExperimentalTransitRoute ptRoute = new ExperimentalTransitRoute(part.fromStop, part.line, part.route, part.toStop);
-                ptRoute.setTravelTime(part.travelTime);
+                ptRoute.setTravelTime(part.arrivalTime - part.depTime);
                 ptRoute.setDistance(part.distance);
                 ptLeg.setRoute(ptRoute);
                 legs.add(ptLeg);
@@ -111,11 +111,11 @@ public final class RaptorUtils {
                 // a non-pt leg
                 Leg walkLeg = PopulationUtils.createLeg(part.mode);
                 walkLeg.setDepartureTime(part.depTime);
-                walkLeg.setTravelTime(part.travelTime);
+                walkLeg.setTravelTime(part.arrivalTime - part.depTime);
                 Id<Link> startLinkId = part.fromStop == null ? (route.fromFacility == null ? null : route.fromFacility.getLinkId()) : part.fromStop.getLinkId();
                 Id<Link> endLinkId =  part.toStop == null ? (route.toFacility == null ? null : route.toFacility.getLinkId()) : part.toStop.getLinkId();
                 Route walkRoute = RouteUtils.createGenericRouteImpl(startLinkId, endLinkId);
-                walkRoute.setTravelTime(part.travelTime);
+                walkRoute.setTravelTime(part.arrivalTime - part.depTime);
                 walkRoute.setDistance(part.distance);
                 walkLeg.setRoute(walkRoute);
                 legs.add(walkLeg);
