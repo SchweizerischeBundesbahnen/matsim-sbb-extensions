@@ -4,13 +4,11 @@
 
 package ch.sbb.matsim.mobsim.qsim.pt;
 
-import com.google.inject.Module;
 import org.matsim.core.config.Config;
 import org.matsim.core.mobsim.qsim.AbstractQSimModule;
+import org.matsim.core.mobsim.qsim.pt.ComplexTransitStopHandlerFactory;
+import org.matsim.core.mobsim.qsim.pt.TransitStopHandlerFactory;
 import org.matsim.core.replanning.ReplanningContext;
-
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * The deterministic transit simulation ({@link SBBTransitQSimEngine}) requires access
@@ -23,16 +21,17 @@ import java.util.Collections;
  * @author mrieser / SBB
  */
 public class TestQSimModule extends AbstractQSimModule {
-	public final DummyReplanningContext context;
-	
+    public final DummyReplanningContext context;
+
     public TestQSimModule(Config config) {
         this.context = new DummyReplanningContext();
     }
-	
-	@Override
-	protected void configureQSim() {
-		bind(ReplanningContext.class).toInstance(context);
-	}
+
+    @Override
+    protected void configureQSim() {
+        bind(ReplanningContext.class).toInstance(context);
+        bind(TransitStopHandlerFactory.class).to(ComplexTransitStopHandlerFactory.class);
+    }
 
     public static final class DummyReplanningContext implements ReplanningContext {
 
