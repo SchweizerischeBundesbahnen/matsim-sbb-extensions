@@ -28,6 +28,7 @@ public class SwissRailRaptorModule extends AbstractModule {
             }
             addRoutingModuleBinding(TransportMode.transit_walk).to(Key.get(RoutingModule.class, Names.named(TransportMode.walk)));
             bind(RaptorParametersForPerson.class).to(DefaultRaptorParametersForPerson.class);
+            bind(RaptorStopFinder.class).to(DefaultRaptorStopFinder.class);
 
             SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(getConfig(), SwissRailRaptorConfigGroup.class);
 
