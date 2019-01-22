@@ -17,6 +17,7 @@ import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
 import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.RouteUtils;
+import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.router.TransitRouterConfig;
 import org.matsim.pt.routes.ExperimentalTransitRoute;
 
@@ -95,11 +96,17 @@ public final class RaptorUtils {
 
     public static List<Leg> convertRouteToLegs(RaptorRoute route) {
         List<Leg> legs = new ArrayList<>(route.parts.size());
+        double lastArrivalTime = Time.getUndefinedTime();
         for (RaptorRoute.RoutePart part : route.parts) {
             if (part.planElements != null) {
                 for (PlanElement pe : part.planElements) {
                     if (pe instanceof Leg) {
-                        legs.add((Leg) pe);
+                        Leg leg = (Leg) pe;
+                        legs.add(leg);
+                        if (Time.isUndefinedTime(leg.getDepartureTime())) {
+                            leg.setDepartureTime(lastArrivalTime);
+                        }
+                        lastArrivalTime = leg.getDepartureTime() + leg.getTravelTime();
                     }
                 }
             } else if (part.line != null) {
@@ -112,6 +119,7 @@ public final class RaptorUtils {
                 ptRoute.setDistance(part.distance);
                 ptLeg.setRoute(ptRoute);
                 legs.add(ptLeg);
+                lastArrivalTime = part.arrivalTime;
             } else {
                 // a non-pt leg
                 Leg walkLeg = PopulationUtils.createLeg(part.mode);
@@ -124,6 +132,7 @@ public final class RaptorUtils {
                 walkRoute.setDistance(part.distance);
                 walkLeg.setRoute(walkRoute);
                 legs.add(walkLeg);
+                lastArrivalTime = part.arrivalTime;
             }
         }
 
