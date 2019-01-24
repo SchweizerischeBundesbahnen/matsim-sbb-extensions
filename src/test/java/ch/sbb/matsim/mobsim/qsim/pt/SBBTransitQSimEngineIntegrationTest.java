@@ -5,17 +5,14 @@
 package ch.sbb.matsim.mobsim.qsim.pt;
 
 import ch.sbb.matsim.mobsim.qsim.SBBTransitModule;
-import com.google.inject.Provides;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.mobsim.framework.Mobsim;
 import org.matsim.core.mobsim.qsim.QSim;
 import org.matsim.core.mobsim.qsim.components.QSimComponentsConfig;
-import org.matsim.core.mobsim.qsim.components.StandardQSimComponentConfigurator;
 import org.matsim.core.mobsim.qsim.pt.TransitEngineModule;
 import org.matsim.testcases.MatsimTestUtils;
 
@@ -39,19 +36,9 @@ public class SBBTransitQSimEngineIntegrationTest {
         f.config.controler().setLastIteration(0);
 
         Controler controler = new Controler(f.scenario);
-        controler.addOverridingModule(new AbstractModule() {
-            @Override
-            public void install() {
-                install(new SBBTransitModule());
-            }
-
-			@Provides
-			QSimComponentsConfig provideQSimComponentsConfig() {
-				QSimComponentsConfig components = new QSimComponentsConfig();
-				new StandardQSimComponentConfigurator(f.config).configure(components);
-				SBBTransitEngineQSimModule.configure(components);
-				return components;
-			}
+        controler.addOverridingModule(new SBBTransitModule());
+        controler.configureQSimComponents(components -> {
+				    SBBTransitEngineQSimModule.configure(components);
         });
 
         controler.run();
@@ -78,21 +65,10 @@ public class SBBTransitQSimEngineIntegrationTest {
         f.config.controler().setLastIteration(0);
 
         Controler controler = new Controler(f.scenario);
-        controler.addOverridingModule(new AbstractModule() {
-            @Override
-            public void install() {
-                install(new SBBTransitModule());
-            }
-
-            @Provides
-            QSimComponentsConfig provideQSimComponentsConfig() {
-            	QSimComponentsConfig components = new QSimComponentsConfig();
-                new StandardQSimComponentConfigurator(f.config).configure(components);
-                SBBTransitEngineQSimModule.configure(components);
-                return components;
-            }
+        controler.addOverridingModule(new SBBTransitModule());
+        controler.configureQSimComponents(components -> {
+            SBBTransitEngineQSimModule.configure(components);
         });
-
 
         try {
             controler.run();

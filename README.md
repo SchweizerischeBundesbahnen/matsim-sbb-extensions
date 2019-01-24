@@ -183,10 +183,10 @@ of the interface `ch.sbb.matsim.routing.pt.raptor.RaptorRouteSelector` can be pr
 
 ```$java
 // somewhere in your main method, where you set up your controler:
+controler.addOverridingModule(new SwissRailRaptorModule());
 controler.addOverridingModule(new AbstractModule() {
     @Override
     public void install() {
-        install(new SwissRailRaptorModule());
         bind(RaptorRouteSelector.class).to(MyCustomRouteSelector.class);
     }
 });
@@ -261,10 +261,10 @@ implementation, bind your implementation of the `RaptorParametersForPerson` inte
 
 ```$java
 // somewhere in your main method, where you set up your controler:
+controler.addOverridingModule(new SwissRailRaptorModule());
 controler.addOverridingModule(new AbstractModule() {
     @Override
     public void install() {
-        install(new SwissRailRaptorModule());
         bind(RaptorParametersForPerson.class).to(MyPersonSpecificRaptorParameters.class);
     }
 });
