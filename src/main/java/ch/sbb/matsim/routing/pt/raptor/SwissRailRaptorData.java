@@ -220,7 +220,7 @@ public class SwissRailRaptorData {
         Map<Integer, RTransfer[]> transfers = new HashMap<>(stopsQT.size() * 5);
         double maxBeelineWalkConnectionDistance = config.getBeelineWalkConnectionDistance();
         double beelineWalkSpeed = config.getBeelineWalkSpeed();
-        double transferUtilPerS = config.getMarginalUtilityOfTravelTimeWalk_utl_s();
+        double transferUtilPerS = config.getMarginalUtilityOfTravelTimeTransitWalk_utl_s();
         double minimalTransferTime = config.getMinimalTransferTime();
 
         Map<TransitStopFacility, List<TransitStopFacility>> stopToStopsTransfers = new HashMap<>();

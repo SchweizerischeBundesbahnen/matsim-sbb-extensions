@@ -48,6 +48,7 @@ public final class RaptorUtils {
         staticConfig.setMarginalUtilityOfTravelTimeWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
         staticConfig.setMarginalUtilityOfTravelTimeAccessWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
         staticConfig.setMarginalUtilityOfTravelTimeEgressWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
+        staticConfig.setMarginalUtilityOfTravelTimeTransitWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
 
         staticConfig.setMinimalTransferTime(config.transitRouter().getAdditionalTransferTime());
 

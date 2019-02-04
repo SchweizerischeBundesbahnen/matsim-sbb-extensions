@@ -38,6 +38,7 @@ public class RaptorStaticConfig {
     private double marginalUtilityOfTravelTimeWalk_utl_s;
     private double marginalUtilityOfTravelTimeAccessWalk_utl_s;
     private double marginalUtilityOfTravelTimeEgressWalk_utl_s;
+    private double marginalUtilityOfTravelTimeTransitWalk_utl_s;
 
     private double minimalTransferTime = 60;
 
@@ -84,6 +85,14 @@ public class RaptorStaticConfig {
 
     public void setMarginalUtilityOfTravelTimeEgressWalk_utl_s(double marginalUtilityOfTravelTimeEgressWalk_utl_s) {
         this.marginalUtilityOfTravelTimeEgressWalk_utl_s = marginalUtilityOfTravelTimeEgressWalk_utl_s;
+    }
+    
+    public double getMarginalUtilityOfTravelTimeTransitWalk_utl_s() {
+        return this.marginalUtilityOfTravelTimeTransitWalk_utl_s;
+    }
+
+    public void setMarginalUtilityOfTravelTimeTransitWalk_utl_s(double marginalUtilityOfTravelTimeTransitWalk_utl_s) {
+        this.marginalUtilityOfTravelTimeTransitWalk_utl_s = marginalUtilityOfTravelTimeTransitWalk_utl_s;
     }
 
     public double getMinimalTransferTime() {
