@@ -26,11 +26,13 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     private static final String PARAM_USE_RANGE_QUERY = "useRangeQuery";
     private static final String PARAM_USE_INTERMODAL_ACCESS_EGRESS = "useIntermodalAccessEgress";
     private static final String PARAM_USE_MODE_MAPPING = "useModeMappingForPassengers";
+    private static final String PARAM_USE_SCORING_PARAMETERS_PER_PERSON = "useScoringParametersPerPerson";
     private static final String PARAM_TRANSFER_PENALTY_FACTOR = "transferPenaltyTravelTimeToCostFactor";
 
     private boolean useRangeQuery = false;
     private boolean useIntermodality = false;
     private boolean useModeMapping = false;
+    private boolean useScoringParametersPerPerson = false;
 
     private double transferPenaltyTravelTimeToCostFactor = 0.0;
 
@@ -71,6 +73,16 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     @StringSetter(PARAM_USE_MODE_MAPPING)
     public void setUseModeMappingForPassengers(boolean useModeMapping) {
         this.useModeMapping = useModeMapping;
+    }
+    
+    @StringGetter(PARAM_USE_SCORING_PARAMETERS_PER_PERSON)
+    public boolean isUseScoringParametersPerPerson() {
+        return this.useScoringParametersPerPerson;
+    }
+
+    @StringSetter(PARAM_USE_SCORING_PARAMETERS_PER_PERSON)
+    public void setUseScoringParametersPerPerson(boolean useScoringParametersPerPerson) {
+        this.useScoringParametersPerPerson = useScoringParametersPerPerson;
     }
 
     @StringGetter(PARAM_TRANSFER_PENALTY_FACTOR)

@@ -4,6 +4,7 @@
 
 package ch.sbb.matsim.routing.pt.raptor;
 
+import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup.IntermodalAccessEgressParameterSet;
 import org.junit.Assert;
 import org.junit.Before;
@@ -24,9 +25,11 @@ import org.matsim.api.core.v01.population.PopulationFactory;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
+import org.matsim.core.config.groups.PlanCalcScoreConfigGroup.ScoringParameterSet;
 import org.matsim.core.config.groups.StrategyConfigGroup.StrategySettings;
 import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
+import org.matsim.core.controler.OutputDirectoryHierarchy.OverwriteFileSetting;
 import org.matsim.core.controler.events.ControlerEvent;
 import org.matsim.core.controler.events.IterationStartsEvent;
 import org.matsim.core.controler.events.StartupEvent;
@@ -37,6 +40,8 @@ import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.core.router.RoutingModule;
 import org.matsim.core.router.TripRouter;
 import org.matsim.core.scenario.ScenarioUtils;
+import org.matsim.core.scoring.functions.ScoringParameters;
+import org.matsim.core.scoring.functions.ScoringParametersForPerson;
 import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.pt.PtConstants;
 import org.matsim.pt.router.TransitScheduleChangedEvent;
@@ -55,6 +60,7 @@ import org.matsim.vehicles.Vehicles;
 import org.matsim.vehicles.VehiclesFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -310,6 +316,49 @@ public class SwissRailRaptorModuleTest {
         Leg ptLeg = (Leg) planElements.get(3);
         ExperimentalTransitRoute ptRoute = (ExperimentalTransitRoute) ptLeg.getRoute();
         Assert.assertEquals(Id.create("AddedLine" + 1, TransitLine.class), ptRoute.getLineId());        
+    }
+    
+    /**
+     * Test individual scoring parameters for agents
+     */
+    @Test
+    public void testRaptorParametersForPerson() {
+    	SwissRailRaptorConfigGroup srrConfig = new SwissRailRaptorConfigGroup();
+    	srrConfig.setUseScoringParametersPerPerson(true);
+    	
+		Config config = ConfigUtils.createConfig(srrConfig);
+		config.controler().setOverwriteFileSetting(OverwriteFileSetting.deleteDirectoryIfExists);
+		config.controler().setLastIteration(0);
+		config.controler().setOutputDirectory(this.utils.getOutputDirectory());
+		config.transit().setUseTransit(true);
+
+		config.planCalcScore().getOrCreateScoringParameters("default").setPerforming_utils_hr(3600.0 * 50.0);
+		config.planCalcScore().getOrCreateScoringParameters("sub").setPerforming_utils_hr(3600.0 * 50.0);
+		
+		for (String mode : Arrays.asList("car", "walk", "pt")) {
+			config.planCalcScore().getOrCreateScoringParameters("default").getOrCreateModeParams(mode);
+			config.planCalcScore().getOrCreateScoringParameters("sub").getOrCreateModeParams(mode);
+		}
+		
+		config.planCalcScore().getOrCreateScoringParameters("default").setMarginalUtlOfWaitingPt_utils_hr(-3600.0 * 30.0);
+		config.planCalcScore().getOrCreateScoringParameters("sub").setMarginalUtlOfWaitingPt_utils_hr(-3600.0 * 10.0);
+		
+		Scenario scenario = ScenarioUtils.createScenario(config);
+		
+		Person personA = scenario.getPopulation().getFactory().createPerson(Id.createPersonId("A"));
+		scenario.getPopulation().getPersonAttributes().putAttribute("A", "subpopulation", "default");
+		
+		Person personB = scenario.getPopulation().getFactory().createPerson(Id.createPersonId("B"));
+		scenario.getPopulation().getPersonAttributes().putAttribute("B", "subpopulation", "sub");
+
+		Controler controller = new Controler(scenario);
+		controller.addOverridingModule(new SwissRailRaptorModule());
+		controller.run();
+		
+		RaptorParametersForPerson parameters = controller.getInjector().getInstance(RaptorParametersForPerson.class);
+
+		Assert.assertEquals(-80.0, parameters.getRaptorParameters(personA).getMarginalUtilityOfWaitingPt_utl_s(), 1e-3);
+		Assert.assertEquals(-60.0, parameters.getRaptorParameters(personB).getMarginalUtilityOfWaitingPt_utl_s(), 1e-3);
     }
 
     private static class ScheduleModifierControlerListener implements StartupListener, IterationStartsListener {
