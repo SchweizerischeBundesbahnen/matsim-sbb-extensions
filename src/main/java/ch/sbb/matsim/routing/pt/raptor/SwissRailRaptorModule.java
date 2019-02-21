@@ -37,10 +37,13 @@ public class SwissRailRaptorModule extends AbstractModule {
                 bind(RaptorRouteSelector.class).to(LeastCostRaptorRouteSelector.class); // just a simple default in case it ever gets used.
             }
             
-            if (srrConfig.isUseScoringParametersPerPerson()) {
-            	bind(RaptorParametersForPerson.class).to(IndividualRaptorParametersForPerson.class);
-            } else {
-            	bind(RaptorParametersForPerson.class).to(DefaultRaptorParametersForPerson.class);
+            switch (srrConfig.getScoringParameters()) {
+			case Default:
+				bind(RaptorParametersForPerson.class).to(DefaultRaptorParametersForPerson.class);
+				break;
+			case Individual:
+				bind(RaptorParametersForPerson.class).to(IndividualRaptorParametersForPerson.class);
+				break;
             }
 
             if (srrConfig.isUseIntermodalAccessEgress()) {

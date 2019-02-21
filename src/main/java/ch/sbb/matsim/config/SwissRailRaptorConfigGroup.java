@@ -26,20 +26,25 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     private static final String PARAM_USE_RANGE_QUERY = "useRangeQuery";
     private static final String PARAM_USE_INTERMODAL_ACCESS_EGRESS = "useIntermodalAccessEgress";
     private static final String PARAM_USE_MODE_MAPPING = "useModeMappingForPassengers";
-    private static final String PARAM_USE_SCORING_PARAMETERS_PER_PERSON = "useScoringParametersPerPerson";
+    private static final String PARAM_SCORING_PARAMETERS = "scoringParameters";
     private static final String PARAM_TRANSFER_PENALTY_FACTOR = "transferPenaltyTravelTimeToCostFactor";
 
     private boolean useRangeQuery = false;
     private boolean useIntermodality = false;
     private boolean useModeMapping = false;
-    private boolean useScoringParametersPerPerson = false;
 
     private double transferPenaltyTravelTimeToCostFactor = 0.0;
+    
+    private ScoringParameters scoringParameters = ScoringParameters.Default;
 
     private final Map<String, RangeQuerySettingsParameterSet> rangeQuerySettingsPerSubpop = new HashMap<>();
     private final Map<String, RouteSelectorParameterSet> routeSelectorPerSubpop = new HashMap<>();
     private final List<IntermodalAccessEgressParameterSet> intermodalAccessEgressSettings = new ArrayList<>();
     private final Map<String, ModeMappingForPassengersParameterSet> modeMappingForPassengersByRouteMode = new HashMap<>();
+    
+    public enum ScoringParameters {
+    	Default, Individual
+    }
 
     public SwissRailRaptorConfigGroup() {
         super(GROUP);
@@ -75,14 +80,14 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
         this.useModeMapping = useModeMapping;
     }
     
-    @StringGetter(PARAM_USE_SCORING_PARAMETERS_PER_PERSON)
-    public boolean isUseScoringParametersPerPerson() {
-        return this.useScoringParametersPerPerson;
+    @StringGetter(PARAM_SCORING_PARAMETERS)
+    public ScoringParameters getScoringParameters() {
+        return this.scoringParameters;
     }
 
-    @StringSetter(PARAM_USE_SCORING_PARAMETERS_PER_PERSON)
-    public void setUseScoringParametersPerPerson(boolean useScoringParametersPerPerson) {
-        this.useScoringParametersPerPerson = useScoringParametersPerPerson;
+    @StringSetter(PARAM_SCORING_PARAMETERS)
+    public void setScoringParameters(ScoringParameters scoringParameters) {
+        this.scoringParameters = scoringParameters;
     }
 
     @StringGetter(PARAM_TRANSFER_PENALTY_FACTOR)
