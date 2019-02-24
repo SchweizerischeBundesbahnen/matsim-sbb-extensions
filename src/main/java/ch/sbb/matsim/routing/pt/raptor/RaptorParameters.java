@@ -5,7 +5,6 @@
 package ch.sbb.matsim.routing.pt.raptor;
 
 import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
-import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
 
 import java.util.HashMap;
 import java.util.Map;

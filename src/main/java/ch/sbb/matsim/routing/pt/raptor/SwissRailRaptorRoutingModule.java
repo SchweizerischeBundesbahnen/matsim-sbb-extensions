@@ -13,7 +13,6 @@ import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.core.population.PopulationUtils;
-import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.core.router.RoutingModule;
 import org.matsim.core.router.StageActivityTypes;
 import org.matsim.core.router.StageActivityTypesImpl;
@@ -60,11 +59,11 @@ public class SwissRailRaptorRoutingModule implements RoutingModule {
     public List<? extends PlanElement> calcRoute(Facility fromFacility, Facility toFacility, double departureTime, Person person) {
         List<Leg> legs = this.raptor.calcRoute(fromFacility, toFacility, departureTime, person);
         return legs != null ?
-                fillWithActivities(legs, fromFacility, toFacility, departureTime, person) :
+                fillWithActivities(legs) :
                 walkRouter.calcRoute(fromFacility, toFacility, departureTime, person);
     }
 
-    private List<? extends PlanElement> fillWithActivities(List<Leg> legs, Facility fromFacility, Facility toFacility, double departureTime, Person person) {
+    private List<? extends PlanElement> fillWithActivities(List<Leg> legs) {
         List<PlanElement> planElements = new ArrayList<>(legs.size() * 2);
         Leg prevLeg = null;
         for (Leg leg : legs) {

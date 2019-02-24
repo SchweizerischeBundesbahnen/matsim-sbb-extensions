@@ -250,10 +250,10 @@ import org.matsim.vehicles.VehiclesFactory;
 		this.schedule.addTransitLine(this.redLine);
 		{ // route from left to right
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[2].getId(), this.links[6].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[3].getId(), this.links[4].getId(), this.links[5].getId());
 			netRoute.setLinkIds(this.links[2].getId(), routeLinks, this.links[6].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			stops.add(this.builder.createTransitRouteStop(this.stopFacilities[4], Time.getUndefinedTime(), 0.0));
 			stops.add(this.builder.createTransitRouteStop(this.stopFacilities[12], Time.getUndefinedTime(), 9.0*60));
 			TransitRoute route = this.builder.createTransitRoute(Id.create("red C > G", TransitRoute.class), netRoute, stops, "train");
@@ -266,10 +266,10 @@ import org.matsim.vehicles.VehiclesFactory;
 		}
 		{ // route from right to left
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[11].getId(), this.links[15].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[12].getId(), this.links[13].getId(), this.links[14].getId());
 			netRoute.setLinkIds(this.links[11].getId(), routeLinks, this.links[15].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			stops.add(this.builder.createTransitRouteStop(this.stopFacilities[13], Time.getUndefinedTime(), 0.0));
 			stops.add(this.builder.createTransitRouteStop(this.stopFacilities[5], Time.getUndefinedTime(), 9.0*60));
 			TransitRoute route = this.builder.createTransitRoute(Id.create("red G > C", TransitRoute.class), netRoute, stops, "train");
@@ -287,10 +287,10 @@ import org.matsim.vehicles.VehiclesFactory;
 		this.schedule.addTransitLine(this.blueLine);
 		{ // route from left to right
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[0].getId(), this.links[8].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[1].getId(), this.links[2].getId(), this.links[3].getId(), this.links[4].getId(), this.links[5].getId(), this.links[6].getId(), this.links[7].getId());
 			netRoute.setLinkIds(this.links[0].getId(), routeLinks, this.links[8].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			TransitRouteStop stop;
 			stop = this.builder.createTransitRouteStop(this.stopFacilities[ 0], Time.getUndefinedTime(), 0.0);
 			stop.setAwaitDepartureTime(true);
@@ -340,10 +340,10 @@ import org.matsim.vehicles.VehiclesFactory;
 		}
 		{ // route from right to left
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[9].getId(), this.links[17].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[10].getId(), this.links[11].getId(), this.links[12].getId(), this.links[13].getId(), this.links[14].getId(), this.links[15].getId(), this.links[16].getId());
 			netRoute.setLinkIds(this.links[9].getId(), routeLinks, this.links[17].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			TransitRouteStop stop;
 			stop = this.builder.createTransitRouteStop(this.stopFacilities[17], Time.getUndefinedTime(), 0.0);
 			stop.setAwaitDepartureTime(true);
@@ -398,10 +398,10 @@ import org.matsim.vehicles.VehiclesFactory;
 		this.schedule.addTransitLine(this.greenLine);
 		{ // route in circle in clockwise
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[25].getId(), this.links[25].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[20].getId(), this.links[21].getId(), this.links[22].getId(), this.links[23].getId(), this.links[24].getId());
 			netRoute.setLinkIds(this.links[25].getId(), routeLinks, this.links[25].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			TransitRouteStop stop;
 			stop = this.builder.createTransitRouteStop(this.stopFacilities[18], Time.getUndefinedTime(), 0.0);
 			stop.setAwaitDepartureTime(true);
