@@ -108,13 +108,15 @@
 	</build>
 
 	<distributionManagement>
-		<repository>
-			<id>repo</id>
-			<url>http://repo.sbb.ch/content/repositories/hosted.memop.releases/</url>
-		</repository>
+    <repository>
+        <id>bintray-schweizerischebundesbahnen-simba.mvn</id>
+        <name>schweizerischebundesbahnen-simba.mvn</name>
+        <url>https://api.bintray.com/maven/schweizerischebundesbahnen/simba.mvn/matsim-sbb-extensions/;publish=1</url>
+    </repository>
 		<snapshotRepository>
-			<id>repo</id>
-			<url>http://repo.sbb.ch/content/repositories/hosted.memop.snapshots/</url>
+			<id>oss-jfrog-artifactory</id>
+			<name>artifactory-snapshots</name>
+			<url>http://oss.jfrog.org/oss-snapshot-local</url>
 		</snapshotRepository>
 	</distributionManagement>
 
