@@ -27,7 +27,7 @@ public class SwissRailRaptorModule extends AbstractModule {
                 addRoutingModuleBinding(mode).toProvider(SwissRailRaptorRoutingModuleProvider.class);
             }
             addRoutingModuleBinding(TransportMode.transit_walk).to(Key.get(RoutingModule.class, Names.named(TransportMode.walk)));
-            bind(RaptorParametersForPerson.class).to(DefaultRaptorParametersForPerson.class);
+            bind(RaptorStopFinder.class).to(DefaultRaptorStopFinder.class);
 
             SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(getConfig(), SwissRailRaptorConfigGroup.class);
 
@@ -35,6 +35,15 @@ public class SwissRailRaptorModule extends AbstractModule {
                 bind(RaptorRouteSelector.class).to(ConfigurableRaptorRouteSelector.class);
             } else {
                 bind(RaptorRouteSelector.class).to(LeastCostRaptorRouteSelector.class); // just a simple default in case it ever gets used.
+            }
+            
+            switch (srrConfig.getScoringParameters()) {
+			case Default:
+				bind(RaptorParametersForPerson.class).to(DefaultRaptorParametersForPerson.class);
+				break;
+			case Individual:
+				bind(RaptorParametersForPerson.class).to(IndividualRaptorParametersForPerson.class);
+				break;
             }
 
             if (srrConfig.isUseIntermodalAccessEgress()) {

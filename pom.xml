@@ -8,15 +8,26 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.sbb</groupId>
 	<artifactId>matsim-sbb-extensions</artifactId>
-	<version>0.10.3-SNAPSHOT</version>
+	<version>0.11.0-SNAPSHOT</version>
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
 
 	<repositories>
 		<repository>
+			<!-- Geotools is not on Maven central -->
+			<id>osgeo</id>
+			<name>Geotools repository</name>
+			<url>http://download.osgeo.org/webdav/geotools</url>
+		</repository>
+		<repository>
 			<!-- MATSim is not on Maven central -->
 			<id>matsim</id>
 			<url>https://dl.bintray.com/matsim/matsim</url>
+		</repository>
+		<repository>
+			<!-- For MATSim snapshots: -->
+			<id>ojo-snapshots</id>
+			<url>http://oss.jfrog.org/libs-snapshot</url>
 		</repository>
 	</repositories>
 
@@ -25,13 +36,13 @@
 		<dependency>
 			<groupId>org.matsim</groupId>
 			<artifactId>matsim</artifactId>
-			<version>0.10.0</version>
+			<version>0.11.0-2019w03-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.matsim</groupId>
 			<artifactId>matsim</artifactId>
-			<version>0.10.0</version>
+			<version>0.11.0-2019w03-SNAPSHOT</version>
 			<classifier>tests</classifier>
 			<scope>test</scope>
 			<type>test-jar</type>
@@ -70,6 +81,20 @@
 					</compilerArguments>
 				</configuration>
 			</plugin>
+
+			<plugin>  <!-- Create sources.jar -->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-eclipse-plugin</artifactId>

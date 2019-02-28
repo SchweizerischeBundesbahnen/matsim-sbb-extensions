@@ -17,9 +17,9 @@ public interface RaptorIntermodalAccessEgress {
 
     class RIntermodalAccessEgress {
 
-        final List<? extends PlanElement> routeParts;
-        final double disutility;
-        final double travelTime;
+        public final List<? extends PlanElement> routeParts;
+        public final double disutility;
+        public final double travelTime;
 
         public RIntermodalAccessEgress(List<? extends PlanElement> planElements, double disutility, double travelTime) {
             this.routeParts = planElements;

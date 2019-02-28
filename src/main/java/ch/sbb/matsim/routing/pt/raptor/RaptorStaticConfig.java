@@ -35,9 +35,6 @@ public class RaptorStaticConfig {
      */
     private double beelineWalkConnectionDistance = 200.0;
     private double beelineWalkSpeed; // meter / second
-    private double marginalUtilityOfTravelTimeWalk_utl_s;
-    private double marginalUtilityOfTravelTimeAccessWalk_utl_s;
-    private double marginalUtilityOfTravelTimeEgressWalk_utl_s;
 
     private double minimalTransferTime = 60;
 
@@ -60,30 +57,6 @@ public class RaptorStaticConfig {
 
     public void setBeelineWalkSpeed(double beelineWalkSpeed) {
         this.beelineWalkSpeed = beelineWalkSpeed;
-    }
-
-    public double getMarginalUtilityOfTravelTimeWalk_utl_s() {
-        return this.marginalUtilityOfTravelTimeWalk_utl_s;
-    }
-
-    public void setMarginalUtilityOfTravelTimeWalk_utl_s(double marginalUtilityOfTravelTimeWalk_utl_s) {
-        this.marginalUtilityOfTravelTimeWalk_utl_s = marginalUtilityOfTravelTimeWalk_utl_s;
-    }
-
-    public double getMarginalUtilityOfTravelTimeAccessWalk_utl_s() {
-        return this.marginalUtilityOfTravelTimeAccessWalk_utl_s;
-    }
-
-    public void setMarginalUtilityOfTravelTimeAccessWalk_utl_s(double marginalUtilityOfTravelTimeAccessWalk_utl_s) {
-        this.marginalUtilityOfTravelTimeAccessWalk_utl_s = marginalUtilityOfTravelTimeAccessWalk_utl_s;
-    }
-
-    public double getMarginalUtilityOfTravelTimeEgressWalk_utl_s() {
-        return this.marginalUtilityOfTravelTimeEgressWalk_utl_s;
-    }
-
-    public void setMarginalUtilityOfTravelTimeEgressWalk_utl_s(double marginalUtilityOfTravelTimeEgressWalk_utl_s) {
-        this.marginalUtilityOfTravelTimeEgressWalk_utl_s = marginalUtilityOfTravelTimeEgressWalk_utl_s;
     }
 
     public double getMinimalTransferTime() {

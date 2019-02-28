@@ -26,7 +26,9 @@ To use the extensions along your MATSim code, follow these two steps:
 	</dependency>
   ``` 
 
-## SwissRailRaptor <span id="swissRailRaptor" />
+<a id="swissRailRaptor" />
+
+## SwissRailRaptor 
 
 The SwissRailRaptor is a fast public transport router. It is based on the RAPTOR algorithm
 (Delling et al, 2012, Round-Based Public Transit Routing), and applies several optimizations,
@@ -181,10 +183,10 @@ of the interface `ch.sbb.matsim.routing.pt.raptor.RaptorRouteSelector` can be pr
 
 ```$java
 // somewhere in your main method, where you set up your controler:
+controler.addOverridingModule(new SwissRailRaptorModule());
 controler.addOverridingModule(new AbstractModule() {
     @Override
     public void install() {
-        install(new SwissRailRaptorModule());
         bind(RaptorRouteSelector.class).to(MyCustomRouteSelector.class);
     }
 });
@@ -259,10 +261,10 @@ implementation, bind your implementation of the `RaptorParametersForPerson` inte
 
 ```$java
 // somewhere in your main method, where you set up your controler:
+controler.addOverridingModule(new SwissRailRaptorModule());
 controler.addOverridingModule(new AbstractModule() {
     @Override
     public void install() {
-        install(new SwissRailRaptorModule());
         bind(RaptorParametersForPerson.class).to(MyPersonSpecificRaptorParameters.class);
     }
 });
@@ -315,7 +317,9 @@ If you plan to use this method, make sure to set
 `RaptorStaticConfig.setOptimization(RaptorOptimization.OneToAllRouting)` before
 calling `SwissRailRaptorData.create(...)`.
 
-## Deterministic Public Transport Simulation <span id="detPTSim" />
+<a id="detPTSim" />
+
+## Deterministic Public Transport Simulation 
 
 The deterministic pt simulation is a QSim engine, handling the movement of public transport vehicles
 in MATSim. The default `TransitQSimEngine` simulates all pt vehicles on the queue-based network. While
@@ -383,7 +387,5 @@ To use the deterministic pt simulation, a few things need to be taken into accou
   the controller's `writeEventsInterval`.
 
 Have a look at the class `ch.sbb.matsim.RunSBBExtension` included in the repository to see 
-how to enable the deterministic pt simulation when running MATSim. If you already have your own
-`QSimModule`, have a look at `ch.sbb.matsim.mobsim.qsim.SBBQSimModule` to see how you can
-integrate just the deterministic pt simulation in your own QSim setup.
+how to enable the deterministic pt simulation when running MATSim.
 
