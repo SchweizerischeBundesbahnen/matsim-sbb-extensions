@@ -35,6 +35,7 @@ public class RaptorStaticConfig {
      */
     private double beelineWalkConnectionDistance = 200.0;
     private double beelineWalkSpeed; // meter / second
+    private double beelineWalkDistanceFactor = 1.0;
 
     private double minimalTransferTime = 60;
 
@@ -57,6 +58,14 @@ public class RaptorStaticConfig {
 
     public void setBeelineWalkSpeed(double beelineWalkSpeed) {
         this.beelineWalkSpeed = beelineWalkSpeed;
+    }
+
+    public double getBeelineWalkDistanceFactor() {
+        return this.beelineWalkDistanceFactor;
+    }
+
+    public void setBeelineWalkDistanceFactor(double beelineWalkDistanceFactor) {
+        this.beelineWalkDistanceFactor = beelineWalkDistanceFactor;
     }
 
     public double getMinimalTransferTime() {
