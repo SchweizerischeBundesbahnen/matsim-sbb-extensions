@@ -79,12 +79,13 @@ public class DefaultRaptorStopFinder implements RaptorStopFinder {
 		if (srrCfg.isUseIntermodalAccessEgress()) {
 			return findIntermodalStops(facility, person, departureTime, Direction.ACCESS, parameters, data);
 		} else {
+			double distanceFactor = data.config.getBeelineWalkDistanceFactor();
 			List<TransitStopFacility> stops = findNearbyStops(facility, parameters, data);
 			List<InitialStop> initialStops = stops.stream().map(stop -> {
 				double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
 				double travelTime = Math.ceil(beelineDistance / parameters.getBeelineWalkSpeed());
 				double disutility = travelTime * -parameters.getMarginalUtilityOfTravelTime_utl_s(TransportMode.access_walk);
-				return new InitialStop(stop, disutility, travelTime, beelineDistance, TransportMode.access_walk);
+				return new InitialStop(stop, disutility, travelTime, beelineDistance * distanceFactor, TransportMode.access_walk);
 			}).collect(Collectors.toList());
 			return initialStops;
 		}
@@ -95,12 +96,13 @@ public class DefaultRaptorStopFinder implements RaptorStopFinder {
 		if (srrCfg.isUseIntermodalAccessEgress()) {
 			return findIntermodalStops(facility, person, departureTime, Direction.EGRESS, parameters, data);
 		} else {
+			double distanceFactor = data.config.getBeelineWalkDistanceFactor();
 			List<TransitStopFacility> stops = findNearbyStops(facility, parameters, data);
 			List<InitialStop> initialStops = stops.stream().map(stop -> {
 				double beelineDistance = CoordUtils.calcEuclideanDistance(stop.getCoord(), facility.getCoord());
 				double travelTime = Math.ceil(beelineDistance / parameters.getBeelineWalkSpeed());
 				double disutility = travelTime * -parameters.getMarginalUtilityOfTravelTime_utl_s(TransportMode.egress_walk);
-				return new InitialStop(stop, disutility, travelTime, beelineDistance, TransportMode.egress_walk);
+				return new InitialStop(stop, disutility, travelTime, beelineDistance * distanceFactor, TransportMode.egress_walk);
 			}).collect(Collectors.toList());
 			return initialStops;
 		}

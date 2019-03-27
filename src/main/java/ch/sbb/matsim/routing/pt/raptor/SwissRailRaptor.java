@@ -195,9 +195,10 @@ public class SwissRailRaptor implements TransitRouter {
         double walkTime = beelineDistance / parameters.getBeelineWalkSpeed();
         double walkCost_per_s = -parameters.getMarginalUtilityOfTravelTime_utl_s(TransportMode.transit_walk);
         double walkCost = walkTime * walkCost_per_s;
+        double beelineDistanceFactor = this.data.config.getBeelineWalkDistanceFactor();
 
         RaptorRoute route = new RaptorRoute(fromFacility, toFacility, walkCost);
-        route.addNonPt(null, null, departureTime, walkTime, beelineDistance, TransportMode.transit_walk);
+        route.addNonPt(null, null, departureTime, walkTime, beelineDistance * beelineDistanceFactor, TransportMode.transit_walk);
         return route;
     }
 
