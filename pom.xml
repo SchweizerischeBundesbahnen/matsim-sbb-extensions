@@ -8,15 +8,26 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.sbb</groupId>
 	<artifactId>matsim-sbb-extensions</artifactId>
-	<version>0.10.2</version>
+	<version>0.11.0-2019w13</version>
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
 
 	<repositories>
 		<repository>
+			<!-- Geotools is not on Maven central -->
+			<id>osgeo</id>
+			<name>Geotools repository</name>
+			<url>http://download.osgeo.org/webdav/geotools</url>
+		</repository>
+		<repository>
 			<!-- MATSim is not on Maven central -->
 			<id>matsim</id>
 			<url>https://dl.bintray.com/matsim/matsim</url>
+		</repository>
+		<repository>
+			<!-- For MATSim snapshots: -->
+			<id>ojo-snapshots</id>
+			<url>http://oss.jfrog.org/libs-snapshot</url>
 		</repository>
 	</repositories>
 
@@ -25,13 +36,13 @@
 		<dependency>
 			<groupId>org.matsim</groupId>
 			<artifactId>matsim</artifactId>
-			<version>0.10.0</version>
+			<version>0.11.0-2019w03-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.matsim</groupId>
 			<artifactId>matsim</artifactId>
-			<version>0.10.0</version>
+			<version>0.11.0-2019w03-SNAPSHOT</version>
 			<classifier>tests</classifier>
 			<scope>test</scope>
 			<type>test-jar</type>
@@ -70,6 +81,37 @@
 					</compilerArguments>
 				</configuration>
 			</plugin>
+
+			<plugin>  <!-- Create sources.jar -->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+							<doclint>none</doclint>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-eclipse-plugin</artifactId>
@@ -83,13 +125,15 @@
 	</build>
 
 	<distributionManagement>
-		<repository>
-			<id>repo</id>
-			<url>http://repo.sbb.ch/content/repositories/hosted.memop.releases/</url>
-		</repository>
+    <repository>
+        <id>bintray-schweizerischebundesbahnen-simba.mvn</id>
+        <name>schweizerischebundesbahnen-simba.mvn</name>
+        <url>https://api.bintray.com/maven/schweizerischebundesbahnen/simba.mvn/matsim-sbb-extensions/;publish=1</url>
+    </repository>
 		<snapshotRepository>
-			<id>repo</id>
-			<url>http://repo.sbb.ch/content/repositories/hosted.memop.snapshots/</url>
+			<id>oss-jfrog-artifactory</id>
+			<name>artifactory-snapshots</name>
+			<url>http://oss.jfrog.org/oss-snapshot-local</url>
 		</snapshotRepository>
 	</distributionManagement>
 

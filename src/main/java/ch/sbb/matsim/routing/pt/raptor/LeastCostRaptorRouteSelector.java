@@ -13,7 +13,7 @@ import java.util.List;
  * the desired departure time, with a negative difference (leaving earlier than desired)
  * having double the weight. (Example: having two routes, one leaving 5 minutes before the
  * desired time, and another leaving 9 minutes after the desired time, the second one
- * is selected due to (5 * 2) > 9.
+ * is selected due to (5 * 2) &gt; 9.
  *
  * @author mrieser / SBB
  */

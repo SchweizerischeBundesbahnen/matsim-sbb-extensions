@@ -17,10 +17,12 @@ import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
 import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.RouteUtils;
+import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.router.TransitRouterConfig;
 import org.matsim.pt.routes.ExperimentalTransitRoute;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +35,6 @@ public final class RaptorUtils {
     }
 
     public static RaptorStaticConfig createStaticConfig(Config config) {
-        PlanCalcScoreConfigGroup pcsConfig = config.planCalcScore();
         PlansCalcRouteConfigGroup pcrConfig = config.plansCalcRoute();
         SwissRailRaptorConfigGroup srrConfig = ConfigUtils.addOrGetModule(config, SwissRailRaptorConfigGroup.class);
 
@@ -43,11 +44,7 @@ public final class RaptorUtils {
 
         PlansCalcRouteConfigGroup.ModeRoutingParams walk = pcrConfig.getModeRoutingParams().get(TransportMode.walk);
         staticConfig.setBeelineWalkSpeed(walk.getTeleportedModeSpeed() / walk.getBeelineDistanceFactor());
-
-        double marginalUtilityOfTravelTimeWalk_utl_s = pcsConfig.getModes().get(TransportMode.walk).getMarginalUtilityOfTraveling() /3600.0 - pcsConfig.getPerforming_utils_hr()/3600. ;
-        staticConfig.setMarginalUtilityOfTravelTimeWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
-        staticConfig.setMarginalUtilityOfTravelTimeAccessWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
-        staticConfig.setMarginalUtilityOfTravelTimeEgressWalk_utl_s(marginalUtilityOfTravelTimeWalk_utl_s);
+        staticConfig.setBeelineWalkDistanceFactor(walk.getBeelineDistanceFactor());
 
         staticConfig.setMinimalTransferTime(config.transitRouter().getAdditionalTransferTime());
 
@@ -81,6 +78,16 @@ public final class RaptorUtils {
             double marginalUtility_utl_s = modeParams.getMarginalUtilityOfTraveling()/3600.0 - marginalUtilityPerforming;
             raptorParams.setMarginalUtilityOfTravelTime_utl_s(mode, marginalUtility_utl_s);
         }
+        
+		for (String fallbackMode : Arrays.asList(TransportMode.access_walk, TransportMode.egress_walk,
+				TransportMode.transit_walk)) {
+			if (!pcsConfig.getModes().containsKey(fallbackMode)) {
+				PlanCalcScoreConfigGroup.ModeParams modeParams = pcsConfig.getModes().get(TransportMode.walk);
+				double marginalUtility_utl_s = modeParams.getMarginalUtilityOfTraveling() / 3600.0
+						- marginalUtilityPerforming;
+				raptorParams.setMarginalUtilityOfTravelTime_utl_s(fallbackMode, marginalUtility_utl_s);
+			}
+		}
 
         raptorParams.setTransferPenaltyFixCostPerTransfer(-trConfig.getUtilityOfLineSwitch_utl());
         raptorParams.setTransferPenaltyTravelTimeToCostFactor(advancedConfig.getTransferPenaltyTravelTimeToCostFactor());
@@ -90,35 +97,43 @@ public final class RaptorUtils {
 
     public static List<Leg> convertRouteToLegs(RaptorRoute route) {
         List<Leg> legs = new ArrayList<>(route.parts.size());
+        double lastArrivalTime = Time.getUndefinedTime();
         for (RaptorRoute.RoutePart part : route.parts) {
             if (part.planElements != null) {
                 for (PlanElement pe : part.planElements) {
                     if (pe instanceof Leg) {
-                        legs.add((Leg) pe);
+                        Leg leg = (Leg) pe;
+                        legs.add(leg);
+                        if (Time.isUndefinedTime(leg.getDepartureTime())) {
+                            leg.setDepartureTime(lastArrivalTime);
+                        }
+                        lastArrivalTime = leg.getDepartureTime() + leg.getTravelTime();
                     }
                 }
             } else if (part.line != null) {
                 // a pt leg
                 Leg ptLeg = PopulationUtils.createLeg(part.mode);
                 ptLeg.setDepartureTime(part.depTime);
-                ptLeg.setTravelTime(part.travelTime);
+                ptLeg.setTravelTime(part.arrivalTime - part.depTime);
                 ExperimentalTransitRoute ptRoute = new ExperimentalTransitRoute(part.fromStop, part.line, part.route, part.toStop);
-                ptRoute.setTravelTime(part.travelTime);
+                ptRoute.setTravelTime(part.arrivalTime - part.depTime);
                 ptRoute.setDistance(part.distance);
                 ptLeg.setRoute(ptRoute);
                 legs.add(ptLeg);
+                lastArrivalTime = part.arrivalTime;
             } else {
                 // a non-pt leg
                 Leg walkLeg = PopulationUtils.createLeg(part.mode);
                 walkLeg.setDepartureTime(part.depTime);
-                walkLeg.setTravelTime(part.travelTime);
+                walkLeg.setTravelTime(part.arrivalTime - part.depTime);
                 Id<Link> startLinkId = part.fromStop == null ? (route.fromFacility == null ? null : route.fromFacility.getLinkId()) : part.fromStop.getLinkId();
                 Id<Link> endLinkId =  part.toStop == null ? (route.toFacility == null ? null : route.toFacility.getLinkId()) : part.toStop.getLinkId();
                 Route walkRoute = RouteUtils.createGenericRouteImpl(startLinkId, endLinkId);
-                walkRoute.setTravelTime(part.travelTime);
+                walkRoute.setTravelTime(part.arrivalTime - part.depTime);
                 walkRoute.setDistance(part.distance);
                 walkLeg.setRoute(walkRoute);
                 legs.add(walkLeg);
+                lastArrivalTime = part.arrivalTime;
             }
         }
 

@@ -220,7 +220,7 @@ public class SwissRailRaptorData {
         Map<Integer, RTransfer[]> transfers = new HashMap<>(stopsQT.size() * 5);
         double maxBeelineWalkConnectionDistance = config.getBeelineWalkConnectionDistance();
         double beelineWalkSpeed = config.getBeelineWalkSpeed();
-        double transferUtilPerS = config.getMarginalUtilityOfTravelTimeWalk_utl_s();
+        double beelineDistanceFactor = config.getBeelineWalkDistanceFactor();
         double minimalTransferTime = config.getMinimalTransferTime();
 
         Map<TransitStopFacility, List<TransitStopFacility>> stopToStopsTransfers = new HashMap<>();
@@ -248,6 +248,7 @@ public class SwissRailRaptorData {
 
         // now calculate the transfers between the route stops
         MinimalTransferTimes mtt = schedule.getMinimalTransferTimes();
+        ArrayList<RTransfer> stopTransfers = new ArrayList<>();
         for (Map.Entry<TransitStopFacility, List<TransitStopFacility>> e : stopToStopsTransfers.entrySet()) {
             TransitStopFacility fromStop = e.getKey();
             Coord fromCoord = fromStop.getCoord();
@@ -255,35 +256,36 @@ public class SwissRailRaptorData {
             Collection<TransitStopFacility> nearbyStops = e.getValue();
             for (TransitStopFacility toStop : nearbyStops) {
                 int[] toRouteStopIndices = routeStopsPerStopFacility.get(toStop);
-                double distance = CoordUtils.calcEuclideanDistance(fromCoord, toStop.getCoord());
-                double transferTime = distance / beelineWalkSpeed;
+                double beelineDistance = CoordUtils.calcEuclideanDistance(fromCoord, toStop.getCoord());
+                double transferTime = beelineDistance / beelineWalkSpeed;
                 if (transferTime < minimalTransferTime) {
                     transferTime = minimalTransferTime;
                 }
 
                 transferTime = mtt.get(fromStop.getId(), toStop.getId(), transferTime);
 
-                double transferUtil = transferTime * transferUtilPerS;
-                double transferCost = -transferUtil;
                 final double fixedTransferTime = transferTime; // variables must be effective final to be used in lambdas (below)
 
                 for (int fromRouteStopIndex : fromRouteStopIndices) {
                     RRouteStop fromRouteStop = routeStops[fromRouteStopIndex];
+                    stopTransfers.clear();
                     for (int toRouteStopIndex : toRouteStopIndices) {
                         RRouteStop toRouteStop = routeStops[toRouteStopIndex];
                         if (isUsefulTransfer(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance, config.getOptimization())) {
-                            transfers.compute(fromRouteStopIndex, (routeStopIndex, currentTransfers) -> {
-                                RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, transferCost, distance);
-                                if (currentTransfers == null) {
-                                    return new RTransfer[] { newTransfer };
-                                }
-                                RTransfer[] tmp = new RTransfer[currentTransfers.length + 1];
-                                System.arraycopy(currentTransfers, 0, tmp, 0, currentTransfers.length);
-                                tmp[currentTransfers.length] = newTransfer;
-                                return tmp;
-                            });
+                            RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, beelineDistance * beelineDistanceFactor);
+                            stopTransfers.add(newTransfer);
                         }
                     }
+                    RTransfer[] newTransfers = stopTransfers.toArray(new RTransfer[0]);
+                    transfers.compute(fromRouteStopIndex, (routeStopIndex, currentTransfers) -> {
+                        if (currentTransfers == null) {
+                            return newTransfers;
+                        }
+                        RTransfer[] tmp = new RTransfer[currentTransfers.length + newTransfers.length];
+                        System.arraycopy(currentTransfers, 0, tmp, 0, currentTransfers.length);
+                        System.arraycopy(newTransfers, 0, tmp, currentTransfers.length, newTransfers.length);
+                        return tmp;
+                    });
                 }
             }
         }
@@ -515,14 +517,12 @@ public class SwissRailRaptorData {
         final int fromRouteStop;
         final int toRouteStop;
         final double transferTime;
-        final double transferCost;
         final double transferDistance;
 
-        RTransfer(int fromRouteStop, int toRouteStop, double transferTime, double transferCost, double transferDistance) {
+        RTransfer(int fromRouteStop, int toRouteStop, double transferTime, double transferDistance) {
             this.fromRouteStop = fromRouteStop;
             this.toRouteStop = toRouteStop;
             this.transferTime = transferTime;
-            this.transferCost = transferCost;
             this.transferDistance = transferDistance;
         }
     }

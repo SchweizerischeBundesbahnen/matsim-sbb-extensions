@@ -183,10 +183,10 @@ of the interface `ch.sbb.matsim.routing.pt.raptor.RaptorRouteSelector` can be pr
 
 ```$java
 // somewhere in your main method, where you set up your controler:
+controler.addOverridingModule(new SwissRailRaptorModule());
 controler.addOverridingModule(new AbstractModule() {
     @Override
     public void install() {
-        install(new SwissRailRaptorModule());
         bind(RaptorRouteSelector.class).to(MyCustomRouteSelector.class);
     }
 });
@@ -261,10 +261,10 @@ implementation, bind your implementation of the `RaptorParametersForPerson` inte
 
 ```$java
 // somewhere in your main method, where you set up your controler:
+controler.addOverridingModule(new SwissRailRaptorModule());
 controler.addOverridingModule(new AbstractModule() {
     @Override
     public void install() {
-        install(new SwissRailRaptorModule());
         bind(RaptorParametersForPerson.class).to(MyPersonSpecificRaptorParameters.class);
     }
 });
@@ -387,7 +387,5 @@ To use the deterministic pt simulation, a few things need to be taken into accou
   the controller's `writeEventsInterval`.
 
 Have a look at the class `ch.sbb.matsim.RunSBBExtension` included in the repository to see 
-how to enable the deterministic pt simulation when running MATSim. If you already have your own
-`QSimModule`, have a look at `ch.sbb.matsim.mobsim.qsim.SBBQSimModule` to see how you can
-integrate just the deterministic pt simulation in your own QSim setup.
+how to enable the deterministic pt simulation when running MATSim.
 

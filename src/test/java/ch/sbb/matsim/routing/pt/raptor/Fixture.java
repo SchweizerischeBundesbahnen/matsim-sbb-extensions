@@ -27,6 +27,10 @@ import org.matsim.pt.transitSchedule.api.TransitRouteStop;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.pt.transitSchedule.api.TransitScheduleFactory;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
+import org.matsim.vehicles.Vehicle;
+import org.matsim.vehicles.VehicleType;
+import org.matsim.vehicles.Vehicles;
+import org.matsim.vehicles.VehiclesFactory;
 
 /**
  * THIS IS A COPY OF org.matsim.pt.router.Fixture.
@@ -71,6 +75,7 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 	/*package*/ final Network network;
 	/*package*/ final TransitScheduleFactory builder;
 	/*package*/ final TransitSchedule schedule;
+	/*package*/ final Vehicles transitVehicles;
 	/*package*/ TransitLine redLine = null;
 	/*package*/ TransitLine blueLine = null;
 	/*package*/ TransitLine greenLine = null;
@@ -88,6 +93,7 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 		this.network = this.scenario.getNetwork();
 		this.schedule = this.scenario.getTransitSchedule();
 		this.builder = this.schedule.getFactory();
+		this.transitVehicles = this.scenario.getTransitVehicles();
 	}
 
 	protected void init() {
@@ -244,10 +250,10 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 		this.schedule.addTransitLine(this.redLine);
 		{ // route from left to right
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[2].getId(), this.links[6].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[3].getId(), this.links[4].getId(), this.links[5].getId());
 			netRoute.setLinkIds(this.links[2].getId(), routeLinks, this.links[6].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			stops.add(this.builder.createTransitRouteStop(this.stopFacilities[4], Time.getUndefinedTime(), 0.0));
 			stops.add(this.builder.createTransitRouteStop(this.stopFacilities[12], Time.getUndefinedTime(), 9.0*60));
 			TransitRoute route = this.builder.createTransitRoute(Id.create("red C > G", TransitRoute.class), netRoute, stops, "train");
@@ -260,10 +266,10 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 		}
 		{ // route from right to left
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[11].getId(), this.links[15].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[12].getId(), this.links[13].getId(), this.links[14].getId());
 			netRoute.setLinkIds(this.links[11].getId(), routeLinks, this.links[15].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			stops.add(this.builder.createTransitRouteStop(this.stopFacilities[13], Time.getUndefinedTime(), 0.0));
 			stops.add(this.builder.createTransitRouteStop(this.stopFacilities[5], Time.getUndefinedTime(), 9.0*60));
 			TransitRoute route = this.builder.createTransitRoute(Id.create("red G > C", TransitRoute.class), netRoute, stops, "train");
@@ -281,10 +287,10 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 		this.schedule.addTransitLine(this.blueLine);
 		{ // route from left to right
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[0].getId(), this.links[8].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[1].getId(), this.links[2].getId(), this.links[3].getId(), this.links[4].getId(), this.links[5].getId(), this.links[6].getId(), this.links[7].getId());
 			netRoute.setLinkIds(this.links[0].getId(), routeLinks, this.links[8].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			TransitRouteStop stop;
 			stop = this.builder.createTransitRouteStop(this.stopFacilities[ 0], Time.getUndefinedTime(), 0.0);
 			stop.setAwaitDepartureTime(true);
@@ -334,10 +340,10 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 		}
 		{ // route from right to left
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[9].getId(), this.links[17].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[10].getId(), this.links[11].getId(), this.links[12].getId(), this.links[13].getId(), this.links[14].getId(), this.links[15].getId(), this.links[16].getId());
 			netRoute.setLinkIds(this.links[9].getId(), routeLinks, this.links[17].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			TransitRouteStop stop;
 			stop = this.builder.createTransitRouteStop(this.stopFacilities[17], Time.getUndefinedTime(), 0.0);
 			stop.setAwaitDepartureTime(true);
@@ -392,10 +398,10 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 		this.schedule.addTransitLine(this.greenLine);
 		{ // route in circle in clockwise
 			NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.links[25].getId(), this.links[25].getId());
-			List<Id<Link>> routeLinks = new ArrayList<Id<Link>>();
+			List<Id<Link>> routeLinks = new ArrayList<>();
 			Collections.addAll(routeLinks, this.links[20].getId(), this.links[21].getId(), this.links[22].getId(), this.links[23].getId(), this.links[24].getId());
 			netRoute.setLinkIds(this.links[25].getId(), routeLinks, this.links[25].getId());
-			List<TransitRouteStop> stops = new ArrayList<TransitRouteStop>();
+			List<TransitRouteStop> stops = new ArrayList<>();
 			TransitRouteStop stop;
 			stop = this.builder.createTransitRouteStop(this.stopFacilities[18], Time.getUndefinedTime(), 0.0);
 			stop.setAwaitDepartureTime(true);
@@ -439,5 +445,24 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 			route.addDeparture(this.builder.createDeparture(Id.create("g>17", Departure.class), 7.0*3600 + 41.0*60));
 			route.addDeparture(this.builder.createDeparture(Id.create("g>18", Departure.class), 7.0*3600 + 51.0*60));
 		}
+	}
+	
+	protected void addVehicles() {
+        VehiclesFactory vf = transitVehicles.getFactory();
+        VehicleType trainType = vf.createVehicleType(Id.create("train", VehicleType.class));
+        trainType.setCapacity(vf.createVehicleCapacity());
+        trainType.getCapacity().setSeats(200);
+        trainType.getCapacity().setStandingRoom(100);
+        transitVehicles.addVehicleType(trainType);
+        
+        for (TransitLine line: schedule.getTransitLines().values()) {
+        	for (TransitRoute route: line.getRoutes().values()) {
+                for (Departure dep: route.getDepartures().values()) {
+                	Id<Vehicle> vehId = Id.createVehicleId(dep.getId().toString());
+                	transitVehicles.addVehicle(vf.createVehicle(vehId, trainType));
+                	dep.setVehicleId(vehId);
+                }
+        	}
+        }
 	}
 }

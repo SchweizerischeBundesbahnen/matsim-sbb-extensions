@@ -62,8 +62,8 @@ public class SwissRailRaptorTest {
 
     private SwissRailRaptor createTransitRouter(TransitSchedule schedule, Config config, Network network) {
         SwissRailRaptorData data = SwissRailRaptorData.create(schedule, RaptorUtils.createStaticConfig(config), network);
-        SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(config),
-                new LeastCostRaptorRouteSelector(), new DefaultRaptorIntermodalAccessEgress());
+        DefaultRaptorStopFinder stopFinder = new DefaultRaptorStopFinder(null, new DefaultRaptorIntermodalAccessEgress(), null);
+        SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(config), new LeastCostRaptorRouteSelector(), stopFinder);
         return raptor;
     }
 
@@ -96,7 +96,7 @@ public class SwissRailRaptorTest {
         double expectedTravelTime = 29.0 * 60 + // agent takes the *:06 course, arriving in D at *:29
                 CoordUtils.calcEuclideanDistance(f.schedule.getFacilities().get(Id.create("6", TransitStopFacility.class)).getCoord(), toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(Math.ceil(expectedTravelTime), actualTravelTime, MatsimTestCase.EPSILON);
-        assertEquals(Math.ceil(distance), 15334, MatsimTestCase.EPSILON);
+        assertEquals(15434, Math.ceil(distance), MatsimTestCase.EPSILON);
     }
 
     @Test
@@ -202,7 +202,7 @@ public class SwissRailRaptorTest {
         List<Leg> legs = router.calcRoute(new FakeFacility(fromCoord), new FakeFacility(toCoord), 5.0*3600, null);
         assertEquals(1, legs.size());
         assertEquals(TransportMode.transit_walk, legs.get(0).getMode());
-        assertEquals(4000, legs.get(0).getRoute().getDistance(), 0.0);
+        assertEquals(4000*1.3, legs.get(0).getRoute().getDistance(), 0.0);
         double actualTravelTime = legs.get(0).getTravelTime();
         double expectedTravelTime = CoordUtils.calcEuclideanDistance(fromCoord, toCoord) / raptorParams.getBeelineWalkSpeed();
         assertEquals(expectedTravelTime, actualTravelTime, MatsimTestCase.EPSILON);

@@ -281,7 +281,6 @@ public class SBBTransitQSimEngine extends TransitQSimEngine /*implements Departu
         TransitRoute trRoute = driver.getTransitRoute();
         List<Link[]> links = this.createLinkEvents ? this.linksCache.computeIfAbsent(trRoute, r -> getLinksPerStopAlongRoute(r, this.qSim.getScenario().getNetwork())) : null;
         TransitContext context = new TransitContext(driver, links);
-        TransitRouteStop firstStop = context.nextStop;
         this.qSim.getEventsManager().processEvent(new PersonEntersVehicleEvent(now, driver.getId(), driver.getVehicle().getId()));
         if (this.createLinkEvents) {
             Id<Link> linkId = driver.getCurrentLinkId();
