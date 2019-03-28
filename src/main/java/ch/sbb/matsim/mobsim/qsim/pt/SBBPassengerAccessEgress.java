@@ -4,10 +4,6 @@
 
 package ch.sbb.matsim.mobsim.qsim.pt;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.events.PersonEntersVehicleEvent;
@@ -21,19 +17,19 @@ import org.matsim.core.mobsim.framework.MobsimDriverAgent;
 import org.matsim.core.mobsim.framework.PassengerAgent;
 import org.matsim.core.mobsim.qsim.InternalInterface;
 import org.matsim.core.mobsim.qsim.interfaces.MobsimVehicle;
-import org.matsim.core.mobsim.qsim.pt.PTPassengerAgent;
-import org.matsim.core.mobsim.qsim.pt.PassengerAccessEgress;
-import org.matsim.core.mobsim.qsim.pt.TransitStopAgentTracker;
-import org.matsim.core.mobsim.qsim.pt.TransitStopHandler;
-import org.matsim.core.mobsim.qsim.pt.TransitVehicle;
+import org.matsim.core.mobsim.qsim.pt.*;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitRouteStop;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 import org.matsim.vehicles.Vehicle;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
- * This class contains a lot of code from {@link org.matsim.core.mobsim.qsim.pt.PassengerAccessEgressImpl},
+ * This class contains a lot of code from org.matsim.core.mobsim.qsim.pt.PassengerAccessEgressImpl,
  * some methods with small adaptations, other directly copied. The aforementioned class is package-protected
  * and thus not visible from this package, making it impossible to inherit from it and re-use parts of the code.
  *
