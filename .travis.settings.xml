@@ -1,17 +1,17 @@
-<Settings Xmlns="Http://Maven.apache.org/SETTINGS/1.0.0"
-          Xmlns:Xsi="Http://Www.w3.Org/2001/XMLSchema-Instance"
-          Xsi:SchemaLocation="Http://Maven.apache.org/SETTINGS/1.0.0
-                      Http://Maven.apache.org/Xsd/Settings-1.0.0.Xsd">
-  <Servers>
-    <Server>
-      <Id>bintray-schweizerischebundesbahnen-simba.mvn</Id>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                      http://maven.apache.org/xsd/settings-1.0.0.Xsd">
+  <servers>
+    <server>
+      <id>bintray-schweizerischebundesbahnen-simba.mvn</id>
       <username>${env.BINTRAY_USER}</username>
-      <Password>${env.BINTRAY_API_KEY}</Password>
-    </Server>
-    <Server>
-      <Id>oss-jfrog-artifactory</Id>
+      <password>${env.BINTRAY_API_KEY}</password>
+    </server>
+    <server>
+      <id>oss-jfrog-artifactory</id>
       <username>${env.BINTRAY_USER}</username>
-      <Password>${env.BINTRAY_API_KEY}</Password>
-    </Server>
-  </Servers>
-</Settings>
+      <password>${env.BINTRAY_API_KEY}</password>
+    </server>
+  </servers>
+</settings>
