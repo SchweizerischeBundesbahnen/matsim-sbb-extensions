@@ -44,6 +44,7 @@ public final class RaptorUtils {
 
         PlansCalcRouteConfigGroup.ModeRoutingParams walk = pcrConfig.getModeRoutingParams().get(TransportMode.walk);
         staticConfig.setBeelineWalkSpeed(walk.getTeleportedModeSpeed() / walk.getBeelineDistanceFactor());
+        staticConfig.setBeelineWalkDistanceFactor(walk.getBeelineDistanceFactor());
 
         staticConfig.setMinimalTransferTime(config.transitRouter().getAdditionalTransferTime());
 

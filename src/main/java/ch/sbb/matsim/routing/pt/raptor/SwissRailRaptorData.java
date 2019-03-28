@@ -220,6 +220,7 @@ public class SwissRailRaptorData {
         Map<Integer, RTransfer[]> transfers = new HashMap<>(stopsQT.size() * 5);
         double maxBeelineWalkConnectionDistance = config.getBeelineWalkConnectionDistance();
         double beelineWalkSpeed = config.getBeelineWalkSpeed();
+        double beelineDistanceFactor = config.getBeelineWalkDistanceFactor();
         double minimalTransferTime = config.getMinimalTransferTime();
 
         Map<TransitStopFacility, List<TransitStopFacility>> stopToStopsTransfers = new HashMap<>();
@@ -255,8 +256,8 @@ public class SwissRailRaptorData {
             Collection<TransitStopFacility> nearbyStops = e.getValue();
             for (TransitStopFacility toStop : nearbyStops) {
                 int[] toRouteStopIndices = routeStopsPerStopFacility.get(toStop);
-                double distance = CoordUtils.calcEuclideanDistance(fromCoord, toStop.getCoord());
-                double transferTime = distance / beelineWalkSpeed;
+                double beelineDistance = CoordUtils.calcEuclideanDistance(fromCoord, toStop.getCoord());
+                double transferTime = beelineDistance / beelineWalkSpeed;
                 if (transferTime < minimalTransferTime) {
                     transferTime = minimalTransferTime;
                 }
@@ -271,7 +272,7 @@ public class SwissRailRaptorData {
                     for (int toRouteStopIndex : toRouteStopIndices) {
                         RRouteStop toRouteStop = routeStops[toRouteStopIndex];
                         if (isUsefulTransfer(fromRouteStop, toRouteStop, maxBeelineWalkConnectionDistance, config.getOptimization())) {
-                            RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, distance);
+                            RTransfer newTransfer = new RTransfer(fromRouteStopIndex, toRouteStopIndex, fixedTransferTime, beelineDistance * beelineDistanceFactor);
                             stopTransfers.add(newTransfer);
                         }
                     }
