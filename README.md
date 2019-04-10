@@ -433,7 +433,7 @@ To calculate skim matrices, you need:
 - required: transit schedule
 
 The class `ch.sbb.matsim.analysis.skims.CalculateSkimMatrices` is the main class that
-exposes some helpful methods to calculate skim matrices. In contains a main method that accepts
+exposes some helpful methods to calculate skim matrices. It contains a main method that accepts
 arguments to be directly run, alternatively the main method can act as a template for customized
 skim matrix calculations. 
 
@@ -441,10 +441,10 @@ The basic template to calculate skim matrices looks as follows:
 
 ```java
 CalculateSkimMatrices skims = new CalculateSkimMatrices(zonesShapeFilename, zonesIdAttributeName, outputDirectory, numberOfThreads);
-skims.calculateSamplingPointsPerZoneFromFacilities(facilitiesFilename, numberOfPointsPerZone, r, f -> 1.0);
+skims.calculateSamplingPointsPerZoneFromFacilities(facilitiesFilename, numberOfPointsPerZone, r, facility -> 1.0);
 // alternative if you don't have facilities:
 // skims.calculateSamplingPointsPerZoneFromNetwork(networkFilename, numberOfPointsPerZone, r);
-skims.calculateNetworkMatrices(networkFilename, eventsFilename, timesCar, config, l -> true);
+skims.calculateNetworkMatrices(networkFilename, eventsFilename, timesCar, config, link -> true);
 skims.calculatePTMatrices(transitScheduleFilename, earliestTime, latestTime, config, (line, route) -> route.getTransportMode().equals("train"));
 skims.calculateBeelineMatrix();
 ```
@@ -518,5 +518,6 @@ it would require 25 million trips to be calculated. If the calculation is repeat
 total of 4 different points in time, 100 million trips would need to be calculated.
 By calculating full least-cost-path trees instead of single trips, the number of trip-calculations
 can be reduced to `n*m` per point of time, bringing a massive reduction in computation time, but
-with a slight increase in memory usage.
+with a slight increase in memory usage. In addition, most parts of the skim calculation
+are multi-threaded and benefit from additional cpu-cores.
 
