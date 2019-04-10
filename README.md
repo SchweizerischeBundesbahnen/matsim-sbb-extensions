@@ -5,6 +5,7 @@ the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahn
 
 - [SwissRailRaptor](#swissRailRaptor)
 - [Deterministic PT Simulation](#detPTSim)
+- [Skim Matrices](#skim-matrices)
 
 To use the extensions along your MATSim code, follow these two steps:
 
@@ -388,4 +389,134 @@ To use the deterministic pt simulation, a few things need to be taken into accou
 
 Have a look at the class `ch.sbb.matsim.RunSBBExtension` included in the repository to see 
 how to enable the deterministic pt simulation when running MATSim.
+
+<a id="skim-matrices" />
+
+## Skim Matrices
+
+Skim matrices describe performance or supply indicators for travelling from one region to another region.
+Examples are travel times using car or public transport, travel distances, but also number of 
+transfers required when travelling with public transport or the perceived frequency of transit
+services.
+
+MATSim typically calculates routes and travel times individually for each agent, based on specific
+coordinates. For analysis purposes, comparison to alternative models or for the preparation of the
+initial demand, it can be necessary to have travel times, travel distances and other travel performance
+indicators not only for individual agents, but aggregations of these values between spatial zones of
+a model.
+
+This repository contains code to calculate a variety of skim matrices based on MATSim data:
+
+- for private car traffic:
+  - travel time, routed on network (loaded or unloaded)
+  - travel distances, routed on network (loaded or unloaded)
+- for public transport:
+  - travel time (from departure at first stop to arrival at last stop of a trip)
+  - access time (from origin to first stop)
+  - egress time (from last stop to destination)
+  - number of transfers required
+  - average adaption time (how many minutes needs an agent to wait or leave early in average to catch the next best service)
+  - perceived service frequency
+  - percentage of the distance covered with rail-based transportation within a public transport trip
+  - percentage of the travel time spent in rail-based transportation within a public transport trip 
+- general:
+  - bee-line distances between zones
+
+### Usage
+
+To calculate skim matrices, you need:
+
+- required: shape-file containing the zones to be differentiated in the model
+- required: network
+- optionally: events, if travel times on a loaded network should be calculated
+- recommended: facilities, to sample locations within zones; alternatively nodes from the network can be used
+- required: transit schedule
+
+The class `ch.sbb.matsim.analysis.skims.CalculateSkimMatrices` is the main class that
+exposes some helpful methods to calculate skim matrices. In contains a main method that accepts
+arguments to be directly run, alternatively the main method can act as a template for customized
+skim matrix calculations. 
+
+The basic template to calculate skim matrices looks as follows:
+
+```java
+CalculateSkimMatrices skims = new CalculateSkimMatrices(zonesShapeFilename, zonesIdAttributeName, outputDirectory, numberOfThreads);
+skims.calculateSamplingPointsPerZoneFromFacilities(facilitiesFilename, numberOfPointsPerZone, r, f -> 1.0);
+// alternative if you don't have facilities:
+// skims.calculateSamplingPointsPerZoneFromNetwork(networkFilename, numberOfPointsPerZone, r);
+skims.calculateNetworkMatrices(networkFilename, eventsFilename, timesCar, config, l -> true);
+skims.calculatePTMatrices(transitScheduleFilename, earliestTime, latestTime, config, (line, route) -> route.getTransportMode().equals("train"));
+skims.calculateBeelineMatrix();
+```
+
+The methods all write the skim matrices directly into files in the specified output directory.
+To work with the matrices, use the classes `FloatMatrix` (the actual matrix) and `FloatMatrixIO`
+(code related to reading/writing matrices). The class `MatricesToXY` gives an example on how
+to combine the values of multiple matrices into one table (CSV).
+
+Be aware that the calculation of skim matrices for a large number of zones can take several
+hours and can require large amounts of memory, despite optimized algorithms (see section 
+Technical Background below). 
+
+If you use your own class to call the methods in `CalculateSkimMatrices`, you will have to
+provide a few custom functions:
+
+- To select optimal locations per zone, a random draw from weighted facilities is performed.
+  You need to specify a function returning a weight for each facility (see method 
+  `CalculateSkimMatrices.calculateSamplingPointsPerZoneFromFacilities(...)`).
+  If in doubt, you can return the same weight of 1 for every facility to have an
+  unweighted random draw.
+- To assign selected locations to the road network, not every link might be suited (e.g. it
+  is considered bad practise to start or end trips directly on highway-links). Thus you
+  need to specify a function returning `true` for every link that could be used as start or
+  end of a trip, and `false` otherwise (see method `CalculateSkimMatrices.calculateNetworkMatrices(...)`).
+  If in doubt, just return `true` for every link.
+- In order to calculate the share of rail-based transportation, the algorithm needs to know
+  which transit lines and routes qualify as rail-based. You need to provide a function returning
+  `true` for every transit line/route that should be counted as rail-based, and `false` in 
+  other cases (see method `CalculateSkimMatrices.calculatePTMatrices(...)`). If in doubt, just
+  return either `true` or `false` for every request. In such a case, the calculated rail-based
+  shares will all be either 1 or 0.
+
+
+### Invalid values
+
+In some cases, especially with public transport, cases might occur where no trip
+can be calculated between two zones. In such a case, the skim matrices contain the value
+`0` in the case of the perceived transit frequency, and `Infinity` for all other matrices.
+
+
+### Technical Background
+
+Strictly speaking, travel indicators cannot be calculated between zones, only between specific
+locations. To calculate meaningful indicators for travels between zones, average values have
+to be calculated that should represent actual averages as close as possible.
+
+The implemented algorithms are based on the following concept:
+
+1. Choose `n` locations for each zone.
+2. For each zone-pair (origin &ndash; destination), calculate all `n*n` possible trips.
+3. Average the `n*n` values into one value for the skim matrix
+
+In order to get representative averages, the `n` locations need to be carefully chosen.
+In our experiments, we achieved the best results by sampling from the facilities, where
+each facility (=potential location for activities to take place) has a weight (e.g. home
+locations have a weight of 2.0, work locations according to the number of work places
+they offer in full-time equivalents). This is the reason why by default the calculation
+of skims requires facilities. If your model does not use facilities, there is alternative
+code available that samples from the nodes of a network instead of from facilities, based
+on the observation that there are more nodes in a network in central locations where also
+more activities take place than in remote locations.
+
+Also, actual travel times will be different throughout the day. It is thus advised to 
+calculate performance indices not only for a single point of time, but for multiple points
+of time and take the average of these. 
+
+Calculating `n*n` trips for each `m*m` zone-pairs can result in a very
+large number of calculations needed. E.g. with 1000 zones and 5 locations per zones,
+it would require 25 million trips to be calculated. If the calculation is repeated for a
+total of 4 different points in time, 100 million trips would need to be calculated.
+By calculating full least-cost-path trees instead of single trips, the number of trip-calculations
+can be reduced to `n*m` per point of time, bringing a massive reduction in computation time, but
+with a slight increase in memory usage.
 
