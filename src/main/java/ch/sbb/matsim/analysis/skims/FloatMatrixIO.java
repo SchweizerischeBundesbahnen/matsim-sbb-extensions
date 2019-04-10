@@ -45,6 +45,7 @@ public final class FloatMatrixIO {
                 writer.append(NL);
             }
         }
+        writer.flush();
     }
 
     public static <T> void readAsCSV(FloatMatrix<T> matrix, String filename, IdConverter<T> idConverter) throws IOException {
