@@ -89,8 +89,16 @@ public final class RaptorUtils {
 			}
 		}
 
-        raptorParams.setTransferPenaltyFixCostPerTransfer(-trConfig.getUtilityOfLineSwitch_utl());
-        raptorParams.setTransferPenaltyTravelTimeToCostFactor(advancedConfig.getTransferPenaltyTravelTimeToCostFactor());
+        double costPerHour = advancedConfig.getTransferPenaltyCostPerTravelTimeHour();
+        if (costPerHour == 0.0) {
+            // for backwards compatibility, use the default utility of line switch.
+            raptorParams.setTransferPenaltyFixCostPerTransfer(-trConfig.getUtilityOfLineSwitch_utl());
+        } else {
+            raptorParams.setTransferPenaltyFixCostPerTransfer(advancedConfig.getTransferPenaltyBaseCost());
+        }
+        raptorParams.setTransferPenaltyPerTravelTimeHour(costPerHour);
+        raptorParams.setTransferPenaltyMinimum(advancedConfig.getTransferPenaltyMinCost());
+        raptorParams.setTransferPenaltyMaximum(advancedConfig.getTransferPenaltyMaxCost());
 
         return raptorParams;
     }

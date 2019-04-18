@@ -280,30 +280,38 @@ This can lead to problems, as empirical data shows that perceived costs for tran
 total travel time: A transfer during an urban commute of a total of 15 minutes is perceived 
 with a lower disutility than a transfer during a long-distance journey of 2 hours.
 
-SwissRailRaptor supports transfer costs based on the total travel of a route:
+SwissRailRaptor supports transfer costs based on the total travel of a route, with additional
+minimal and maximal boundaries for the transfer costs:
 
   ```$xml
    <module name="swissRailRaptor">
-     <param name="transferPenaltyTravelTimeToCostFactor" value="0.0003" />
+     <param name="transferPenaltyBaseCost" value="0.5" />
+     <param name="transferPenaltyCostPerTravelTimeHour" value="1.2" />
+     <param name="transferPenaltyMinCost" value="1.0" />
+     <param name="transferPenaltyMaxCost" value="5.0" />
    </module>
    ```
 
-If the `transferPenaltyTravelTimeToCostFactor` is configured differently from `0.0`,
+If the `transferPenaltyCostPerTravelTimeHour` is configured differently from `0.0`,
 transfer costs during route search are calculated as:
 
 ```
-singleTransferCost = fixedTransferCost + totalTravelTime * transferPenaltyTravelTimeToCostFactor;
+singleTransferCost = transferPenaltyBaseCost + (totalTravelTime/3600) * transferPenaltyCostPerTravelTimeHour;
+if (singleTransferCost < transferPenaltyMinCost) singleTransferCost = transferPenaltyMinCost;
+if (singleTransferCost > transferPenaltyMaxCost) singleTransferCost = transferPenaltyMaxCost;
 totalTransferCost = numberOfTransfers * singleTransferCost
 ```
 
-The fixed transfer cost is taken from the `planCalcScore`'s `utilityOfLineSwitch`, while the 
-`transferPenaltyTravelTimetoCostFactor` is taken from the SwissRailRaptor's configuration.
+If `transferPenaltyCostPerTravelTimeHour` is set to `0.0`, each transfer costs `-utilityOfLineSwitch`
+to stay backwards compatible with the default transit router. All other `transferPenalty`-parameters
+are ignored in this case. If the cost-per-traveltime-hour is set
+differently from `0.0`, `utilityOfLineSwitch` will be ignored and the aforementioned `transferPenaltyBaseCost`
+be used instead.
 
 Assuming a travel time disutility of 6 utils per hour, combined with opportunity costs of another
-6 utils per hour would result in a total travel time disutility of 0.00333 utils per second
-(`(6+6)/3600=0.00333`).
-The configured value of 0.0003 in the example above would thus correspond to a single transfer 
-having a (non-fixed) cost comparable to 9% of the total travel time.
+6 utils per hour would result in a total travel time disutility of 12 utils per hour.
+The configured value of 1.2 in the example above would thus correspond to a single transfer 
+having a (non-fixed) cost comparable to 10% of the total travel time.
 
 
 #### PT Least Cost Path Tree (one-to-all routing)
