@@ -1,17 +1,18 @@
 package ch.sbb.matsim.routing.pt.raptor;
 
-import java.util.Arrays;
-import java.util.Map;
-
-import javax.inject.Inject;
-
+import ch.sbb.matsim.config.SwissRailRaptorConfigGroup;
 import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.config.Config;
+import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
 import org.matsim.core.scoring.functions.ModeUtilityParameters;
 import org.matsim.core.scoring.functions.ScoringParameters;
 import org.matsim.core.scoring.functions.ScoringParametersForPerson;
+
+import javax.inject.Inject;
+import java.util.Arrays;
+import java.util.Map;
 
 /**
  * An implementation of {@link RaptorParametersForPerson} that returns an
@@ -22,11 +23,13 @@ import org.matsim.core.scoring.functions.ScoringParametersForPerson;
  */
 public class IndividualRaptorParametersForPerson implements RaptorParametersForPerson {
 	private final Config config;
+	private final SwissRailRaptorConfigGroup raptorConfig;
 	private final ScoringParametersForPerson parametersForPerson;
 
 	@Inject
 	public IndividualRaptorParametersForPerson(Config config, ScoringParametersForPerson parametersForPerson) {
 		this.config = config;
+		this.raptorConfig = ConfigUtils.addOrGetModule(config, SwissRailRaptorConfigGroup.class);
 		this.parametersForPerson = parametersForPerson;
 	}
 
@@ -64,7 +67,16 @@ public class IndividualRaptorParametersForPerson implements RaptorParametersForP
 			}
 		}
 
-		raptorParameters.setTransferPenaltyFixCostPerTransfer(-scoringParameters.utilityOfLineSwitch);
+		double costPerHour = this.raptorConfig.getTransferPenaltyCostPerTravelTimeHour();
+		if (costPerHour == 0.0) {
+			// backwards compatibility, use the default utility of line switch
+			raptorParameters.setTransferPenaltyFixCostPerTransfer(-scoringParameters.utilityOfLineSwitch);
+		} else {
+			raptorParameters.setTransferPenaltyFixCostPerTransfer(this.raptorConfig.getTransferPenaltyBaseCost());
+		}
+		raptorParameters.setTransferPenaltyPerTravelTimeHour(costPerHour);
+		raptorParameters.setTransferPenaltyMinimum(this.raptorConfig.getTransferPenaltyMinCost());
+		raptorParameters.setTransferPenaltyMaximum(this.raptorConfig.getTransferPenaltyMaxCost());
 
 		return raptorParameters;
 	}

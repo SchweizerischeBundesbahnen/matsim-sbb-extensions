@@ -748,8 +748,8 @@ public class SwissRailRaptorTest {
             Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
         }
 
-        { // test 2 + 0.0025 * tt
-            Config config = prepareConfig(2, 0.0025);
+        { // test 2 + 9 * tt[h]
+            Config config = prepareConfig(2, 9);
             SwissRailRaptor raptor = createTransitRouter(f.schedule, config, f.network);
 
             Coord fromCoord = new Coord(0, 100);
@@ -768,8 +768,8 @@ public class SwissRailRaptorTest {
             Assert.assertEquals(expectedCost, route1.getTotalCosts(), 1e-7);
         }
 
-        { // test 2 + 0.0025 * tt, longer trip
-            Config config = prepareConfig(2, 0.0025);
+        { // test 2 + 9 * tt[h], longer trip
+            Config config = prepareConfig(2, 9);
             SwissRailRaptor raptor = createTransitRouter(f.schedule, config, f.network);
 
             Coord fromCoord = new Coord(0, 100);
@@ -800,7 +800,8 @@ public class SwissRailRaptorTest {
         config.plansCalcRoute().addParameterSet(walkParameters);
 
         config.planCalcScore().setUtilityOfLineSwitch(-transferFixedCost);
-        srrConfig.setTransferPenaltyTravelTimeToCostFactor(transferRelativeCostFactor);
+        srrConfig.setTransferPenaltyBaseCost(transferFixedCost);
+        srrConfig.setTransferPenaltyCostPerTravelTimeHour(transferRelativeCostFactor);
 
         return config;
     }

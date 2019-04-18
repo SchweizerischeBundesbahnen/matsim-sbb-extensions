@@ -40,7 +40,9 @@ public class RaptorParameters {
     private double marginalUtilityOfWaitingPt_utl_s;
 
     private double transferPenaltyFixCostPerTransfer = 0.0;
-    private double transferPenaltyTravelTimeToCostFactor = 0.0;
+    private double transferPenaltyPerTravelTimeHour = 0.0;
+    private double transferPenaltyMinimum = Double.NEGATIVE_INFINITY;
+    private double transferPenaltyMaximum = Double.POSITIVE_INFINITY;
 
     private final SwissRailRaptorConfigGroup config;
 
@@ -104,12 +106,28 @@ public class RaptorParameters {
         this.transferPenaltyFixCostPerTransfer = transferPenaltyFixCostPerTransfer;
     }
 
-    public double getTransferPenaltyTravelTimeToCostFactor() {
-        return this.transferPenaltyTravelTimeToCostFactor;
+    public double getTransferPenaltyPerTravelTimeHour() {
+        return this.transferPenaltyPerTravelTimeHour;
     }
 
-    public void setTransferPenaltyTravelTimeToCostFactor(double transferPenaltyTravelTimeToCostFactor) {
-        this.transferPenaltyTravelTimeToCostFactor = transferPenaltyTravelTimeToCostFactor;
+    public void setTransferPenaltyPerTravelTimeHour(double transferPenaltyPerTravelTimeHour) {
+        this.transferPenaltyPerTravelTimeHour = transferPenaltyPerTravelTimeHour;
+    }
+
+    public double getTransferPenaltyMinimum() {
+        return this.transferPenaltyMinimum;
+    }
+
+    public void setTransferPenaltyMinimum(double transferPenaltyMinimum) {
+        this.transferPenaltyMinimum = transferPenaltyMinimum;
+    }
+
+    public double getTransferPenaltyMaximum() {
+        return this.transferPenaltyMaximum;
+    }
+
+    public void setTransferPenaltyMaximum(double transferPenaltyMaximum) {
+        this.transferPenaltyMaximum = transferPenaltyMaximum;
     }
 
 }

@@ -27,14 +27,20 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
     private static final String PARAM_USE_INTERMODAL_ACCESS_EGRESS = "useIntermodalAccessEgress";
     private static final String PARAM_USE_MODE_MAPPING = "useModeMappingForPassengers";
     private static final String PARAM_SCORING_PARAMETERS = "scoringParameters";
-    private static final String PARAM_TRANSFER_PENALTY_FACTOR = "transferPenaltyTravelTimeToCostFactor";
+    private static final String PARAM_TRANSFER_PENALTY_BASE = "transferPenaltyBaseCost";
+    private static final String PARAM_TRANSFER_PENALTY_MIN = "transferPenaltyMinCost";
+    private static final String PARAM_TRANSFER_PENALTY_MAX = "transferPenaltyMaxCost";
+    private static final String PARAM_TRANSFER_PENALTY_PERHOUR = "transferPenaltyCostPerTravelTimeHour";
 
     private boolean useRangeQuery = false;
     private boolean useIntermodality = false;
     private boolean useModeMapping = false;
 
-    private double transferPenaltyTravelTimeToCostFactor = 0.0;
-    
+    private double transferPenaltyBaseCost = 0;
+    private double transferPenaltyMinCost = Double.NEGATIVE_INFINITY;
+    private double transferPenaltyMaxCost = Double.POSITIVE_INFINITY;
+    private double transferPenaltyHourlyCost = 0;
+
     private ScoringParameters scoringParameters = ScoringParameters.Default;
 
     private final Map<String, RangeQuerySettingsParameterSet> rangeQuerySettingsPerSubpop = new HashMap<>();
@@ -90,14 +96,44 @@ public class SwissRailRaptorConfigGroup extends ReflectiveConfigGroup {
         this.scoringParameters = scoringParameters;
     }
 
-    @StringGetter(PARAM_TRANSFER_PENALTY_FACTOR)
-    public double getTransferPenaltyTravelTimeToCostFactor() {
-        return transferPenaltyTravelTimeToCostFactor;
+    @StringGetter(PARAM_TRANSFER_PENALTY_BASE)
+    public double getTransferPenaltyBaseCost() {
+        return this.transferPenaltyBaseCost;
     }
 
-    @StringSetter(PARAM_TRANSFER_PENALTY_FACTOR)
-    public void setTransferPenaltyTravelTimeToCostFactor(double transferPenaltyTravelTimeToCostFactor) {
-        this.transferPenaltyTravelTimeToCostFactor = transferPenaltyTravelTimeToCostFactor;
+    @StringSetter(PARAM_TRANSFER_PENALTY_BASE)
+    public void setTransferPenaltyBaseCost(double baseCost) {
+        this.transferPenaltyBaseCost = baseCost;
+    }
+
+    @StringGetter(PARAM_TRANSFER_PENALTY_MIN)
+    public double getTransferPenaltyMinCost() {
+        return this.transferPenaltyMinCost;
+    }
+
+    @StringSetter(PARAM_TRANSFER_PENALTY_MIN)
+    public void setTransferPenaltyMinCost(double minCost) {
+        this.transferPenaltyMinCost = minCost;
+    }
+
+    @StringGetter(PARAM_TRANSFER_PENALTY_MAX)
+    public double getTransferPenaltyMaxCost() {
+        return this.transferPenaltyMaxCost;
+    }
+
+    @StringSetter(PARAM_TRANSFER_PENALTY_MAX)
+    public void setTransferPenaltyMaxCost(double maxCost) {
+        this.transferPenaltyMaxCost = maxCost;
+    }
+
+    @StringGetter(PARAM_TRANSFER_PENALTY_PERHOUR)
+    public double getTransferPenaltyCostPerTravelTimeHour() {
+        return this.transferPenaltyHourlyCost;
+    }
+
+    @StringSetter(PARAM_TRANSFER_PENALTY_PERHOUR)
+    public void setTransferPenaltyCostPerTravelTimeHour(double hourlyCost) {
+        this.transferPenaltyHourlyCost = hourlyCost;
     }
 
     @Override

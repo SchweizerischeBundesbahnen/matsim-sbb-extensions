@@ -40,7 +40,7 @@ public class SwissRailRaptorConfigGroupTest {
             config1.setUseRangeQuery(true);
             config1.setUseIntermodalAccessEgress(true);
             config1.setUseModeMappingForPassengers(true);
-            config1.setTransferPenaltyTravelTimeToCostFactor(0.0031);
+            config1.setTransferPenaltyCostPerTravelTimeHour(0.0031 * 3600);
         }
 
         SwissRailRaptorConfigGroup config2 = writeRead(config1);
@@ -49,7 +49,7 @@ public class SwissRailRaptorConfigGroupTest {
         Assert.assertTrue(config2.isUseRangeQuery());
         Assert.assertTrue(config2.isUseIntermodalAccessEgress());
         Assert.assertTrue(config2.isUseModeMappingForPassengers());
-        Assert.assertEquals(0.0031, config2.getTransferPenaltyTravelTimeToCostFactor(), 0.0);
+        Assert.assertEquals(0.0031 * 3600, config2.getTransferPenaltyCostPerTravelTimeHour(), 0.0);
     }
 
     @Test
