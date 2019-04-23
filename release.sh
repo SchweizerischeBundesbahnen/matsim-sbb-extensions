@@ -40,7 +40,7 @@ if [ -n "$IN" ]; then
     RELEASE_VERSION=$IN
 fi
 
-BRANCH=feature/release-$RELEASE_VERSION
+RELEASE_BRANCH=feature/release-$RELEASE_VERSION
 TAG="v$RELEASE_VERSION"
 
 NEXT_VERSION=$(advance_version $RELEASE_VERSION)
@@ -51,6 +51,8 @@ if [ -n "$IN" ]; then
     # non-empty input, so use this as next version
     NEXT_VERSION=$IN
 fi
+
+NEXT_BRANCH=feature/prepare-$NEXT_VERSION
 
 DRYRUN=1
 echo -n "Perform dry run? [Y/n] "
@@ -75,7 +77,8 @@ echo "Current version   : $CURRENT_VERSION"
 echo "Release version   : $RELEASE_VERSION"
 echo "Tag for Release   : $TAG"
 echo "Next version      : $NEXT_VERSION "
-echo "Branch for release: $BRANCH"
+echo "Branch for release: $RELEASE_BRANCH"
+echo "Branch for next   : $NEXT_BRANCH"
 if [ $DRYRUN = 0 ]; then
     echo "Changes will be pushed to remote repository if you continue!";
 fi
@@ -88,12 +91,12 @@ if [ "$CONTINUE" != "y" ]; then
     exit 0
 fi
 
-echo "Creating new branch: $BRANCH"
-git checkout -b $BRANCH
+echo "Creating new branch: $RELEASE_BRANCH"
+git checkout -b $RELEASE_BRANCH
 
 echo "Setting release version: $RELEASE_VERSION"
 mvn -q versions:set -DnewVersion=$RELEASE_VERSION
-mvn -o -q versions:commit  # gets rid of pom.xml.versionsBackup
+mvn -o -q versions:commit  # get rid of pom.xml.versionsBackup
 
 echo "Create commit for release"
 git add pom.xml
@@ -102,9 +105,13 @@ git commit -m "Create release: $RELEASE_VERSION"
 echo "Creating tag"
 git tag -a $TAG -m "release $RELEASE_VERSION"
 
+echo "Creating new branch from develop: $NEXT_BRANCH"
+git checkout develop
+git checkout -b $NEXT_BRANCH
+
 echo "Setting new development version"
 mvn -o -q versions:set -DnewVersion=$NEXT_VERSION
-mvn -o -q versions:commit  # gets rid of pom.xml.versionsBackup
+mvn -o -q versions:commit  # get rid of pom.xml.versionsBackup
 
 echo "Committing new development version"
 git add pom.xml
@@ -112,16 +119,19 @@ git commit -m "Set next development version: $NEXT_VERSION"
 
 echo "Pushing changes to remote"
 if [ $DRYRUN = 0 ]; then
-    git push origin $BRANCH
+    git push origin $RELEASE_BRANCH
     git push origin $TAG
+    git push origin $NEXT_BRANCH
 else
-    echo "[DRYRUN] git push origin $BRANCH"
+    echo "[DRYRUN] git push origin $RELEASE_BRANCH"
     echo "[DRYRUN] git push origin $TAG"
+    echo "[DRYRUN] git push origin $NEXT_BRANCH"
     echo "[DRYRUN]"
     echo "[DRYRUN] to revert back to the original state, use:"
     echo "[DRYRUN]    git checkout develop"
-    echo "[DRYRUN]    git branch -D $BRANCH"
     echo "[DRYRUN]    git tag -d $TAG"
+    echo "[DRYRUN]    git branch -D $RELEASE_BRANCH"
+    echo "[DRYRUN]    git branch -D $NEXT_BRANCH"
 fi
 
 echo "everything done."
