@@ -9,6 +9,7 @@ import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RRouteStop;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData.RTransfer;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.TransportMode;
+import org.matsim.core.utils.misc.Time;
 import org.matsim.facilities.Facility;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
@@ -68,6 +69,7 @@ public class SwissRailRaptorCore {
         Arrays.fill(this.arrivalPathPerStop, null);
         Arrays.fill(this.leastArrivalCostAtRouteStop, Double.POSITIVE_INFINITY);
         Arrays.fill(this.leastArrivalCostAtStop, Double.POSITIVE_INFINITY);
+        this.improvedStops.clear();
         this.improvedRouteStopIndices.clear();
         this.reachedRouteStopIndices.clear();
         this.destinationRouteStopIndices.clear();
@@ -104,6 +106,7 @@ public class SwissRailRaptorCore {
                 initialStops.put(accessStop.stop, accessStop);
             }
         }
+        boolean hasIntermodalAccess = false;
         for (InitialStop stop : initialStops.values()) {
             int[] routeStopIndices = this.data.routeStopsPerStopFacility.get(stop.stop);
             for (int routeStopIndex : routeStopIndices) {
@@ -111,8 +114,10 @@ public class SwissRailRaptorCore {
                 double arrivalCost = stop.accessCost;
 
                 RRouteStop routeStop = this.data.routeStops[routeStopIndex];
-                if (routeStop.routeStop == routeStop.route.getStops().get(routeStop.route.getStops().size() - 1)) {
-                    // this is the last stop of a route
+                boolean isIntermodalAccess = stop.planElements != null;
+                if (!isIntermodalAccess && routeStop.routeStop == routeStop.route.getStops().get(routeStop.route.getStops().size() - 1)) {
+                    // this is the last stop of a route, doesn't make sense to start here
+                    // if it's intermodal, we still start here, as we might transfer to another close-by but non-intermodal stop.
                     continue;
                 }
                 RRoute route = this.data.routes[routeStop.transitRouteIndex];
@@ -145,12 +150,38 @@ public class SwissRailRaptorCore {
                         this.leastArrivalCostAtRouteStop[routeStopIndex] = xCost;
                         this.improvedRouteStopIndices.set(routeStopIndex);
                         if (xCost < this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex]) {
+                            this.improvedStops.set(toRouteStop.stopFacilityIndex);
                             this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
                             this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = xCost;
                         }
                     }
+                } else if (isIntermodalAccess) {
+                    // there is no more departure, but we start here by intermodal access, so still register to allow transfers to other (non-)intermodal stops.
+                    RRouteStop toRouteStop = this.data.routeStops[routeStopIndex];
+                    PathElement pe = new PathElement(null, toRouteStop, Double.NaN, Time.getUndefinedTime(), arrivalTime, arrivalCost, 0, stop.distance, 0, true, stop);
+
+                    /* okay, the following is not very nice...
+                     * ... see long comment above, it's the same
+                     */
+                    if (arrivalCost < this.leastArrivalCostAtRouteStop[routeStopIndex]) {
+                        hasIntermodalAccess = true;
+                        this.arrivalPathPerRouteStop[routeStopIndex] = pe;
+                        this.leastArrivalCostAtRouteStop[routeStopIndex] = arrivalCost;
+                        this.improvedRouteStopIndices.set(routeStopIndex);
+                        if (arrivalCost < this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex]) {
+                            this.improvedStops.set(toRouteStop.stopFacilityIndex);
+                            this.arrivalPathPerStop[toRouteStop.stopFacilityIndex] = pe;
+                            this.leastArrivalCostAtStop[toRouteStop.stopFacilityIndex] = arrivalCost;
+                        }
+                    }
                 }
             }
+        }
+
+        if (hasIntermodalAccess) {
+            // allow transfering from the initial stop to another one if we have intermodal access,
+            // as not all stops might be intermodal
+            handleTransfers(true, parameters);
         }
 
         int allowedTransfersLeft = maxTransfersAfterFirstArrival;
@@ -499,7 +530,11 @@ public class SwissRailRaptorCore {
         this.improvedStops.clear();
         this.reachedRouteStopIndices.clear();
 
-        double transferPenaltyTravelTimeToCostFactor = parameters.getTransferPenaltyTravelTimeToCostFactor();
+        double transferCostBase = parameters.getTransferPenaltyFixCostPerTransfer();
+        double transferCostPerHour = parameters.getTransferPenaltyPerTravelTimeHour();
+        double transferCostMin = parameters.getTransferPenaltyMinimum();
+        double transferCostMax = parameters.getTransferPenaltyMaximum();
+
         double marginalUtilityOfWaitingPt_utl_s = parameters.getMarginalUtilityOfWaitingPt_utl_s();
 
         int routeIndex = -1;
@@ -546,7 +581,7 @@ public class SwissRailRaptorCore {
                     double inVehicleTime = arrivalTime - currentAgentBoardingTime;
                     double inVehicleCost = inVehicleTime * -marginalUtilityOfTravelTime_utl_s;
                     double arrivalTravelCost = currentTravelCostWhenBoarding + inVehicleCost;
-                    double arrivalTransferCost = ((arrivalTime - firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (boardingPE.transferCount);
+                    double arrivalTransferCost = calcTransferCost(transferCostBase, transferCostPerHour, transferCostMin, transferCostMax, arrivalTime - firstDepartureTime) * (boardingPE.transferCount);
                     double previousArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];
                     double totalArrivalCost = arrivalTravelCost + arrivalTransferCost;
                     if (totalArrivalCost <= previousArrivalCost) {
@@ -633,12 +668,27 @@ public class SwissRailRaptorCore {
         return pos;
     }
 
+    private double calcTransferCost(double costBase, double costPerHour, double costMin, double costMax, double travelTime) {
+        double cost = costBase + costPerHour / 3600 * travelTime;
+        double max = Math.max(costMin, costMax);
+        double min = Math.min(costMin, costMax);
+        if (cost > max) {
+            cost = max;
+        }
+        if (cost < min) {
+            cost = min;
+        }
+        return cost;
+    }
+
     private void handleTransfers(boolean strict, RaptorParameters raptorParams) {
         this.improvedRouteStopIndices.clear();
         this.tmpImprovedStops.clear();
 
-        double transferPenaltyFixed = raptorParams.getTransferPenaltyFixCostPerTransfer();
-        double transferPenaltyTravelTimeToCostFactor = raptorParams.getTransferPenaltyTravelTimeToCostFactor();
+        double transferCostBase = raptorParams.getTransferPenaltyFixCostPerTransfer();
+        double transferCostPerHour = raptorParams.getTransferPenaltyPerTravelTimeHour();
+        double transferCostMin = raptorParams.getTransferPenaltyMinimum();
+        double transferCostMax = raptorParams.getTransferPenaltyMaximum();
         double margUtilityTransitWalk = raptorParams.getMarginalUtilityOfTravelTime_utl_s(TransportMode.transit_walk);
 
         for (int stopIndex = this.improvedStops.nextSetBit(0); stopIndex >= 0; stopIndex = this.improvedStops.nextSetBit(stopIndex + 1)) {
@@ -657,8 +707,8 @@ public class SwissRailRaptorCore {
                 RTransfer transfer = this.data.transfers[transferIndex];
                 int toRouteStopIndex = transfer.toRouteStop;
                 double newArrivalTime = arrivalTime + transfer.transferTime;
-                double newArrivalTravelCost = arrivalTravelCost + transferPenaltyFixed - transfer.transferTime * margUtilityTransitWalk;
-                double newArrivalTransferCost = Double.isFinite(fromPE.firstDepartureTime) ? ((newArrivalTime - fromPE.firstDepartureTime) * transferPenaltyTravelTimeToCostFactor) * (fromPE.transferCount + 1) : 0;
+                double newArrivalTravelCost = arrivalTravelCost - transfer.transferTime * margUtilityTransitWalk;
+                double newArrivalTransferCost = Double.isFinite(fromPE.firstDepartureTime) ? calcTransferCost (transferCostBase, transferCostPerHour, transferCostMin, transferCostMax, newArrivalTime - fromPE.firstDepartureTime) * (fromPE.transferCount + 1) : 0;
                 double newTotalArrivalCost = newArrivalTravelCost + newArrivalTransferCost;
                 double prevLeastArrivalCost = this.leastArrivalCostAtRouteStop[toRouteStopIndex];
                 if (newTotalArrivalCost < prevLeastArrivalCost || (!strict && newTotalArrivalCost <= prevLeastArrivalCost)) {
@@ -740,8 +790,9 @@ public class SwissRailRaptorCore {
                 boolean differentFromTo = (fromStop == null || toStop == null) || (fromStop != toStop);
                 // do not create a transfer-leg if we stay at the same stop facility
                 if (differentFromTo) {
-                    if (i == peCount - 2) {
+                    if (i == peCount - 2 && !isIntermodal(pes.get(i+1).initialStop)) {
                         // the second last element is a transfer, skip it so it gets merged into the egress_walk
+                        // but it can only be merged if it is not intermodal...
                         continue;
                     }
                     String mode = TransportMode.transit_walk;
@@ -762,6 +813,10 @@ public class SwissRailRaptorCore {
             fromStop = toStop;
         }
         return raptorRoute;
+    }
+
+    private static boolean isIntermodal(InitialStop initialStop) {
+        return initialStop != null && initialStop.planElements != null;
     }
 
     private static class PathElement {

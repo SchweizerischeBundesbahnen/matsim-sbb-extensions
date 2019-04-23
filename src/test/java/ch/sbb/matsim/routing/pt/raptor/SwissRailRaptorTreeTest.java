@@ -234,8 +234,8 @@ public class SwissRailRaptorTreeTest {
 
         Assert.assertEquals("wrong number of reached stops.", f.schedule.getFacilities().size(), map.size());
 
-        assertTravelInfo(map, 0 ,  "2", 1, "07:33:00", "07:54:06"); // transfer at B, walk at A
-        assertTravelInfo(map, 1 ,  "2", 1, "07:33:00", "07:54:00"); // transfer at B
+        assertTravelInfo(map, 0 ,  "2", 0, "07:49:00", "07:54:06"); // initial transfer at B (not counted), walk at A
+        assertTravelInfo(map, 1 ,  "2", 0, "07:49:00", "07:54:00"); // initial transfer at B (not counted)
         assertTravelInfo(map, 2 ,  "2", 0, "07:30:00", "07:30:00"); // from B, we started here
         assertTravelInfo(map, 3 ,  "2", 0, "07:30:06", "07:30:06"); // from B, walk
         assertTravelInfo(map, 4 ,  "2", 0, "07:33:00", "07:38:00"); // from B, directly reachable
