@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright (C) Schweizerische Bundesbahnen SBB, 2018.
+  ~ Copyright (C) Schweizerische Bundesbahnen SBB, 2018-2019.
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -8,7 +8,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.sbb</groupId>
 	<artifactId>matsim-sbb-extensions</artifactId>
-	<version>0.11.0-SNAPSHOT</version>
+	<version>11.0-SNAPSHOT</version>
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
 
@@ -36,13 +36,13 @@
 		<dependency>
 			<groupId>org.matsim</groupId>
 			<artifactId>matsim</artifactId>
-			<version>0.11.0-2019w03-SNAPSHOT</version>
+			<version>11.0</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.matsim</groupId>
 			<artifactId>matsim</artifactId>
-			<version>0.11.0-2019w03-SNAPSHOT</version>
+			<version>11.0</version>
 			<classifier>tests</classifier>
 			<scope>test</scope>
 			<type>test-jar</type>
