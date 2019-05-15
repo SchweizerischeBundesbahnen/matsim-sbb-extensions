@@ -7,6 +7,7 @@ import org.matsim.core.utils.misc.Time;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author mrieser
@@ -85,5 +86,62 @@ public class PTSkimMatricesTest {
         adaptionTime = PTSkimMatrices.RowWorker.calcAverageAdaptionTime(connections, Time.parseTime("08:00:00"), Time.parseTime("09:00:00"));
         Assert.assertEquals(216, adaptionTime, 1e-7);
         // the frequency would be 3600 / 216 / 4 = 4.1666
+    }
+
+    @Test
+    public void testCalcConnectionShares() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        // 15-min headway
+        ODConnection c1, c2, c3, c4, c5, c6, c7, c8;
+        connections.add(c1 = new ODConnection(Time.parseTime("08:05:00"), 600, 60, 150, 0, null));
+        connections.add(c2 = new ODConnection(Time.parseTime("08:20:00"), 600, 60, 150, 0, null));
+        connections.add(c3 = new ODConnection(Time.parseTime("08:35:00"), 600, 60, 150, 0, null));
+        connections.add(c4 = new ODConnection(Time.parseTime("08:50:00"), 600, 60, 150, 0, null));
+        connections.add(c5 = new ODConnection(Time.parseTime("09:05:00"), 600, 60, 150, 0, null));
+
+        Map<ODConnection, Double> shares = PTSkimMatrices.RowWorker.calcConnectionShares(connections, Time.parseTime("08:00:00"), Time.parseTime("09:00:00"));
+        // there is a departure every 900 seconds, max adaption time would be 450, average of that would be 225.0.
+        // every connection should have the same share, i.e. 1/4th = 0.25, but the first and the last only cover part of the time, so they have less
+        Assert.assertEquals(5, shares.size());
+        Assert.assertEquals(12.0/60.0, shares.get(c1), 1e-7);
+        Assert.assertEquals(15.0/60.0, shares.get(c2), 1e-7);
+        Assert.assertEquals(15.0/60.0, shares.get(c3), 1e-7);
+        Assert.assertEquals(15.0/60.0, shares.get(c4), 1e-7);
+        Assert.assertEquals(3.0/60.0, shares.get(c5), 1e-7);
+
+
+        // two special, fast courses
+        connections.add(c6 = new ODConnection(Time.parseTime("08:22:00"), 300, 60, 150, 0, null));
+        connections.add(c7 = new ODConnection(Time.parseTime("08:48:00"), 300, 60, 150, 0, null));
+
+        connections = PTSkimMatrices.RowWorker.sortAndFilterConnections(connections);
+        Assert.assertEquals(5, connections.size());
+        // there should now be departures at 08:05, 08:22, 08:35, 08:48, 09:05
+
+        shares = PTSkimMatrices.RowWorker.calcConnectionShares(connections, Time.parseTime("08:00:00"), Time.parseTime("09:00:00"));
+
+        Assert.assertEquals(5, shares.size());
+        Assert.assertEquals(10.0/60.0, shares.get(c1), 1e-7);
+        Assert.assertEquals(20.0/60.0, shares.get(c6), 1e-7);
+        Assert.assertEquals(8.0/60.0, shares.get(c3), 1e-7);
+        Assert.assertEquals(20.0/60.0, shares.get(c7), 1e-7);
+        Assert.assertEquals(2.0/60.0, shares.get(c5), 1e-7);
+
+        connections.add(c8 = new ODConnection(Time.parseTime("08:15:00"), 300, 60, 150, 0, null));
+
+        connections = PTSkimMatrices.RowWorker.sortAndFilterConnections(connections);
+        Assert.assertEquals(6, connections.size());
+        // there should now be departures at 08:05, 08:15, 08:22, 08:35, 08:48, 09:05
+
+        shares = PTSkimMatrices.RowWorker.calcConnectionShares(connections, Time.parseTime("08:00:00"), Time.parseTime("09:00:00"));
+
+        Assert.assertEquals(6, shares.size());
+        Assert.assertEquals(7.0/60.0, shares.get(c1), 1e-7);
+        Assert.assertEquals(11.0/60.0, shares.get(c8), 1e-7);
+        Assert.assertEquals(12.0/60.0, shares.get(c6), 1e-7);
+        Assert.assertEquals(8.0/60.0, shares.get(c3), 1e-7);
+        Assert.assertEquals(20.0/60.0, shares.get(c7), 1e-7);
+        Assert.assertEquals(2.0/60.0, shares.get(c5), 1e-7);
     }
 }

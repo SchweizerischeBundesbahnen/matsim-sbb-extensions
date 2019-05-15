@@ -210,34 +210,54 @@ public class PTSkimMatrices {
 
             this.pti.adaptionTimeMatrix.add(fromZoneId, toZoneId, (float) avgAdaptionTime);
 
-            ODConnection fastestConnection = findFastestConnection(connections);
+            Map<ODConnection, Double> connectionShares = calcConnectionShares(connections, minDepartureTime, maxDepartureTime);
 
-            float accessTime = accessTimes.get(fastestConnection.travelInfo.departureStop).floatValue();
-            float egressTime = (float) fastestConnection.egressTime;
-            float transferCount = (float) fastestConnection.transferCount;
-            float travelTime = (float) fastestConnection.totalTravelTime();
+            float accessTime = 0;
+            float egressTime = 0;
+            float transferCount = 0;
+            float travelTime = 0;
 
             double totalDistance = 0;
             double trainDistance = 0;
             double totalInVehTime = 0;
             double trainInVehTime = 0;
 
-            RaptorRoute route = fastestConnection.travelInfo.getRaptorRoute();
-            for (RaptorRoute.RoutePart part : route.getParts()) {
-                if (part.line != null) {
-                    // it's a non-transfer part, an actual pt stage
+            for (Map.Entry<ODConnection, Double> e : connectionShares.entrySet()) {
+                ODConnection connection = e.getKey();
+                double share = e.getValue();
 
-                    boolean isTrain = this.trainDetector.test(part.line, part.route);
-                    double inVehicleTime = part.arrivalTime - part.boardingTime;
+                accessTime += share * accessTimes.get(connection.travelInfo.departureStop).floatValue();
+                egressTime += share * (float) connection.egressTime;
+                transferCount += share * (float) connection.transferCount;
+                travelTime += share * (float) connection.totalTravelTime();
 
-                    totalDistance += part.distance;
-                    totalInVehTime += inVehicleTime;
+                double connTotalDistance = 0;
+                double connTrainDistance = 0;
+                double connTotalInVehTime = 0;
+                double connTrainInVehTime = 0;
 
-                    if (isTrain) {
-                        trainDistance += part.distance;
-                        trainInVehTime += inVehicleTime;
+                RaptorRoute route = connection.travelInfo.getRaptorRoute();
+                for (RaptorRoute.RoutePart part : route.getParts()) {
+                    if (part.line != null) {
+                        // it's a non-transfer part, an actual pt stage
+
+                        boolean isTrain = this.trainDetector.test(part.line, part.route);
+                        double inVehicleTime = part.arrivalTime - part.boardingTime;
+
+                        connTotalDistance += part.distance;
+                        connTotalInVehTime += inVehicleTime;
+
+                        if (isTrain) {
+                            connTrainDistance += part.distance;
+                            connTrainInVehTime += inVehicleTime;
+                        }
                     }
                 }
+
+                totalDistance += share * connTotalDistance;
+                trainDistance += share * connTrainDistance;
+                totalInVehTime += share * connTotalInVehTime;
+                trainInVehTime += share * connTrainInVehTime;
             }
 
             float trainShareByTravelTime = (float) (trainInVehTime / totalInVehTime);
@@ -375,6 +395,63 @@ public class PTSkimMatrices {
                 count++;
             }
             return sum / count;
+        }
+
+        /** calculates the share each connection covers based on minimizing (travelTime + adaptionTime)
+         */
+        static Map<ODConnection, Double> calcConnectionShares(List<ODConnection> connections, double minDepartureTime, double maxDepartureTime) {
+            double prevDepartureTime = Double.NaN;
+            double nextDepartureTime = Double.NaN;
+
+            ODConnection prevConnection = null;
+            ODConnection nextConnection = null;
+
+            Map<ODConnection, Double> shares = new HashMap<>();
+
+            Iterator<ODConnection> connectionIterator = connections.iterator();
+            if (connectionIterator.hasNext()) {
+                nextConnection = connectionIterator.next();
+                nextDepartureTime = nextConnection.departureTime - nextConnection.accessTime;
+            }
+
+            for (double time = minDepartureTime; time < maxDepartureTime; time += 60.0) {
+                if (time >= nextDepartureTime) {
+                    prevDepartureTime = nextDepartureTime;
+                    prevConnection = nextConnection;
+                    if (connectionIterator.hasNext()) {
+                        nextConnection = connectionIterator.next();
+                        nextDepartureTime = nextConnection.departureTime - nextConnection.accessTime;
+                    } else {
+                        nextDepartureTime = Double.NaN;
+                        nextConnection = null;
+                    }
+                }
+
+                if (prevConnection == null) {
+                    shares.compute(nextConnection, (c, oldVal) -> (oldVal == null ? 1 : (oldVal+1)));
+                } else if (nextConnection == null) {
+                    shares.compute(prevConnection, (c, oldVal) -> (oldVal == null ? 1 : (oldVal+1)));
+                } else {
+                    double prevAdaptionTime = time - prevDepartureTime;
+                    double nextAdaptionTime = nextDepartureTime - time;
+                    double prevTotalTime = prevConnection.travelTime + prevAdaptionTime;
+                    double nextTotalTime = nextConnection.travelTime + nextAdaptionTime;
+
+                    if (prevTotalTime < nextTotalTime) {
+                        shares.compute(prevConnection, (c, oldVal) -> (oldVal == null ? 1 : (oldVal+1)));
+                    } else {
+                        shares.compute(nextConnection, (c, oldVal) -> (oldVal == null ? 1 : (oldVal+1)));
+                    }
+                }
+            }
+
+            double sum = (maxDepartureTime - minDepartureTime) / 60;
+            for (Map.Entry<ODConnection, Double> e : shares.entrySet()) {
+                ODConnection c = e.getKey();
+                shares.put(c, e.getValue() / sum);
+            }
+
+            return shares;
         }
 
         private static Collection<TransitStopFacility> findStopCandidates(Coord coord, SwissRailRaptor raptor, RaptorParameters parameters) {
