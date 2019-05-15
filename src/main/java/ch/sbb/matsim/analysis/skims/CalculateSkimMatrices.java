@@ -72,6 +72,7 @@ public class CalculateSkimMatrices {
 
     public static final String CAR_TRAVELTIMES_FILENAME = "car_traveltimes.csv.gz";
     public static final String CAR_DISTANCES_FILENAME = "car_distances.csv.gz";
+    public static final String PT_DISTANCES_FILENAME = "pt_distances.csv.gz";
     public static final String PT_TRAVELTIMES_FILENAME = "pt_traveltimes.csv.gz";
     public static final String PT_ACCESSTIMES_FILENAME = "pt_accesstimes.csv.gz";
     public static final String PT_EGRESSTIMES_FILENAME = "pt_egresstimes.csv.gz";
@@ -357,6 +358,7 @@ public class CalculateSkimMatrices {
         log.info("write PT matrices to " + outputDirectory);
         FloatMatrixIO.writeAsCSV(matrices.adaptionTimeMatrix, outputDirectory + "/" + PT_ADAPTIONTIMES_FILENAME);
         FloatMatrixIO.writeAsCSV(matrices.frequencyMatrix, outputDirectory + "/" + PT_FREQUENCIES_FILENAME);
+        FloatMatrixIO.writeAsCSV(matrices.distanceMatrix, outputDirectory + "/" + PT_DISTANCES_FILENAME);
         FloatMatrixIO.writeAsCSV(matrices.travelTimeMatrix, outputDirectory + "/" + PT_TRAVELTIMES_FILENAME);
         FloatMatrixIO.writeAsCSV(matrices.accessTimeMatrix, outputDirectory + "/" + PT_ACCESSTIMES_FILENAME);
         FloatMatrixIO.writeAsCSV(matrices.egressTimeMatrix, outputDirectory + "/" + PT_EGRESSTIMES_FILENAME);
