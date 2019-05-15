@@ -328,11 +328,13 @@ public class PTSkimMatrices {
         static double calcAverageAdaptionTime(List<ODConnection> connections, double minDepartureTime, double maxDepartureTime) {
             double prevDepartureTime = Double.NaN;
             double nextDepartureTime = Double.NaN;
+            ODConnection prevConnection = null;
+            ODConnection nextConnection = null;
 
             Iterator<ODConnection> connectionIterator = connections.iterator();
             if (connectionIterator.hasNext()) {
-                ODConnection connection = connectionIterator.next();
-                nextDepartureTime = connection.departureTime - connection.accessTime;
+                nextConnection = connectionIterator.next();
+                nextDepartureTime = nextConnection.departureTime - nextConnection.accessTime;
             }
 
             double sum = 0.0;
@@ -342,20 +344,31 @@ public class PTSkimMatrices {
 
                 if (time >= nextDepartureTime) {
                     prevDepartureTime = nextDepartureTime;
+                    prevConnection = nextConnection;
                     if (connectionIterator.hasNext()) {
-                        ODConnection connection = connectionIterator.next();
-                        nextDepartureTime = connection.departureTime - connection.accessTime;
+                        nextConnection = connectionIterator.next();
+                        nextDepartureTime = nextConnection.departureTime - nextConnection.accessTime;
                     } else {
                         nextDepartureTime = Double.NaN;
+                        nextConnection = null;
                     }
                 }
 
-                if (Double.isNaN(prevDepartureTime)) {
+                if (prevConnection == null) {
                     adaptionTime = nextDepartureTime - time;
-                } else if (Double.isNaN(nextDepartureTime)) {
+                } else if (nextConnection == null) {
                     adaptionTime = time - prevDepartureTime;
                 } else {
-                    adaptionTime = Math.min(time - prevDepartureTime, nextDepartureTime - time);
+                    double prevAdaptionTime = time - prevDepartureTime;
+                    double nextAdaptionTime = nextDepartureTime - time;
+                    double prevTotalTime = prevConnection.travelTime + prevAdaptionTime;
+                    double nextTotalTime = nextConnection.travelTime + nextAdaptionTime;
+
+                    if (prevTotalTime < nextTotalTime) {
+                        adaptionTime = prevAdaptionTime;
+                    } else {
+                        adaptionTime = nextAdaptionTime;
+                    }
                 }
 
                 sum += adaptionTime;

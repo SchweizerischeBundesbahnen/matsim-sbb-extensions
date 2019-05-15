@@ -50,7 +50,6 @@ public class PTSkimMatricesTest {
     public void testCalcAvgAdaptionTime() {
         List<ODConnection> connections = new ArrayList<>();
 
-        // we'll misuse the transferCount as a connection identifier
         // 15-min headway
         connections.add(new ODConnection(Time.parseTime("08:05:00"), 600, 60, 150, 0, null));
         connections.add(new ODConnection(Time.parseTime("08:20:00"), 600, 60, 150, 0, null));
@@ -75,8 +74,8 @@ public class PTSkimMatricesTest {
         // resulting in a slightly higher adaption time
 
         adaptionTime = PTSkimMatrices.RowWorker.calcAverageAdaptionTime(connections, Time.parseTime("08:00:00"), Time.parseTime("09:00:00"));
-        Assert.assertEquals(228, adaptionTime, 1e-7);
-        // the frequency would be 3600 / 228 / 4 = 3.94736
+        Assert.assertEquals(254, adaptionTime, 1e-7);
+        // the frequency would be 3600 / 254 / 4 = 3.5433
 
         connections.add(new ODConnection(Time.parseTime("08:15:00"), 300, 60, 150, 0, null));
 
@@ -84,7 +83,7 @@ public class PTSkimMatricesTest {
         Assert.assertEquals(6, connections.size());
 
         adaptionTime = PTSkimMatrices.RowWorker.calcAverageAdaptionTime(connections, Time.parseTime("08:00:00"), Time.parseTime("09:00:00"));
-        Assert.assertEquals(193, adaptionTime, 1e-7);
-        // the frequency would be 3600 / 193 / 4 = 4.66321
+        Assert.assertEquals(216, adaptionTime, 1e-7);
+        // the frequency would be 3600 / 216 / 4 = 4.1666
     }
 }
