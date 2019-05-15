@@ -267,6 +267,7 @@ public class PTSkimMatrices {
             this.pti.egressTimeMatrix.add(fromZoneId, toZoneId, egressTime);
             this.pti.transferCountMatrix.add(fromZoneId, toZoneId, transferCount);
             this.pti.travelTimeMatrix.add(fromZoneId, toZoneId, travelTime);
+            this.pti.distanceMatrix.add(fromZoneId, toZoneId, (float) totalDistance);
             this.pti.trainDistanceShareMatrix.add(fromZoneId, toZoneId, trainShareByDistance);
             this.pti.trainTravelTimeShareMatrix.add(fromZoneId, toZoneId, trainShareByTravelTime);
 
@@ -467,6 +468,7 @@ public class PTSkimMatrices {
         private void invalidateEntries(T fromZone, T toZone) {
             this.pti.adaptionTimeMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
             this.pti.frequencyMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
+            this.pti.distanceMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
             this.pti.travelTimeMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
             this.pti.accessTimeMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
             this.pti.egressTimeMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
@@ -503,6 +505,7 @@ public class PTSkimMatrices {
         public final FloatMatrix<T> adaptionTimeMatrix;
         public final FloatMatrix<T> frequencyMatrix;
 
+        public final FloatMatrix<T> distanceMatrix;
         public final FloatMatrix<T> travelTimeMatrix;
         public final FloatMatrix<T> accessTimeMatrix;
         public final FloatMatrix<T> egressTimeMatrix;
@@ -516,6 +519,7 @@ public class PTSkimMatrices {
             this.adaptionTimeMatrix = new FloatMatrix<>(zones, 0);
             this.frequencyMatrix = new FloatMatrix<>(zones, 0);
 
+            this.distanceMatrix = new FloatMatrix<>(zones, 0);
             this.travelTimeMatrix = new FloatMatrix<>(zones, 0);
             this.accessTimeMatrix = new FloatMatrix<>(zones, 0);
             this.egressTimeMatrix = new FloatMatrix<>(zones, 0);
