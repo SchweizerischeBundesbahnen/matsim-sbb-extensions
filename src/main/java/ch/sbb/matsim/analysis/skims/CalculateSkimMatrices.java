@@ -341,11 +341,12 @@ public class CalculateSkimMatrices {
         return xy2lNetwork;
     }
 
-    public final void calculatePTMatrices(String transitScheduleFilename, double startTime, double endTime, Config config, String outputPrefix, BiPredicate<TransitLine, TransitRoute> trainDetector) throws IOException {
+    public final void calculatePTMatrices(String networkFilename, String transitScheduleFilename, double startTime, double endTime, Config config, String outputPrefix, BiPredicate<TransitLine, TransitRoute> trainDetector) throws IOException {
         String prefix = outputPrefix == null ? "" : outputPrefix;
         Scenario scenario = ScenarioUtils.createScenario(config);
         log.info("loading schedule from " + transitScheduleFilename);
         new TransitScheduleReader(scenario).readFile(transitScheduleFilename);
+        new MatsimNetworkReader(scenario.getNetwork()).readFile(networkFilename);
 
         log.info("prepare PT Matrix calculation");
         RaptorStaticConfig raptorConfig = RaptorUtils.createStaticConfig(config);
@@ -436,7 +437,7 @@ public class CalculateSkimMatrices {
         }
 
         if (modes.contains(TransportMode.pt)) {
-            skims.calculatePTMatrices(transitScheduleFilename, timesPt[0], timesPt[1], config, null, (line, route) -> route.getTransportMode().equals("train"));
+            skims.calculatePTMatrices(networkFilename, transitScheduleFilename, timesPt[0], timesPt[1], config, null, (line, route) -> route.getTransportMode().equals("train"));
         }
 
         skims.calculateBeelineMatrix();
