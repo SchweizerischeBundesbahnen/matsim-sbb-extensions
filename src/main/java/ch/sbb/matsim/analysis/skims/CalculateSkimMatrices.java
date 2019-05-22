@@ -258,7 +258,8 @@ public class CalculateSkimMatrices {
         FloatMatrixIO.writeAsCSV(beelineMatrix, outputDirectory + "/" + BEELINE_DISTANCE_FILENAME);
     }
 
-    public final void calculateNetworkMatrices(String networkFilename, String eventsFilename, double[] times, Config config, Predicate<Link> xy2linksPredicate) throws IOException {
+    public final void calculateNetworkMatrices(String networkFilename, String eventsFilename, double[] times, Config config, String outputPrefix, Predicate<Link> xy2linksPredicate) throws IOException {
+        String prefix = outputPrefix == null ? "" : outputPrefix;
         Scenario scenario = ScenarioUtils.createScenario(config);
         log.info("loading network from " + networkFilename);
         new MatsimNetworkReader(scenario.getNetwork()).readFile(networkFilename);
@@ -305,9 +306,9 @@ public class CalculateSkimMatrices {
             netIndicators.distanceMatrix.multiply((float) (1.0 / times.length));
         }
 
-        log.info("write CAR matrices to " + outputDirectory);
-        FloatMatrixIO.writeAsCSV(netIndicators.travelTimeMatrix, outputDirectory + "/" + CAR_TRAVELTIMES_FILENAME);
-        FloatMatrixIO.writeAsCSV(netIndicators.distanceMatrix, outputDirectory + "/" + CAR_DISTANCES_FILENAME);
+        log.info("write CAR matrices to " + outputDirectory + (prefix.isEmpty() ? "" : (" with prefix " + prefix)));
+        FloatMatrixIO.writeAsCSV(netIndicators.travelTimeMatrix, outputDirectory + "/" + prefix + CAR_TRAVELTIMES_FILENAME);
+        FloatMatrixIO.writeAsCSV(netIndicators.distanceMatrix, outputDirectory + "/" + prefix + CAR_DISTANCES_FILENAME);
     }
 
     private Network extractXy2LinksNetwork(Network network, Predicate<Link> xy2linksPredicate) {
@@ -340,7 +341,8 @@ public class CalculateSkimMatrices {
         return xy2lNetwork;
     }
 
-    public final void calculatePTMatrices(String networkFilename, String transitScheduleFilename, double startTime, double endTime, Config config, BiPredicate<TransitLine, TransitRoute> trainDetector) throws IOException {
+    public final void calculatePTMatrices(String networkFilename, String transitScheduleFilename, double startTime, double endTime, Config config, String outputPrefix, BiPredicate<TransitLine, TransitRoute> trainDetector) throws IOException {
+        String prefix = outputPrefix == null ? "" : outputPrefix;
         Scenario scenario = ScenarioUtils.createScenario(config);
         log.info("loading schedule from " + transitScheduleFilename);
         new TransitScheduleReader(scenario).readFile(transitScheduleFilename);
@@ -356,16 +358,16 @@ public class CalculateSkimMatrices {
         PTSkimMatrices.PtIndicators<String> matrices = PTSkimMatrices.calculateSkimMatrices(
                 raptorData, this.zonesById, this.coordsPerZone, startTime, endTime, 120, raptorParameters, this.numberOfThreads, trainDetector);
 
-        log.info("write PT matrices to " + outputDirectory);
-        FloatMatrixIO.writeAsCSV(matrices.adaptionTimeMatrix, outputDirectory + "/" + PT_ADAPTIONTIMES_FILENAME);
-        FloatMatrixIO.writeAsCSV(matrices.frequencyMatrix, outputDirectory + "/" + PT_FREQUENCIES_FILENAME);
-        FloatMatrixIO.writeAsCSV(matrices.distanceMatrix, outputDirectory + "/" + PT_DISTANCES_FILENAME);
-        FloatMatrixIO.writeAsCSV(matrices.travelTimeMatrix, outputDirectory + "/" + PT_TRAVELTIMES_FILENAME);
-        FloatMatrixIO.writeAsCSV(matrices.accessTimeMatrix, outputDirectory + "/" + PT_ACCESSTIMES_FILENAME);
-        FloatMatrixIO.writeAsCSV(matrices.egressTimeMatrix, outputDirectory + "/" + PT_EGRESSTIMES_FILENAME);
-        FloatMatrixIO.writeAsCSV(matrices.transferCountMatrix, outputDirectory + "/" + PT_TRANSFERCOUNTS_FILENAME);
-        FloatMatrixIO.writeAsCSV(matrices.trainTravelTimeShareMatrix, outputDirectory + "/" + PT_TRAINSHARE_BYTIME_FILENAME);
-        FloatMatrixIO.writeAsCSV(matrices.trainDistanceShareMatrix, outputDirectory + "/" + PT_TRAINSHARE_BYDISTANCE_FILENAME);
+        log.info("write PT matrices to " + outputDirectory + (prefix.isEmpty() ? "" : (" with prefix " + prefix)));
+        FloatMatrixIO.writeAsCSV(matrices.adaptionTimeMatrix, outputDirectory + "/" + prefix + PT_ADAPTIONTIMES_FILENAME);
+        FloatMatrixIO.writeAsCSV(matrices.frequencyMatrix, outputDirectory + "/" + prefix + PT_FREQUENCIES_FILENAME);
+        FloatMatrixIO.writeAsCSV(matrices.distanceMatrix, outputDirectory + "/" + prefix + PT_DISTANCES_FILENAME);
+        FloatMatrixIO.writeAsCSV(matrices.travelTimeMatrix, outputDirectory + "/" + prefix + PT_TRAVELTIMES_FILENAME);
+        FloatMatrixIO.writeAsCSV(matrices.accessTimeMatrix, outputDirectory + "/" + prefix + PT_ACCESSTIMES_FILENAME);
+        FloatMatrixIO.writeAsCSV(matrices.egressTimeMatrix, outputDirectory + "/" + prefix + PT_EGRESSTIMES_FILENAME);
+        FloatMatrixIO.writeAsCSV(matrices.transferCountMatrix, outputDirectory + "/" + prefix + PT_TRANSFERCOUNTS_FILENAME);
+        FloatMatrixIO.writeAsCSV(matrices.trainTravelTimeShareMatrix, outputDirectory + "/" + prefix + PT_TRAINSHARE_BYTIME_FILENAME);
+        FloatMatrixIO.writeAsCSV(matrices.trainDistanceShareMatrix, outputDirectory + "/" + prefix + PT_TRAINSHARE_BYDISTANCE_FILENAME);
     }
 
     private static <T> void combineMatrices(FloatMatrix<T> matrix1, FloatMatrix<T> matrix2) {
@@ -431,11 +433,11 @@ public class CalculateSkimMatrices {
         // skims.calculateSamplingPointsPerZoneFromNetwork(networkFilename, numberOfPointsPerZone, r);
 
         if (modes.contains(TransportMode.car)) {
-            skims.calculateNetworkMatrices(networkFilename, eventsFilename, timesCar, config, l -> true);
+            skims.calculateNetworkMatrices(networkFilename, eventsFilename, timesCar, config, null, l -> true);
         }
 
         if (modes.contains(TransportMode.pt)) {
-            skims.calculatePTMatrices(networkFilename, transitScheduleFilename, timesPt[0], timesPt[1], config, (line, route) -> route.getTransportMode().equals("train"));
+            skims.calculatePTMatrices(networkFilename, transitScheduleFilename, timesPt[0], timesPt[1], config, null, (line, route) -> route.getTransportMode().equals("train"));
         }
 
         skims.calculateBeelineMatrix();

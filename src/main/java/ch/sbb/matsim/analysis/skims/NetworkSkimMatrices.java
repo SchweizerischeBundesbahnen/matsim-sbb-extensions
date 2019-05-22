@@ -49,7 +49,7 @@ public final class NetworkSkimMatrices {
             for (int i = 0; i < coords.length; i++) {
                 Coord coord = coords[i];
                 Node node = NetworkUtils.getNearestLink(xy2lNetwork, coord).getToNode();
-                nodes[i] = node;
+                nodes[i] = routingNetwork.getNodes().get(node.getId());
             }
         }
 

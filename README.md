@@ -452,8 +452,8 @@ CalculateSkimMatrices skims = new CalculateSkimMatrices(zonesShapeFilename, zone
 skims.calculateSamplingPointsPerZoneFromFacilities(facilitiesFilename, numberOfPointsPerZone, r, facility -> 1.0);
 // alternative if you don't have facilities:
 // skims.calculateSamplingPointsPerZoneFromNetwork(networkFilename, numberOfPointsPerZone, r);
-skims.calculateNetworkMatrices(networkFilename, eventsFilename, timesCar, config, link -> true);
-skims.calculatePTMatrices(transitScheduleFilename, earliestTime, latestTime, config, (line, route) -> route.getTransportMode().equals("train"));
+skims.calculateNetworkMatrices(networkFilename, eventsFilename, timesCar, config, null, link -> true);
+skims.calculatePTMatrices(networkFilename, transitScheduleFilename, earliestTime, latestTime, config, null, (line, route) -> route.getTransportMode().equals("train"));
 skims.calculateBeelineMatrix();
 ```
 
