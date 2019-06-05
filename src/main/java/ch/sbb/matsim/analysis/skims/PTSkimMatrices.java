@@ -90,16 +90,28 @@ public class PTSkimMatrices {
         for (T fromZoneId : zones.keySet()) {
             for (T toZoneId : zones.keySet()) {
                 float count = pti.dataCountMatrix.get(fromZoneId, toZoneId);
-                float avgFactor = 1.0f / count;
-                float adaptionTime = pti.adaptionTimeMatrix.multiply(fromZoneId, toZoneId, avgFactor);
-                pti.travelTimeMatrix.multiply(fromZoneId, toZoneId, avgFactor);
-                pti.accessTimeMatrix.multiply(fromZoneId, toZoneId, avgFactor);
-                pti.egressTimeMatrix.multiply(fromZoneId, toZoneId, avgFactor);
-                pti.trainDistanceShareMatrix.multiply(fromZoneId, toZoneId, avgFactor);
-                pti.trainTravelTimeShareMatrix.multiply(fromZoneId, toZoneId, avgFactor);
-                pti.transferCountMatrix.multiply(fromZoneId, toZoneId, avgFactor);
-                float frequency = (float) ((maxDepartureTime - minDepartureTime) / adaptionTime / 4.0);
-                pti.frequencyMatrix.set(fromZoneId, toZoneId, frequency);
+                if (count == 0) {
+                    pti.adaptionTimeMatrix.set(fromZoneId, toZoneId, Float.POSITIVE_INFINITY);
+                    pti.frequencyMatrix.set(fromZoneId, toZoneId, 0);
+                    pti.distanceMatrix.set(fromZoneId, toZoneId, Float.POSITIVE_INFINITY);
+                    pti.travelTimeMatrix.set(fromZoneId, toZoneId, Float.POSITIVE_INFINITY);
+                    pti.accessTimeMatrix.set(fromZoneId, toZoneId, Float.POSITIVE_INFINITY);
+                    pti.egressTimeMatrix.set(fromZoneId, toZoneId, Float.POSITIVE_INFINITY);
+                    pti.transferCountMatrix.set(fromZoneId, toZoneId, Float.POSITIVE_INFINITY);
+                    pti.trainDistanceShareMatrix.set(fromZoneId, toZoneId, Float.POSITIVE_INFINITY);
+                    pti.trainTravelTimeShareMatrix.set(fromZoneId, toZoneId, Float.POSITIVE_INFINITY);
+                } else {
+                    float avgFactor = 1.0f / count;
+                    float adaptionTime = pti.adaptionTimeMatrix.multiply(fromZoneId, toZoneId, avgFactor);
+                    pti.travelTimeMatrix.multiply(fromZoneId, toZoneId, avgFactor);
+                    pti.accessTimeMatrix.multiply(fromZoneId, toZoneId, avgFactor);
+                    pti.egressTimeMatrix.multiply(fromZoneId, toZoneId, avgFactor);
+                    pti.trainDistanceShareMatrix.multiply(fromZoneId, toZoneId, avgFactor);
+                    pti.trainTravelTimeShareMatrix.multiply(fromZoneId, toZoneId, avgFactor);
+                    pti.transferCountMatrix.multiply(fromZoneId, toZoneId, avgFactor);
+                    float frequency = (float) ((maxDepartureTime - minDepartureTime) / adaptionTime / 4.0);
+                    pti.frequencyMatrix.set(fromZoneId, toZoneId, frequency);
+                }
             }
         }
 
@@ -146,13 +158,7 @@ public class PTSkimMatrices {
                     for (Coord fromCoord : fromCoords) {
                         calcForRow(fromZoneId, fromCoord);
                     }
-                } else {
-                    // this might happen if a zone has no geometry, for whatever reason...
-                    for (T toZoneId : this.destinationZones) {
-                        invalidateEntries(fromZoneId, toZoneId);
-                    }
                 }
-
             }
         }
 
@@ -180,9 +186,6 @@ public class PTSkimMatrices {
                     for (Coord toCoord : toCoords) {
                         calcForOD(fromZoneId, fromCoord, toZoneId, toCoord, accessTimes, trees);
                     }
-                } else {
-                    // this might happen if a zone has no geometry, for whatever reason...
-                    invalidateEntries(fromZoneId, toZoneId);
                 }
             }
         }
@@ -200,7 +203,6 @@ public class PTSkimMatrices {
 
             List<ODConnection> connections = buildODConnections(trees, egressTimes);
             if (connections.isEmpty()) {
-                invalidateEntries(fromZoneId, toZoneId);
                 return;
             }
 
@@ -464,19 +466,6 @@ public class PTSkimMatrices {
             }
             return stops;
         }
-
-        private void invalidateEntries(T fromZone, T toZone) {
-            this.pti.adaptionTimeMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
-            this.pti.frequencyMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
-            this.pti.distanceMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
-            this.pti.travelTimeMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
-            this.pti.accessTimeMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
-            this.pti.egressTimeMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
-            this.pti.transferCountMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
-            this.pti.trainDistanceShareMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
-            this.pti.trainTravelTimeShareMatrix.set(fromZone, toZone, Float.POSITIVE_INFINITY);
-        }
-
     }
 
     static class ODConnection {
