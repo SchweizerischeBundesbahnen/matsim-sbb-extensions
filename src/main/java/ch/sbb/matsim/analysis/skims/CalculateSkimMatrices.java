@@ -221,6 +221,7 @@ public class CalculateSkimMatrices {
     public final void loadSamplingPointsFromFile(String filename) throws IOException {
         log.info("loading sampling points from " + filename);
         String expectedHeader = "ZONE;POINT_INDEX;X;Y";
+        this.coordsPerZone = new HashMap<>();
         try (BufferedReader reader = IOUtils.getBufferedReader(filename)) {
             String header = reader.readLine();
             if (!expectedHeader.equals(header)) {
