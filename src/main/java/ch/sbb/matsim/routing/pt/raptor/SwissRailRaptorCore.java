@@ -181,7 +181,15 @@ public class SwissRailRaptorCore {
         if (hasIntermodalAccess) {
             // allow transfering from the initial stop to another one if we have intermodal access,
             // as not all stops might be intermodal
+
+            // handleTransfers clears improvedRouteStopIndices, which is correct during rounds
+            // but it loses the initial route stop indices directly after initialization.
+            // so keep a copy and restore it
+            BitSet initialRouteStopIndices = new BitSet();
+            initialRouteStopIndices.or(this.improvedRouteStopIndices);
+
             handleTransfers(true, parameters);
+            this.improvedRouteStopIndices.or(initialRouteStopIndices);
         }
 
         int allowedTransfersLeft = maxTransfersAfterFirstArrival;

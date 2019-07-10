@@ -411,7 +411,7 @@ public class SwissRailRaptorIntermodalTest {
 
     /**
      * Tests the following situation: two stops A and B close to each other, A has intermodal access, B not.
-     * They route is fastest from B to C, with intermodal access to A and then transferring from A to B.
+     * The route is fastest from B to C, with intermodal access to A and then transferring from A to B.
      * Make sure that in such cases the correct transit_walks are generated around stops A and B for access to pt.
      */
     @Test
@@ -457,6 +457,53 @@ public class SwissRailRaptorIntermodalTest {
         Assert.assertEquals("egress_walk", legAccess.getMode());
         Assert.assertEquals("DD", legAccess.getRoute().getStartLinkId().toString());
         Assert.assertEquals("to", legAccess.getRoute().getEndLinkId().toString());
+    }
+
+    /**
+     * When using intermodal access/egress, transfers at the beginning are allowed to
+     * be able to transfer from a stop with intermodal access/egress to another stop
+     * with better connections to the destination. Earlier versions of SwissRailRaptor
+     * had a bug that resulted in only stops where such transfers were possible to be
+     * used for route finding, but not stops directly reachable and usable.
+     * This test tries to cover this case to make sure, route finding works as expected
+     * in all cases.
+     */
+    @Test
+    public void testIntermodalTrip_singleReachableStop() {
+        IntermodalTransferFixture f = new IntermodalTransferFixture();
+
+        f.srrConfig.getIntermodalAccessEgressParameterSets().removeIf(paramset -> paramset.getMode().equals("bike")); // we only want "walk" as mode
+
+        Facility fromFac = new FakeFacility(new Coord(9800, 400), Id.create("from", Link.class)); // stops B or E, B is intermodal and triggered the bug
+        Facility toFac = new FakeFacility(new Coord(20000, 5100), Id.create("to", Link.class)); // stop F
+
+        SwissRailRaptorData data = SwissRailRaptorData.create(f.scenario.getTransitSchedule(), RaptorUtils.createStaticConfig(f.config), f.scenario.getNetwork());
+        DefaultRaptorStopFinder stopFinder = new DefaultRaptorStopFinder(null, new DefaultRaptorIntermodalAccessEgress(), f.routingModules);
+        SwissRailRaptor raptor = new SwissRailRaptor(data, new DefaultRaptorParametersForPerson(f.scenario.getConfig()),
+            new LeastCostRaptorRouteSelector(), stopFinder, null, null);
+
+        List<Leg> legs = raptor.calcRoute(fromFac, toFac, 7.5 * 3600 + 900, f.dummyPerson);
+        for (Leg leg : legs) {
+            System.out.println(leg);
+        }
+
+        Assert.assertEquals(3, legs.size());
+
+        Leg legAccess = legs.get(0);
+        Assert.assertEquals("access_walk", legAccess.getMode());
+        Assert.assertEquals("from", legAccess.getRoute().getStartLinkId().toString());
+        Assert.assertEquals("EE", legAccess.getRoute().getEndLinkId().toString());
+
+        Leg legPT = legs.get(1);
+        Assert.assertEquals("pt", legPT.getMode());
+        Assert.assertEquals("EE", legPT.getRoute().getStartLinkId().toString());
+        Assert.assertEquals("FF", legPT.getRoute().getEndLinkId().toString());
+
+        Leg legEgress = legs.get(2);
+        Assert.assertEquals("egress_walk", legEgress.getMode());
+        Assert.assertEquals("FF", legEgress.getRoute().getStartLinkId().toString());
+        Assert.assertEquals("to", legEgress.getRoute().getEndLinkId().toString());
+
     }
 
     @Test
@@ -521,11 +568,16 @@ public class SwissRailRaptorIntermodalTest {
             this.scenario = ScenarioUtils.createScenario(this.config);
 
             /* Scenario:
-
+                            (F)
+                            / green
+                           /
+                        (E)
                  red            blue
             (A)-------(B)  (C)--------(D)
                       /     \
                    bike      no bike
+
+               (E) is outside the transfer distance from (B) and (C)
 
              */
 
@@ -536,20 +588,28 @@ public class SwissRailRaptorIntermodalTest {
             Node nodeB = nf.createNode(Id.create("B", Node.class), new Coord( 9980, 0));
             Node nodeC = nf.createNode(Id.create("C", Node.class), new Coord(10020, 0));
             Node nodeD = nf.createNode(Id.create("D", Node.class), new Coord(20000, 0));
+            Node nodeE = nf.createNode(Id.create("E", Node.class), new Coord(10000, 800));
+            Node nodeF = nf.createNode(Id.create("F", Node.class), new Coord(20000, 5000));
 
             network.addNode(nodeA);
             network.addNode(nodeB);
             network.addNode(nodeC);
             network.addNode(nodeD);
+            network.addNode(nodeE);
+            network.addNode(nodeF);
 
             Link linkAA = nf.createLink(Id.create("AA", Link.class), nodeA, nodeA);
             Link linkAB = nf.createLink(Id.create("AB", Link.class), nodeA, nodeB);
-            Link linkBA = nf.createLink(Id.create("BA", Link.class), nodeA, nodeB);
+            Link linkBA = nf.createLink(Id.create("BA", Link.class), nodeB, nodeA);
             Link linkBB = nf.createLink(Id.create("BB", Link.class), nodeB, nodeB);
             Link linkCC = nf.createLink(Id.create("CC", Link.class), nodeC, nodeC);
             Link linkCD = nf.createLink(Id.create("CD", Link.class), nodeC, nodeD);
-            Link linkDC = nf.createLink(Id.create("DC", Link.class), nodeC, nodeD);
+            Link linkDC = nf.createLink(Id.create("DC", Link.class), nodeD, nodeC);
             Link linkDD = nf.createLink(Id.create("DD", Link.class), nodeD, nodeD);
+            Link linkEE = nf.createLink(Id.create("EE", Link.class), nodeE, nodeE);
+            Link linkEF = nf.createLink(Id.create("EF", Link.class), nodeE, nodeF);
+            Link linkFE = nf.createLink(Id.create("FE", Link.class), nodeF, nodeE);
+            Link linkFF = nf.createLink(Id.create("FF", Link.class), nodeF, nodeF);
 
             network.addLink(linkAA);
             network.addLink(linkAB);
@@ -559,6 +619,10 @@ public class SwissRailRaptorIntermodalTest {
             network.addLink(linkCD);
             network.addLink(linkDC);
             network.addLink(linkDD);
+            network.addLink(linkEE);
+            network.addLink(linkEF);
+            network.addLink(linkFE);
+            network.addLink(linkFF);
 
             // ----
 
@@ -569,6 +633,8 @@ public class SwissRailRaptorIntermodalTest {
             TransitStopFacility stopB = sf.createTransitStopFacility(Id.create("B", TransitStopFacility.class), nodeB.getCoord(), false);
             TransitStopFacility stopC = sf.createTransitStopFacility(Id.create("C", TransitStopFacility.class), nodeC.getCoord(), false);
             TransitStopFacility stopD = sf.createTransitStopFacility(Id.create("D", TransitStopFacility.class), nodeD.getCoord(), false);
+            TransitStopFacility stopE = sf.createTransitStopFacility(Id.create("E", TransitStopFacility.class), nodeE.getCoord(), false);
+            TransitStopFacility stopF = sf.createTransitStopFacility(Id.create("F", TransitStopFacility.class), nodeF.getCoord(), false);
 
             stopB.getAttributes().putAttribute("bikeAccessible", true);
             stopB.getAttributes().putAttribute("accessLinkId_bike", "bike_B");
@@ -577,11 +643,15 @@ public class SwissRailRaptorIntermodalTest {
             stopB.setLinkId(linkBB.getId());
             stopC.setLinkId(linkCC.getId());
             stopD.setLinkId(linkDD.getId());
+            stopE.setLinkId(linkEE.getId());
+            stopF.setLinkId(linkFF.getId());
 
             schedule.addStopFacility(stopA);
             schedule.addStopFacility(stopB);
             schedule.addStopFacility(stopC);
             schedule.addStopFacility(stopD);
+            schedule.addStopFacility(stopE);
+            schedule.addStopFacility(stopF);
 
             // red transit line
 
@@ -626,6 +696,28 @@ public class SwissRailRaptorIntermodalTest {
             blueLine.addRoute(blueDCRoute);
 
             schedule.addTransitLine(blueLine);
+
+            // green transit line
+
+            TransitLine greenLine = sf.createTransitLine(Id.create("green", TransitLine.class));
+
+            NetworkRoute networkRouteEF = RouteUtils.createLinkNetworkRouteImpl(linkEE.getId(), new Id[] { linkEF.getId() }, linkFF.getId());
+            List<TransitRouteStop> stopsGreenEF = new ArrayList<>(2);
+            stopsGreenEF.add(sf.createTransitRouteStop(stopE, Time.getUndefinedTime(), 0.0));
+            stopsGreenEF.add(sf.createTransitRouteStop(stopF, 600, Time.getUndefinedTime()));
+            TransitRoute greenEFRoute = sf.createTransitRoute(Id.create("greenEF", TransitRoute.class), networkRouteEF, stopsGreenEF, "train");
+            greenEFRoute.addDeparture(sf.createDeparture(Id.create("1", Departure.class), 8*3600));
+            greenLine.addRoute(greenEFRoute);
+
+            NetworkRoute networkRouteFE = RouteUtils.createLinkNetworkRouteImpl(linkDD.getId(), new Id[] { linkDC.getId() }, linkCC.getId());
+            List<TransitRouteStop> stopsGreenFE = new ArrayList<>(2);
+            stopsGreenFE.add(sf.createTransitRouteStop(stopF, Time.getUndefinedTime(), 0.0));
+            stopsGreenFE.add(sf.createTransitRouteStop(stopE, 600, Time.getUndefinedTime()));
+            TransitRoute greenFERoute = sf.createTransitRoute(Id.create("greenFE", TransitRoute.class), networkRouteFE, stopsGreenFE, "train");
+            greenFERoute.addDeparture(sf.createDeparture(Id.create("1", Departure.class), 8*3600));
+            greenLine.addRoute(greenFERoute);
+
+            schedule.addTransitLine(greenLine);
 
             // ---
 
