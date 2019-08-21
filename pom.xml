@@ -8,7 +8,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.sbb</groupId>
 	<artifactId>matsim-sbb-extensions</artifactId>
-	<version>11.4</version>
+	<version>11.5</version>
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
 
@@ -107,6 +107,7 @@
 						</goals>
 						<configuration>
 							<doclint>none</doclint>
+							<source>8</source>
 						</configuration>
 					</execution>
 				</executions>
