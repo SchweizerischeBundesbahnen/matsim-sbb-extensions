@@ -921,5 +921,19 @@ public class SwissRailRaptorCore {
             Facility toFacility = this.destinationPath.toRouteStop.routeStop.getStopFacility();
             return createRaptorRoute(fromFacility, toFacility, this.destinationPath, firstPath.arrivalTime);
         }
+
+        public boolean isWalkOnly() {
+            if (this.destinationPath.comingFrom == null) {
+                return true;
+            }
+            PathElement pe = this.destinationPath.comingFrom;
+            while (pe != null) {
+                if (!pe.isTransfer) {
+                    return false;
+                }
+                pe = pe.comingFrom;
+            }
+            return true;
+        }
     }
 }
