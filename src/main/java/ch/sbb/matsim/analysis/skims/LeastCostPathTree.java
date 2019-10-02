@@ -5,6 +5,7 @@
 package ch.sbb.matsim.analysis.skims;
 
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.IdMap;
 import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
@@ -24,8 +25,6 @@ import org.matsim.vehicles.Vehicle;
 import org.matsim.vehicles.VehicleUtils;
 
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 /**
@@ -51,7 +50,7 @@ public class LeastCostPathTree {
 	
 	private final TravelTime ttFunction;
 	private final TravelDisutility tcFunction;
-	private HashMap<Id<Node>, NodeData> nodeData = null;
+	private IdMap<Node, NodeData> nodeData = null;
 	
 	private final static Vehicle VEHICLE = VehicleUtils.getFactory().createVehicle(Id.create("theVehicle", Vehicle.class), VehicleUtils.getDefaultVehicleType());
 	private final static Person PERSON = PopulationUtils.getFactory().createPerson(Id.create("thePerson", Person.class));
@@ -69,14 +68,14 @@ public class LeastCostPathTree {
 		this.origin1 = origin;
 		this.dTime = time;
 		
-		this.nodeData = new HashMap<Id<Node>, NodeData>((int) (network.getNodes().size() * 1.1), 0.95f);
+		this.nodeData = new IdMap<>(Node.class);
 		NodeData d = new NodeData();
 		d.time = time;
 		d.cost = 0;
 		this.nodeData.put(origin.getId(), d);
 
 		ComparatorCost comparator = new ComparatorCost(this.nodeData);
-		PriorityQueue<Node> pendingNodes = new PriorityQueue<Node>(500, comparator);
+		PriorityQueue<Node> pendingNodes = new PriorityQueue<>(500, comparator);
 		relaxNode(origin, pendingNodes);
 		while (!pendingNodes.isEmpty()) {
 			Node n = pendingNodes.poll();
@@ -119,9 +118,9 @@ public class LeastCostPathTree {
 	}
 
 	/*package*/ static class ComparatorCost implements Comparator<Node> {
-		protected Map<Id<Node>, ? extends NodeData> nodeData;
+		protected IdMap<Node, ? extends NodeData> nodeData;
 
-		ComparatorCost(final Map<Id<Node>, ? extends NodeData> nodeData) {
+		ComparatorCost(final IdMap<Node, ? extends NodeData> nodeData) {
 			this.nodeData = nodeData;
 		}
 
@@ -145,7 +144,7 @@ public class LeastCostPathTree {
 	// get methods
 	// ////////////////////////////////////////////////////////////////////
 
-	public final Map<Id<Node>, NodeData> getTree() {
+	public final IdMap<Node, NodeData> getTree() {
 		return this.nodeData;
 	}
 
@@ -206,15 +205,13 @@ public class LeastCostPathTree {
 		LeastCostPathTree st = new LeastCostPathTree(ttc.getLinkTravelTimes(), new RandomizingTimeDistanceTravelDisutilityFactory( TransportMode.car, scenario.getConfig().planCalcScore() ).createTravelDisutility(ttc.getLinkTravelTimes()));
 		Node origin = network.getNodes().get(Id.create(1, Node.class));
 		st.calculate(network, origin, 8*3600);
-		Map<Id<Node>, NodeData> tree = st.getTree();
-		for (Map.Entry<Id<Node>, NodeData> e : tree.entrySet()) {
-			Id<Node> id = e.getKey();
-			NodeData d = e.getValue();
+		IdMap<Node, NodeData> tree = st.getTree();
+		tree.forEach((id, d) -> {
 			if (d.getPrevNodeId() != null) {
 				System.out.println(id + "\t" + d.getTime() + "\t" + d.getCost() + "\t" + d.getPrevNodeId());
 			} else {
 				System.out.println(id + "\t" + d.getTime() + "\t" + d.getCost() + "\t" + "0");
 			}
-		}
+		});
 	}
 }
