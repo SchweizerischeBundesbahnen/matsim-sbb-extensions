@@ -40,6 +40,8 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 import org.matsim.vehicles.Vehicle;
 import org.matsim.vehicles.VehicleCapacity;
 import org.matsim.vehicles.VehicleType;
+import org.matsim.vehicles.VehicleType.DoorOperationMode;
+import org.matsim.vehicles.VehicleUtils;
 import org.matsim.vehicles.Vehicles;
 import org.matsim.vehicles.VehiclesFactory;
 
@@ -104,14 +106,13 @@ class TestFixture {
         VehiclesFactory vf = vehicles.getFactory();
 
         VehicleType vehType1 = vf.createVehicleType(Id.create("some_train", VehicleType.class));
-        VehicleCapacity vehCapacity = vf.createVehicleCapacity();
+        VehicleCapacity vehCapacity = vehType1.getCapacity();
         vehCapacity.setSeats(300);
         vehCapacity.setStandingRoom(150);
-        vehType1.setCapacity(vehCapacity);
         vehicles.addVehicleType(vehType1);
-        vehType1.setDoorOperationMode(VehicleType.DoorOperationMode.serial);
-        vehType1.setAccessTime(2); // 1 person takes 2 seconds to board
-        vehType1.setEgressTime(2);
+        VehicleUtils.setDoorOperationMode(vehType1, DoorOperationMode.serial);
+        VehicleUtils.setAccessTime(vehType1, 2); // 1 person takes 2 seconds to board
+        VehicleUtils.setEgressTime(vehType1, 2);
         Vehicle veh1 = vf.createVehicle(Id.create("train1", Vehicle.class), vehType1);
         vehicles.addVehicle(veh1);
 
