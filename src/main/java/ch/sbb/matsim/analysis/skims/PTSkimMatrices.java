@@ -284,7 +284,7 @@ public class PTSkimMatrices {
                     Id<TransitStopFacility> egressStopId = egressEntry.getKey();
                     Double egressTime = egressEntry.getValue();
                     TravelInfo info = tree.get(egressStopId);
-                    if (info != null) {
+                    if (info != null && !info.isWalkOnly()) {
                         ODConnection connection = new ODConnection(info.ptDepartureTime, info.ptTravelTime, info.accessTime, egressTime, info.transferCount, info);
                         connections.add(connection);
                     }
@@ -365,7 +365,7 @@ public class PTSkimMatrices {
             for (double time = minDepartureTime; time < maxDepartureTime; time += 60.0) {
                 double adaptionTime;
 
-                if (time >= nextDepartureTime) {
+                while (time >= nextDepartureTime) {
                     prevDepartureTime = nextDepartureTime;
                     prevConnection = nextConnection;
                     if (connectionIterator.hasNext()) {
