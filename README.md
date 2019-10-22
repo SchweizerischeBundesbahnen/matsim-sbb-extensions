@@ -9,27 +9,33 @@ the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahn
 
 To use the extensions along your MATSim code, follow these two steps:
 
- **Step 1**. Add the JitPack repository to your `pom.xml`.
+ **Step 1**. Add the Bintray repository to your `pom.xml`.
   ```$xml
 	<repositories>
 		<repository>
-		    <id>jitpack.io</id>
-		    <url>https://jitpack.io</url>
+		    <id>SBB</id>
+		    <url>https://bintray.com/schweizerischebundesbahnen/simba.mvn/matsim-sbb-extensions</url>
 		</repository>
 	</repositories>
   ```
   **Step 2**. Add the dependency
    ```$xml
 	<dependency>
-	    <groupId>com.github.SchweizerischeBundesbahnen</groupId>
+	    <groupId>ch.sbb</groupId>
 	    <artifactId>matsim-sbb-extensions</artifactId>
-	    <version>0.10.x</version>
+	    <version>0.12.x</version> <!-- replace this with latest available version -->
 	</dependency>
   ``` 
 
 <a id="swissRailRaptor" />
 
 ## SwissRailRaptor 
+
+**The SwissRailRaptor is now available directly in MATSim, starting with MATSim 12.0-SNAPSHOT.
+The code for SwissRailRaptor was thus removed from matsim-sbb-extensions.
+The documentation below still applies and is kept here for the moment.**
+
+
 
 The SwissRailRaptor is a fast public transport router. It is based on the RAPTOR algorithm
 (Delling et al, 2012, Round-Based Public Transit Routing), and applies several optimizations,
@@ -91,7 +97,7 @@ the following config module to your `config.xml`:
     </paramset>
     <paramset type="intermodalAccessEgress">
       <param name="mode" value="bike" />
-      <param name="radius" value="3000" />
+      <param name="maxRadius" value="3000" />
       <param name="linkIdAttribute" value="accessLinkId_bike" />
       <param name="personFilterAttribute" value="hasBike" />
       <param name="personFilterValue" value="true" />
