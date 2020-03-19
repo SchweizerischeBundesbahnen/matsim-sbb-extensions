@@ -4,14 +4,21 @@
 
 package ch.sbb.matsim.analysis.skims;
 
+import ch.sbb.matsim.routing.graph.Graph;
+import ch.sbb.matsim.routing.graph.LeastCostPathTree;
 import org.matsim.api.core.v01.Coord;
+import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
+import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.network.NetworkUtils;
+import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.router.util.TravelDisutility;
 import org.matsim.core.router.util.TravelTime;
 import org.matsim.core.utils.misc.Counter;
 import org.matsim.core.utils.misc.Time;
+import org.matsim.vehicles.Vehicle;
+import org.matsim.vehicles.VehicleUtils;
 import org.opengis.feature.simple.SimpleFeature;
 
 import java.util.HashMap;
@@ -40,6 +47,7 @@ public final class NetworkSkimMatrices {
     }
 
     public static <T> NetworkIndicators<T> calculateSkimMatrices(Network xy2lNetwork, Network routingNetwork, Map<T, SimpleFeature> zones, Map<T, Coord[]> coordsPerZone, double departureTime, TravelTime travelTime, TravelDisutility travelDisutility, int numberOfThreads) {
+        Graph routingGraph = new Graph(routingNetwork);
         Map<T, Node[]> nodesPerZone = new HashMap<>();
         for (Map.Entry<T, Coord[]> e : coordsPerZone.entrySet()) {
             T zoneId = e.getKey();
@@ -65,7 +73,7 @@ public final class NetworkSkimMatrices {
         Counter counter = new Counter("CAR-TravelTimeMatrix-" + Time.writeTime(departureTime) + " zone ", " / " + zones.size());
         Thread[] threads = new Thread[numberOfThreads];
         for (int i = 0; i < numberOfThreads; i++) {
-            RowWorker<T> worker = new RowWorker<>(originZones, zones.keySet(), routingNetwork, nodesPerZone, networkIndicators, departureTime, travelTime, travelDisutility, counter);
+            RowWorker<T> worker = new RowWorker<>(originZones, zones.keySet(), routingGraph, nodesPerZone, networkIndicators, departureTime, travelTime, travelDisutility, counter);
             threads[i] = new Thread(worker, "CAR-TravelTimeMatrix-" + Time.writeTime(departureTime) + "-" + i);
             threads[i].start();
         }
@@ -88,7 +96,7 @@ public final class NetworkSkimMatrices {
     private static class RowWorker<T> implements Runnable {
         private final ConcurrentLinkedQueue<T> originZones;
         private final Set<T> destinationZones;
-        private final Network network;
+        private final Graph graph;
         private final Map<T, Node[]> nodesPerZone;
         private final NetworkIndicators<T> networkIndicators;
         private final TravelTime travelTime;
@@ -96,10 +104,13 @@ public final class NetworkSkimMatrices {
         private final double departureTime;
         private final Counter counter;
 
-        RowWorker(ConcurrentLinkedQueue<T> originZones, Set<T> destinationZones, Network network, Map<T, Node[]> nodesPerZone, NetworkIndicators<T> networkIndicators, double departureTime, TravelTime travelTime, TravelDisutility travelDisutility, Counter counter) {
+        private final static Vehicle VEHICLE = VehicleUtils.getFactory().createVehicle(Id.create("theVehicle", Vehicle.class), VehicleUtils.getDefaultVehicleType());
+        private final static Person PERSON = PopulationUtils.getFactory().createPerson(Id.create("thePerson", Person.class));
+
+        RowWorker(ConcurrentLinkedQueue<T> originZones, Set<T> destinationZones, Graph graph, Map<T, Node[]> nodesPerZone, NetworkIndicators<T> networkIndicators, double departureTime, TravelTime travelTime, TravelDisutility travelDisutility, Counter counter) {
             this.originZones = originZones;
             this.destinationZones = destinationZones;
-            this.network = network;
+            this.graph = graph;
             this.nodesPerZone = nodesPerZone;
             this.networkIndicators = networkIndicators;
             this.departureTime = departureTime;
@@ -109,7 +120,7 @@ public final class NetworkSkimMatrices {
         }
 
         public void run() {
-            LeastCostPathTree lcpTree = new LeastCostPathTree(this.travelTime, this.travelDisutility);
+            LeastCostPathTree lcpTree = new LeastCostPathTree(this.graph, this.travelTime, this.travelDisutility);
             while (true) {
                 T fromZoneId = this.originZones.poll();
                 if (fromZoneId == null) {
@@ -120,15 +131,15 @@ public final class NetworkSkimMatrices {
                 Node[] fromNodes = this.nodesPerZone.get(fromZoneId);
                 if (fromNodes != null) {
                     for (Node fromNode : fromNodes) {
-                        lcpTree.calculate(this.network, fromNode, this.departureTime);
+                        lcpTree.calculate(fromNode.getId().index(), this.departureTime, PERSON, VEHICLE);
 
                         for (T toZoneId : this.destinationZones) {
                             Node[] toNodes = this.nodesPerZone.get(toZoneId);
                             if (toNodes != null) {
                                 for (Node toNode : toNodes) {
-                                    LeastCostPathTree.NodeData data = lcpTree.getTree().get(toNode.getId());
-                                    double tt = data.getTime() - this.departureTime;
-                                    double dist = data.getDistance();
+                                    int nodeIndex = toNode.getId().index();
+                                    double tt = lcpTree.getTime(nodeIndex) - this.departureTime;
+                                    double dist = lcpTree.getDistance(nodeIndex);
                                     this.networkIndicators.travelTimeMatrix.add(fromZoneId, toZoneId, (float) tt);
                                     this.networkIndicators.distanceMatrix.add(fromZoneId, toZoneId, (float) dist);
                                 }
