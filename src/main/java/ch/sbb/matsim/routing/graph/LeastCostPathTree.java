@@ -46,6 +46,10 @@ public class LeastCostPathTree {
     }
 
     public void calculate(int startNode, double startTime, Person person, Vehicle vehicle) {
+        this.calculate(startNode, startTime, person, vehicle, (node, arrTime, cost, distance, depTime) -> false);
+    }
+
+    public void calculate(int startNode, double startTime, Person person, Vehicle vehicle, StopCriterion stopCriterion) {
         Arrays.fill(this.data, Double.POSITIVE_INFINITY);
         Arrays.fill(this.comingFrom, -1);
 
@@ -59,6 +63,11 @@ public class LeastCostPathTree {
             double currTime = getTime(nodeIdx);
             double currCost = getCost(nodeIdx);
             double currDistance = getDistance(nodeIdx);
+
+            if (stopCriterion.stop(nodeIdx, currTime, currCost, currDistance, startTime)) {
+                break;
+            }
+
             outLI.reset(nodeIdx);
             while (outLI.next()) {
                 int linkIdx = outLI.getLinkIndex();
@@ -236,4 +245,37 @@ public class LeastCostPathTree {
             this.heap[i] = tmp;
         }
     }
+
+    public interface StopCriterion {
+        boolean stop(int nodeIndex, double arrivalTime, double travelCost, double distance, double departureTime);
+    }
+
+    public static final class TravelTimeStopCriterion implements StopCriterion {
+
+        private final double limit;
+
+        public TravelTimeStopCriterion(double limit) {
+            this.limit = limit;
+        }
+
+        @Override
+        public boolean stop(int nodeIndex, double arrivalTime, double travelCost, double distance, double departureTime) {
+            return Math.abs(arrivalTime - departureTime) >= this.limit; // use Math.abs() so it also works in backwards search
+        }
+    }
+
+    public static final class TravelDistanceStopCriterion implements StopCriterion {
+
+        private final double limit;
+
+        public TravelDistanceStopCriterion(double limit) {
+            this.limit = limit;
+        }
+
+        @Override
+        public boolean stop(int nodeIndex, double arrivalTime, double travelCost, double distance, double departureTime) {
+            return distance >= this.limit;
+        }
+    }
+
 }
