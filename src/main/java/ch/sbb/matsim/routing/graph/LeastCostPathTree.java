@@ -33,6 +33,7 @@ public class LeastCostPathTree {
     private final double[] data; // 3 entries per node: time, cost, distance
     private final int[] comingFrom;
     private final Graph.LinkIterator outLI;
+    private final Graph.LinkIterator inLI;
     private final NodeMinHeap pq;
 
     public LeastCostPathTree(Graph graph, TravelTime tt, TravelDisutility td) {
@@ -43,6 +44,7 @@ public class LeastCostPathTree {
         this.comingFrom = new int[graph.nodeCount];
         this.pq = new NodeMinHeap();
         this.outLI = graph.getOutLinkIterator();
+        this.inLI = graph.getInLinkIterator();
     }
 
     public void calculate(int startNode, double startTime, Person person, Vehicle vehicle) {
@@ -89,6 +91,55 @@ public class LeastCostPathTree {
                     setData(toNode, newCost, newTime, currDistance + link.getLength());
                     pq.insert(toNode);
                     this.comingFrom[toNode] = nodeIdx;
+                }
+            }
+        }
+    }
+
+    public void calculateBackwards(int arrivalNode, double arrivalTime, Person person, Vehicle vehicle) {
+        this.calculate(arrivalNode, arrivalTime, person, vehicle, (node, arrTime, cost, distance, depTime) -> false);
+    }
+
+    public void calculateBackwards(int arrivalNode, double arrivalTime, Person person, Vehicle vehicle, StopCriterion stopCriterion) {
+        Arrays.fill(this.data, Double.POSITIVE_INFINITY);
+        Arrays.fill(this.comingFrom, -1);
+
+        setData(arrivalNode, 0, arrivalTime, 0);
+
+        this.pq.clear();
+        this.pq.insert(arrivalNode);
+
+        while (!pq.isEmpty()) {
+            final int nodeIdx = pq.poll();
+            double currTime = getTime(nodeIdx);
+            double currCost = getCost(nodeIdx);
+            double currDistance = getDistance(nodeIdx);
+
+            if (stopCriterion.stop(nodeIdx, arrivalTime, currCost, currDistance, currTime)) {
+                break;
+            }
+
+            inLI.reset(nodeIdx);
+            while (inLI.next()) {
+                int linkIdx = inLI.getLinkIndex();
+                Link link = this.graph.getLink(linkIdx);
+                int fromNode = inLI.getFromNodeIndex();
+
+                double travelTime = this.tt.getLinkTravelTime(link, currTime, person, vehicle);
+                double newTime = currTime - travelTime;
+                double newCost = currCost + this.td.getLinkTravelDisutility(link, currTime, person, vehicle);
+
+                double oldCost = getCost(fromNode);
+                if (Double.isFinite(oldCost)) {
+                    if (newCost < oldCost) {
+                        pq.decreaseKey(fromNode, newCost);
+                        setData(fromNode, newCost, newTime, currDistance + link.getLength());
+                        this.comingFrom[fromNode] = nodeIdx;
+                    }
+                } else {
+                    setData(fromNode, newCost, newTime, currDistance + link.getLength());
+                    pq.insert(fromNode);
+                    this.comingFrom[fromNode] = nodeIdx;
                 }
             }
         }
