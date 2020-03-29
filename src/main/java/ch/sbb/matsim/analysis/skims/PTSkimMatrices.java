@@ -175,7 +175,9 @@ public class PTSkimMatrices {
 
             List<Map<Id<TransitStopFacility>, TravelInfo>> trees = new ArrayList<>();
 
-            for (double time = this.minDepartureTime; time < this.maxDepartureTime; time += this.stepSize) {
+            double timeWindow = this.maxDepartureTime - this.minDepartureTime;
+            double endTime = this.maxDepartureTime + timeWindow;
+            for (double time = this.minDepartureTime - timeWindow; time < endTime; time += this.stepSize) {
                 Map<Id<TransitStopFacility>, TravelInfo> tree = this.raptor.calcTree(fromStops, time, this.parameters);
                 trees.add(tree);
             }
@@ -201,12 +203,12 @@ public class PTSkimMatrices {
                 egressTimes.put(stop.getId(), egressTime);
             }
 
-            List<ODConnection> connections = buildODConnections(trees, egressTimes);
+            List<ODConnection> connections = buildODConnections(trees, accessTimes, egressTimes);
             if (connections.isEmpty()) {
                 return;
             }
 
-            connections = sortAndFilterConnections(connections);
+            connections = sortAndFilterConnections(connections, maxDepartureTime);
 
             double avgAdaptionTime = calcAverageAdaptionTime(connections, minDepartureTime, maxDepartureTime);
 
@@ -276,7 +278,7 @@ public class PTSkimMatrices {
             this.pti.dataCountMatrix.add(fromZoneId, toZoneId, 1);
         }
 
-        private List<ODConnection> buildODConnections(List<Map<Id<TransitStopFacility>, TravelInfo>> trees,  Map<Id<TransitStopFacility>, Double> egressTimes) {
+        private List<ODConnection> buildODConnections(List<Map<Id<TransitStopFacility>, TravelInfo>> trees, Map<Id<TransitStopFacility>, Double> accessTimes, Map<Id<TransitStopFacility>, Double> egressTimes) {
             List<ODConnection> connections = new ArrayList<>();
 
             for (Map<Id<TransitStopFacility>, TravelInfo> tree : trees) {
@@ -285,7 +287,8 @@ public class PTSkimMatrices {
                     Double egressTime = egressEntry.getValue();
                     TravelInfo info = tree.get(egressStopId);
                     if (info != null && !info.isWalkOnly()) {
-                        ODConnection connection = new ODConnection(info.ptDepartureTime, info.ptTravelTime, info.accessTime, egressTime, info.transferCount, info);
+                        Double accessTime = accessTimes.get(info.departureStop);
+                        ODConnection connection = new ODConnection(info.ptDepartureTime, info.ptTravelTime, accessTime, egressTime, info.transferCount, info);
                         connections.add(connection);
                     }
                 }
@@ -294,11 +297,11 @@ public class PTSkimMatrices {
             return connections;
         }
 
-        static List<ODConnection> sortAndFilterConnections(List<ODConnection> connections) {
+        static List<ODConnection> sortAndFilterConnections(List<ODConnection> connections, double maxDepartureTime) {
             connections.sort((c1, c2) -> Double.compare((c1.departureTime - c1.accessTime), (c2.departureTime - c2.accessTime)));
 
             // step forward through all connections and figure out which can be ignore because the earlier one is better
-            List<ODConnection> filteredConnections1 = new ArrayList<>();
+            List<ODConnection> filteredConnections1 = new ArrayList<>(connections.size());
             ODConnection earlierConnection = null;
             for (ODConnection connection : connections) {
                 if (earlierConnection == null) {
@@ -306,7 +309,7 @@ public class PTSkimMatrices {
                     earlierConnection = connection;
                 } else {
                     double timeDiff = (connection.departureTime - connection.accessTime) - (earlierConnection.departureTime - earlierConnection.accessTime);
-                    if (earlierConnection.totalTravelTime() + timeDiff > connection.totalTravelTime()) {
+                    if (earlierConnection.totalTravelTime() + timeDiff > connection.totalTravelTime() + 0.5) { // +0.5 to catch numerical instabilities in double calculations
                         // connection is better to earlierConnection, use it
                         filteredConnections1.add(connection);
                         earlierConnection = connection;
@@ -325,9 +328,14 @@ public class PTSkimMatrices {
                     laterConnection = connection;
                 } else {
                     double timeDiff = (laterConnection.departureTime - laterConnection.accessTime) - (connection.departureTime - connection.accessTime);
-                    if (laterConnection.totalTravelTime() + timeDiff > connection.totalTravelTime()) {
+                    if (laterConnection.totalTravelTime() + timeDiff > connection.totalTravelTime() + 0.5) { // +0.5 to catch numerical instabilities in double calculations
                         // connection is better to laterConnection, use it
-                        filteredConnections.add(connection);
+                        if (connection.departureTime - connection.accessTime > maxDepartureTime) {
+                            // there should only be one connection after maxDepartureTime
+                            filteredConnections.set(0, connection);
+                        } else {
+                            filteredConnections.add(connection);
+                        }
                         laterConnection = connection;
                     }
                 }
@@ -335,125 +343,131 @@ public class PTSkimMatrices {
 
             Collections.reverse(filteredConnections);
             // now the filtered connections are in ascending departure time order
+
             return filteredConnections;
         }
 
-        private ODConnection findFastestConnection(List<ODConnection> connections) {
-            ODConnection fastest = null;
-            for (ODConnection c : connections) {
-                if (fastest == null || c.travelTime < fastest.travelTime) {
-                    fastest = c;
-                }
-            }
-            return fastest;
-        }
-
         static double calcAverageAdaptionTime(List<ODConnection> connections, double minDepartureTime, double maxDepartureTime) {
-            double prevDepartureTime = Double.NaN;
-            double nextDepartureTime = Double.NaN;
             ODConnection prevConnection = null;
-            ODConnection nextConnection = null;
+            double sum = 0;
+            for (ODConnection connection : connections) {
+                if (prevConnection != null) {
+                    double depTime1 = prevConnection.departureTime - prevConnection.accessTime;
+                    double depTime2 = connection.departureTime - connection.accessTime;
+                    if (depTime2 > minDepartureTime && depTime1 < maxDepartureTime) {
+                        double travelTime1 = prevConnection.totalTravelTime();
+                        double travelTime2 = connection.totalTravelTime();
+                        if (depTime1 < minDepartureTime) {
+                            // shift connection1 to minDepartureTime
+                            double delta = minDepartureTime - depTime1;
+                            depTime1 = minDepartureTime;
+                            travelTime1 += delta;
+                        }
+                        if (depTime2 > maxDepartureTime) {
+                            // shift connection2 to maxDepartureTime;
+                            double delta = depTime2 - maxDepartureTime;
+                            depTime2 = maxDepartureTime;
+                            travelTime2 += delta;
+                        }
+                        double deltaTravelTime = travelTime2 - travelTime1;
+                        double zenith = ((depTime1 + deltaTravelTime) + depTime2) / 2;
 
-            Iterator<ODConnection> connectionIterator = connections.iterator();
-            if (connectionIterator.hasNext()) {
-                nextConnection = connectionIterator.next();
-                nextDepartureTime = nextConnection.departureTime - nextConnection.accessTime;
-            }
-
-            double sum = 0.0;
-            int count = 0;
-            for (double time = minDepartureTime; time < maxDepartureTime; time += 60.0) {
-                double adaptionTime;
-
-                while (time >= nextDepartureTime) {
-                    prevDepartureTime = nextDepartureTime;
-                    prevConnection = nextConnection;
-                    if (connectionIterator.hasNext()) {
-                        nextConnection = connectionIterator.next();
-                        nextDepartureTime = nextConnection.departureTime - nextConnection.accessTime;
-                    } else {
-                        nextDepartureTime = Double.NaN;
-                        nextConnection = null;
+                        if (zenith < minDepartureTime) {
+                            sum += (depTime2 - minDepartureTime) * (depTime2 - minDepartureTime) / 2;
+                        } else if (zenith > maxDepartureTime) {
+                            sum += (maxDepartureTime - depTime1) * (maxDepartureTime - depTime1) / 2;
+                        } else {
+                            sum += (zenith - depTime1) * (zenith - depTime1) / 2;
+                            sum += (depTime2 - zenith) * (depTime2 - zenith) / 2;
+                        }
                     }
                 }
-
-                if (prevConnection == null) {
-                    adaptionTime = nextDepartureTime - time;
-                } else if (nextConnection == null) {
-                    adaptionTime = time - prevDepartureTime;
+                prevConnection = connection;
+            }
+            if (connections.size() == 1) {
+                // in this case, the above loop did nothing except setting prevConnection
+                double depTime = prevConnection.departureTime - prevConnection.accessTime;
+                if (depTime < minDepartureTime) {
+                    double delta = minDepartureTime - depTime;
+                    sum = (3600 + delta) * (3600 + delta) / 2 - (delta * delta / 2);
+                } else if (depTime > maxDepartureTime) {
+                    double delta = depTime - maxDepartureTime;
+                    sum = (3600 + delta) * (3600 + delta) / 2 - (delta * delta / 2);
                 } else {
-                    double prevAdaptionTime = time - prevDepartureTime;
-                    double nextAdaptionTime = nextDepartureTime - time;
-                    double prevTotalTime = prevConnection.travelTime + prevAdaptionTime;
-                    double nextTotalTime = nextConnection.travelTime + nextAdaptionTime;
-
-                    if (prevTotalTime < nextTotalTime) {
-                        adaptionTime = prevAdaptionTime;
-                    } else {
-                        adaptionTime = nextAdaptionTime;
-                    }
+                    sum += (depTime - minDepartureTime) * (depTime - minDepartureTime) / 2;
+                    sum += (maxDepartureTime - depTime) * (maxDepartureTime - depTime) / 2;
                 }
-
-                sum += adaptionTime;
-                count++;
+            } else if (prevConnection != null) {
+                double depTime = prevConnection.departureTime - prevConnection.accessTime;
+                if (depTime < maxDepartureTime) {
+                    // there is no departure after maxDepartureTime, so we're missing the final part
+                    sum += (maxDepartureTime - depTime) * (maxDepartureTime - depTime) / 2;
+                }
             }
-            return sum / count;
+            return sum / (maxDepartureTime - minDepartureTime);
         }
 
         /** calculates the share each connection covers based on minimizing (travelTime + adaptionTime)
          */
         static Map<ODConnection, Double> calcConnectionShares(List<ODConnection> connections, double minDepartureTime, double maxDepartureTime) {
-            double prevDepartureTime = Double.NaN;
-            double nextDepartureTime = Double.NaN;
-
-            ODConnection prevConnection = null;
-            ODConnection nextConnection = null;
-
             Map<ODConnection, Double> shares = new HashMap<>();
 
-            Iterator<ODConnection> connectionIterator = connections.iterator();
-            if (connectionIterator.hasNext()) {
-                nextConnection = connectionIterator.next();
-                nextDepartureTime = nextConnection.departureTime - nextConnection.accessTime;
-            }
+            ODConnection prevConnection = null;
+            for (ODConnection connection : connections) {
+                if (prevConnection != null) {
+                    double depTime1 = prevConnection.departureTime - prevConnection.accessTime;
+                    double depTime2 = connection.departureTime - connection.accessTime;
+                    if (depTime2 > minDepartureTime && depTime1 < maxDepartureTime) {
+                        double travelTime1 = prevConnection.totalTravelTime();
+                        double travelTime2 = connection.totalTravelTime();
+                        if (depTime1 < minDepartureTime) {
+                            // shift connection1 to minDepartureTime
+                            double delta = minDepartureTime - depTime1;
+                            depTime1 = minDepartureTime;
+                            travelTime1 += delta;
+                        }
+                        if (depTime2 > maxDepartureTime) {
+                            // shift connection2 to maxDepartureTime;
+                            double delta = depTime2 - maxDepartureTime;
+                            depTime2 = maxDepartureTime;
+                            travelTime2 += delta;
+                        }
+                        double deltaTravelTime = travelTime2 - travelTime1;
+                        double zenith = ((depTime1 + deltaTravelTime) + depTime2) / 2;
 
-            for (double time = minDepartureTime; time < maxDepartureTime; time += 60.0) {
-                if (time >= nextDepartureTime) {
-                    prevDepartureTime = nextDepartureTime;
-                    prevConnection = nextConnection;
-                    if (connectionIterator.hasNext()) {
-                        nextConnection = connectionIterator.next();
-                        nextDepartureTime = nextConnection.departureTime - nextConnection.accessTime;
-                    } else {
-                        nextDepartureTime = Double.NaN;
-                        nextConnection = null;
+                        double share1 = (zenith - depTime1) /  3600;
+                        double share2 = (depTime2 - zenith) /  3600;
+
+                        if (share1 < 0) {
+                            // this can happen if zenith if before minDepTime
+                            share2 += share1;
+                            share1 = 0;
+                        }
+                        if (share2 < 0) {
+                            // this can happen if zenith is after maxDepTime
+                            share1 += share2;
+                            share2 = 0;
+                        }
+
+                        final double fShare1 = share1; // variables must be final to be used in lambda expression below
+                        final double fShare2 = share2;
+
+                        shares.compute(prevConnection, (c, oldVal) -> (oldVal == null ? fShare1 : (oldVal + fShare1)));
+                        shares.compute(connection, (c, oldVal) -> (oldVal == null ? fShare2 : (oldVal + fShare2)));
                     }
                 }
-
-                if (prevConnection == null) {
-                    shares.compute(nextConnection, (c, oldVal) -> (oldVal == null ? 1 : (oldVal+1)));
-                } else if (nextConnection == null) {
-                    shares.compute(prevConnection, (c, oldVal) -> (oldVal == null ? 1 : (oldVal+1)));
-                } else {
-                    double prevAdaptionTime = time - prevDepartureTime;
-                    double nextAdaptionTime = nextDepartureTime - time;
-                    double prevTotalTime = prevConnection.travelTime + prevAdaptionTime;
-                    double nextTotalTime = nextConnection.travelTime + nextAdaptionTime;
-
-                    if (prevTotalTime < nextTotalTime) {
-                        shares.compute(prevConnection, (c, oldVal) -> (oldVal == null ? 1 : (oldVal+1)));
-                    } else {
-                        shares.compute(nextConnection, (c, oldVal) -> (oldVal == null ? 1 : (oldVal+1)));
-                    }
+                prevConnection = connection;
+            }
+            if (connections.size() == 1) {
+                shares.put(prevConnection, 1.0);
+            } else if (prevConnection != null) {
+                double depTime = prevConnection.departureTime - prevConnection.accessTime;
+                if (depTime < maxDepartureTime) {
+                    // there is no departure after maxDepartureTime, so we're still missing the final part
+                    double share = (maxDepartureTime - depTime) /  3600;
+                    shares.compute(prevConnection, (c, oldVal) -> (oldVal == null ? share : (oldVal + share)));
                 }
             }
-
-            double sum = (maxDepartureTime - minDepartureTime) / 60;
-            for (Map.Entry<ODConnection, Double> e : shares.entrySet()) {
-                ODConnection c = e.getKey();
-                shares.put(c, e.getValue() / sum);
-            }
-
             return shares;
         }
 
