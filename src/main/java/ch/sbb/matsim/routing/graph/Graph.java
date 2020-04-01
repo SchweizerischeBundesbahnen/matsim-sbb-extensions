@@ -22,7 +22,7 @@ import java.util.Arrays;
  * We use simple int-arrays (int[]) to store the data. This should provide fast
  * and thread-safe read-only access, but limits the number of nodes and links in
  * the network to (Integer.MAX_VALUE/2 = 1.073.741.823) nodes and
- * (Integer.MAX_VALUE/4 = 536.870.911) links. I hope that for the foreseeable future,
+ * (Integer.MAX_VALUE/6 = 357.913.941) links. I hope that for the foreseeable future,
  * these limits are high enough.
  *
  * This class is thread-safe, allowing a single graph to be used by multiple threads.
@@ -42,12 +42,14 @@ public class Graph {
      *   - 1 int: next in-link index for to-node
      *   - 1 int: from-node index
      *   - 1 int: to-node index
-     *   = total 4 int per link = 16 bytes per link
+     *   - 1 int: link length * 100
+     *   - 1 int: freespeed-traveltime * 100
+     *   = total 6 int per link = 24 bytes per link
      * - links
      *   - 1 object-pointer per link
      *   = 1 int or 1 long per link (depending on 32 or 64bit JVM) = 4 or 8 bytes per link
      *
-     *   So, a network-graph with 1 Mio nodes and 2 Mio links should consume between 48 and 56 MB RAM only.
+     *   So, a network-graph with 1 Mio nodes and 2 Mio links should consume between 64 and 72 MB RAM only.
      */
 
     private final static int NODE_SIZE = 2;
