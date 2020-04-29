@@ -535,3 +535,4 @@ can be reduced to `n*m` per point of time, bringing a massive reduction in compu
 with a slight increase in memory usage. In addition, most parts of the skim calculation
 are multi-threaded and benefit from additional cpu-cores.
 
+
