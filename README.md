@@ -524,7 +524,7 @@ more activities take place than in remote locations.
 
 Also, actual travel times will be different throughout the day. It is thus advised to 
 calculate performance indices not only for a single point of time, but for multiple points
-of time and take the average of these. 
+of time and take the average of these.
 
 Calculating `n*n` trips for each `m*m` zone-pairs can result in a very
 large number of calculations needed. E.g. with 1000 zones and 5 locations per zones,
