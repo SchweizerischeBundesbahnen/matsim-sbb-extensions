@@ -533,4 +533,4 @@ total of 4 different points in time, 100 million trips would need to be calculat
 By calculating full least-cost-path trees instead of single trips, the number of trip-calculations
 can be reduced to `n*m` per point of time, bringing a massive reduction in computation time, but
 with a slight increase in memory usage. In addition, most parts of the skim calculation
-are multi-threaded and benefit from additional cpu-cores.
+are multi-threaded and benefit from additional CPU-cores.
