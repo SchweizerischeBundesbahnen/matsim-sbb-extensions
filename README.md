@@ -524,7 +524,7 @@ more activities take place than in remote locations.
 
 Also, actual travel times will be different throughout the day. It is thus advised to 
 calculate performance indices not only for a single point of time, but for multiple points
-of time and take the average of these. 
+of time and take the average of these.
 
 Calculating `n*n` trips for each `m*m` zone-pairs can result in a very
 large number of calculations needed. E.g. with 1000 zones and 5 locations per zones,
@@ -532,7 +532,4 @@ it would require 25 million trips to be calculated. If the calculation is repeat
 total of 4 different points in time, 100 million trips would need to be calculated.
 By calculating full least-cost-path trees instead of single trips, the number of trip-calculations
 can be reduced to `n*m` per point of time, bringing a massive reduction in computation time, but
-with a slight increase in memory usage. In addition, most parts of the skim calculation
-are multi-threaded and benefit from additional cpu-cores.
-
-
+with a slight increase in memory usage. In addition, most parts of the skim calculation are multi-threaded and benefit from additional CPU-cores.
