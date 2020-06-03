@@ -46,7 +46,7 @@ public final class NetworkSkimMatrices {
     private NetworkSkimMatrices() {
     }
 
-    public static <T> NetworkIndicators<T> calculateSkimMatrices(Network xy2lNetwork, Network routingNetwork, Map<T, SimpleFeature> zones, Map<T, Coord[]> coordsPerZone, double departureTime, TravelTime travelTime, TravelDisutility travelDisutility, int numberOfThreads) {
+    public static <T> NetworkIndicators<T> calculateSkimMatrices(Network xy2lNetwork, Network routingNetwork, Map<T, Coord[]> coordsPerZone, double departureTime, TravelTime travelTime, TravelDisutility travelDisutility, int numberOfThreads) {
         Graph routingGraph = new Graph(routingNetwork);
         Map<T, Node[]> nodesPerZone = new HashMap<>();
         for (Map.Entry<T, Coord[]> e : coordsPerZone.entrySet()) {
@@ -62,18 +62,18 @@ public final class NetworkSkimMatrices {
         }
 
         // prepare calculation
-        NetworkIndicators<T> networkIndicators = new NetworkIndicators<>(zones.keySet());
+        NetworkIndicators<T> networkIndicators = new NetworkIndicators<>(coordsPerZone.keySet());
 
         int numberOfPointsPerZone = coordsPerZone.values().iterator().next().length;
         float avgFactor = (float) (1.0 / numberOfPointsPerZone / numberOfPointsPerZone);
 
         // do calculation
-        ConcurrentLinkedQueue<T> originZones = new ConcurrentLinkedQueue<>(zones.keySet());
+        ConcurrentLinkedQueue<T> originZones = new ConcurrentLinkedQueue<>(coordsPerZone.keySet());
 
-        Counter counter = new Counter("CAR-TravelTimeMatrix-" + Time.writeTime(departureTime) + " zone ", " / " + zones.size());
+        Counter counter = new Counter("CAR-TravelTimeMatrix-" + Time.writeTime(departureTime) + " zone ", " / " + coordsPerZone.size());
         Thread[] threads = new Thread[numberOfThreads];
         for (int i = 0; i < numberOfThreads; i++) {
-            RowWorker<T> worker = new RowWorker<>(originZones, zones.keySet(), routingGraph, nodesPerZone, networkIndicators, departureTime, travelTime, travelDisutility, counter);
+            RowWorker<T> worker = new RowWorker<>(originZones, coordsPerZone.keySet(), routingGraph, nodesPerZone, networkIndicators, departureTime, travelTime, travelDisutility, counter);
             threads[i] = new Thread(worker, "CAR-TravelTimeMatrix-" + Time.writeTime(departureTime) + "-" + i);
             threads[i].start();
         }
