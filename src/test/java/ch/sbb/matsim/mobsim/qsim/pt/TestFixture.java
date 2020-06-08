@@ -4,11 +4,11 @@
 
 package ch.sbb.matsim.mobsim.qsim.pt;
 
+import ch.sbb.matsim.config.SBBTransitConfigGroup;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
@@ -28,8 +28,7 @@ import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.core.scenario.ScenarioUtils;
-import org.matsim.core.utils.misc.Time;
-import org.matsim.pt.routes.ExperimentalTransitRoute;
+import org.matsim.pt.routes.DefaultTransitPassengerRoute;
 import org.matsim.pt.transitSchedule.api.Departure;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
@@ -44,8 +43,6 @@ import org.matsim.vehicles.VehicleType.DoorOperationMode;
 import org.matsim.vehicles.VehicleUtils;
 import org.matsim.vehicles.Vehicles;
 import org.matsim.vehicles.VehiclesFactory;
-
-import ch.sbb.matsim.config.SBBTransitConfigGroup;
 
 /**
  * Creates a test fixture with a simple TransitSchedule consisting of 1 TransitLine with 1 TransitRoute with 1 Departure and 5 Stops
@@ -142,11 +139,11 @@ class TestFixture {
         NetworkRoute networkRoute = RouteUtils.createLinkNetworkRouteImpl(link1.getId(), linkIdList, link4.getId());
 
         List<TransitRouteStop> stops = new ArrayList<>(5);
-        stops.add(f.createTransitRouteStop(this.stopA, Time.getUndefinedTime(), 0.0));
+        stops.add(f.createTransitRouteStopBuilder(this.stopA).departureOffset(0.0).build());
         stops.add(f.createTransitRouteStop(this.stopB, 100, 120.0));
-        stops.add(f.createTransitRouteStop(this.stopC, Time.getUndefinedTime(), 300.0));
+        stops.add(f.createTransitRouteStopBuilder(this.stopC).departureOffset(300.).build());
         stops.add(f.createTransitRouteStop(this.stopD, 570, 600.0));
-        stops.add(f.createTransitRouteStop(this.stopE, 720, Time.getUndefinedTime()));
+        stops.add(f.createTransitRouteStopBuilder(this.stopE).arrivalOffset(720.).build());
 
         this.route1 = f.createTransitRoute(Id.create("A2E", TransitRoute.class), networkRoute, stops, "train");
 
@@ -176,7 +173,7 @@ class TestFixture {
         Activity act1 = pf.createActivityFromLinkId("home", Id.create(1, Link.class));
         act1.setEndTime(29500);
         Leg leg = pf.createLeg("pt");
-        Route route = new ExperimentalTransitRoute(this.stopB, this.line1, this.route1, this.stopD);
+        Route route = new DefaultTransitPassengerRoute(this.stopB, this.line1, this.route1, this.stopD);
         leg.setRoute(route);
         Activity act2 = pf.createActivityFromLinkId("work", Id.create(3, Link.class));
 
@@ -196,7 +193,7 @@ class TestFixture {
             Activity act1 = pf.createActivityFromLinkId("home", Id.create(1, Link.class));
             act1.setEndTime(29500);
             Leg leg = pf.createLeg("pt");
-            Route route = new ExperimentalTransitRoute(this.stopB, this.line1, this.route1, this.stopD);
+            Route route = new DefaultTransitPassengerRoute(this.stopB, this.line1, this.route1, this.stopD);
             leg.setRoute(route);
             Activity act2 = pf.createActivityFromLinkId("work", Id.create(3, Link.class));
 
@@ -219,8 +216,8 @@ class TestFixture {
         TransitLine line = f.createTransitLine(Id.create("SB", TransitLine.class));
         NetworkRoute netRoute = RouteUtils.createLinkNetworkRouteImpl(this.stopB.getLinkId(), Collections.emptyList(), this.stopC.getLinkId());
         List<TransitRouteStop> stops = new ArrayList<>();
-        stops.add(f.createTransitRouteStop(this.stopB, Time.getUndefinedTime(), 0));
-        stops.add(f.createTransitRouteStop(this.stopC, malformed ? 0 : 120, Time.getUndefinedTime()));
+        stops.add(f.createTransitRouteStopBuilder(this.stopB).departureOffset(0).build());
+        stops.add(f.createTransitRouteStopBuilder(this.stopC).arrivalOffset(malformed ? 0 : 120).build());
         TransitRoute route = f.createTransitRoute(Id.create("SB1", TransitRoute.class), netRoute, stops, "train");
         Departure dep1 = f.createDeparture(Id.create("SB1_1", Departure.class), 35000);
         dep1.setVehicleId(Id.create("train1", Vehicle.class));
@@ -270,10 +267,10 @@ class TestFixture {
         NetworkRoute networkRoute = RouteUtils.createLinkNetworkRouteImpl(link1.getId(), linkIdList, link3.getId());
 
         List<TransitRouteStop> stops = new ArrayList<>(5);
-        stops.add(f.createTransitRouteStop(this.stopA, Time.getUndefinedTime(), 0.0));
+        stops.add(f.createTransitRouteStopBuilder(this.stopA).departureOffset(0.0).build());
         stops.add(f.createTransitRouteStop(stopBLoop, 100, 120.0));
-        stops.add(f.createTransitRouteStop(stopCLoop, Time.getUndefinedTime(), 300.0));
-        stops.add(f.createTransitRouteStop(this.stopD, 570, Time.getUndefinedTime()));
+        stops.add(f.createTransitRouteStopBuilder(stopCLoop).departureOffset(300.).build());
+        stops.add(f.createTransitRouteStopBuilder(this.stopD).arrivalOffset(570.).build());
 
         TransitRoute route = f.createTransitRoute(Id.create("A2D", TransitRoute.class), networkRoute, stops, "train");
 
@@ -307,7 +304,7 @@ class TestFixture {
         TransitScheduleFactory f = this.scenario.getTransitSchedule().getFactory();
 
         TransitRouteStop oldStop = stops.get(0);
-        TransitRouteStop stop = f.createTransitRouteStop(oldStop.getStopFacility(), Time.getUndefinedTime(), 20.0);
+        TransitRouteStop stop = f.createTransitRouteStopBuilder(oldStop.getStopFacility()).departureOffset(20.0).build();
         stops.set(0, stop);
 
         this.route1 = f.createTransitRoute(routeId, netRoute, stops, mode);

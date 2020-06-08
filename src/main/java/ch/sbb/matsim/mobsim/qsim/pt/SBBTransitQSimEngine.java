@@ -322,7 +322,7 @@ public class SBBTransitQSimEngine extends TransitQSimEngine /*implements Departu
 
         TransitRouteStop nextStop = event.context.advanceStop();
         if (nextStop != null) {
-            double arrOffset = nextStop.getArrivalOffset().orElse(nextStop.getDepartureOffset().seconds());
+            double arrOffset = nextStop.getArrivalOffset().or(nextStop.getDepartureOffset()).seconds();
             double arrTime = driver.getDeparture().getDepartureTime() + arrOffset;
             if (arrTime < event.time) {
                 // looks like we had a huge delay before.

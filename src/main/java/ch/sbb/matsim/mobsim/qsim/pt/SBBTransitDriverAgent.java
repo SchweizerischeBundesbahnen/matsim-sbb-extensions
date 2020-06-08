@@ -49,7 +49,7 @@ public class SBBTransitDriverAgent extends TransitDriverAgentImpl {
 
         if (stopTime <= 0.0) {
             // figure out if it's already time to depart or not
-            double departureOffset = this.currentStop.getDepartureOffset().orElse(this.currentStop.getArrivalOffset().seconds());
+            double departureOffset = this.currentStop.getDepartureOffset().or(this.currentStop.getArrivalOffset()).seconds();
             double scheduledDepartureTime = this.getDeparture().getDepartureTime() + departureOffset;
             if (scheduledDepartureTime > now) {
                 stopTime = 1.0; // allow agents arriving in the next time step to board
