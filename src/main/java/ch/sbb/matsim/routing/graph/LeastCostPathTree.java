@@ -1,14 +1,13 @@
 package ch.sbb.matsim.routing.graph;
 
+import java.util.Arrays;
+import java.util.NoSuchElementException;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.router.util.TravelDisutility;
 import org.matsim.core.router.util.TravelTime;
-import org.matsim.core.utils.misc.Time;
+import org.matsim.core.utils.misc.OptionalTime;
 import org.matsim.vehicles.Vehicle;
-
-import java.util.Arrays;
-import java.util.NoSuchElementException;
 
 /**
  * Implements a least-cost-path-tree upon a {@link Graph} datastructure.
@@ -62,7 +61,8 @@ public class LeastCostPathTree {
 
         while (!pq.isEmpty()) {
             final int nodeIdx = pq.poll();
-            double currTime = getTime(nodeIdx);
+            OptionalTime currOptionalTime = getTime(nodeIdx);
+            double currTime = currOptionalTime.orElseThrow(() -> new RuntimeException("Undefined Time"));
             double currCost = getCost(nodeIdx);
             double currDistance = getDistance(nodeIdx);
 
@@ -111,7 +111,8 @@ public class LeastCostPathTree {
 
         while (!pq.isEmpty()) {
             final int nodeIdx = pq.poll();
-            double currTime = getTime(nodeIdx);
+            OptionalTime currOptionalTime = getTime(nodeIdx);
+            double currTime = currOptionalTime.orElseThrow(() -> new RuntimeException("Undefined Time"));
             double currCost = getCost(nodeIdx);
             double currDistance = getDistance(nodeIdx);
 
@@ -149,12 +150,12 @@ public class LeastCostPathTree {
         return this.data[nodeIndex * 3];
     }
 
-    public double getTime(int nodeIndex) {
+    public OptionalTime getTime(int nodeIndex) {
         double time = this.data[nodeIndex * 3 + 1];
         if (Double.isInfinite(time)) {
-            return Time.getUndefinedTime();
+            return OptionalTime.undefined();
         }
-        return time;
+        return OptionalTime.defined(time);
     }
 
     public double getDistance(int nodeIndex) {
@@ -177,7 +178,8 @@ public class LeastCostPathTree {
     }
 
     private class NodeMinHeap {
-        private final int heap[];
+
+        private final int[] heap;
         private int size = 0;
 
         NodeMinHeap() {
