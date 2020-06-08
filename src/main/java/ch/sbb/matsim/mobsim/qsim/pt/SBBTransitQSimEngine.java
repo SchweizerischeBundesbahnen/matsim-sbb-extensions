@@ -4,6 +4,7 @@
 
 package ch.sbb.matsim.mobsim.qsim.pt;
 
+import ch.sbb.matsim.config.SBBTransitConfigGroup;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -12,9 +13,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.inject.Inject;
-
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
@@ -46,7 +45,7 @@ import org.matsim.core.mobsim.qsim.pt.TransitVehicle;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.replanning.ReplanningContext;
 import org.matsim.core.utils.collections.CollectionUtils;
-import org.matsim.core.utils.misc.Time;
+import org.matsim.pt.ReconstructingUmlaufBuilder;
 import org.matsim.pt.Umlauf;
 import org.matsim.pt.UmlaufImpl;
 import org.matsim.pt.UmlaufStueck;
@@ -59,8 +58,6 @@ import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 import org.matsim.vehicles.Vehicle;
 import org.matsim.vehicles.Vehicles;
-
-import ch.sbb.matsim.config.SBBTransitConfigGroup;
 
 /**
  * @author mrieser / SBB
@@ -86,7 +83,7 @@ public class SBBTransitQSimEngine extends TransitQSimEngine /*implements Departu
 
     @Inject
     public SBBTransitQSimEngine(QSim qSim, ReplanningContext context) {
-        super(qSim);
+        super(qSim, new SimpleTransitStopHandlerFactory(), new ReconstructingUmlaufBuilder(qSim.getScenario()));
         this.qSim = qSim;
         this.context = context;
         this.config = ConfigUtils.addOrGetModule(qSim.getScenario().getConfig(), SBBTransitConfigGroup.GROUP_NAME, SBBTransitConfigGroup.class);
@@ -325,10 +322,7 @@ public class SBBTransitQSimEngine extends TransitQSimEngine /*implements Departu
 
         TransitRouteStop nextStop = event.context.advanceStop();
         if (nextStop != null) {
-            double arrOffset = nextStop.getArrivalOffset();
-            if (Time.isUndefinedTime(arrOffset)) {
-                arrOffset = nextStop.getDepartureOffset();
-            }
+            double arrOffset = nextStop.getArrivalOffset().orElse(nextStop.getDepartureOffset().seconds());
             double arrTime = driver.getDeparture().getDepartureTime() + arrOffset;
             if (arrTime < event.time) {
                 // looks like we had a huge delay before.
