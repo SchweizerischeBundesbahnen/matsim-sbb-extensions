@@ -5,14 +5,12 @@
 package ch.sbb.matsim.mobsim.qsim.pt;
 
 import java.util.LinkedList;
-
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.api.experimental.events.VehicleArrivesAtFacilityEvent;
 import org.matsim.core.api.experimental.events.VehicleDepartsAtFacilityEvent;
 import org.matsim.core.mobsim.qsim.InternalInterface;
 import org.matsim.core.mobsim.qsim.pt.TransitDriverAgentImpl;
 import org.matsim.core.mobsim.qsim.pt.TransitStopAgentTracker;
-import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.Umlauf;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitRouteStop;
@@ -51,10 +49,7 @@ public class SBBTransitDriverAgent extends TransitDriverAgentImpl {
 
         if (stopTime <= 0.0) {
             // figure out if it's already time to depart or not
-            double departureOffset = this.currentStop.getDepartureOffset();
-            if (Time.isUndefinedTime(departureOffset)) {
-                departureOffset = this.currentStop.getArrivalOffset();
-            }
+            double departureOffset = this.currentStop.getDepartureOffset().or(this.currentStop.getArrivalOffset()).seconds();
             double scheduledDepartureTime = this.getDeparture().getDepartureTime() + departureOffset;
             if (scheduledDepartureTime > now) {
                 stopTime = 1.0; // allow agents arriving in the next time step to board

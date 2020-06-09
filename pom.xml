@@ -48,13 +48,13 @@
 		<dependency>
 			<groupId>org.matsim</groupId>
 			<artifactId>matsim</artifactId>
-			<version>12.0-2019w45-SNAPSHOT</version>
+			<version>12.0</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.matsim</groupId>
 			<artifactId>matsim</artifactId>
-			<version>12.0-2019w45-SNAPSHOT</version>
+			<version>12.0</version>
 			<classifier>tests</classifier>
 			<scope>test</scope>
 			<type>test-jar</type>

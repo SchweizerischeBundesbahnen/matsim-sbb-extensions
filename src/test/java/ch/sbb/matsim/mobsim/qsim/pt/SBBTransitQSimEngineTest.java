@@ -4,6 +4,8 @@
 
 package ch.sbb.matsim.mobsim.qsim.pt;
 
+import java.util.List;
+import java.util.Map;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,14 +34,10 @@ import org.matsim.core.mobsim.qsim.PopulationModule;
 import org.matsim.core.mobsim.qsim.QSim;
 import org.matsim.core.mobsim.qsim.QSimBuilder;
 import org.matsim.core.utils.collections.CollectionUtils;
-import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitRouteStop;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 import org.matsim.testcases.utils.EventsCollector;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author mrieser / SBB
@@ -78,10 +76,8 @@ public class SBBTransitQSimEngineTest {
     }
 
     private void assertNextStop(SBBTransitDriverAgent driver, TransitRouteStop stop, double routeDepTime) {
-        double arrOffset = stop.getArrivalOffset();
-        double depOffset = stop.getDepartureOffset();
-        if (Time.isUndefinedTime(arrOffset)) arrOffset = depOffset;
-        if (Time.isUndefinedTime(depOffset)) depOffset = arrOffset;
+        double arrOffset = stop.getArrivalOffset().or(stop.getDepartureOffset()).seconds();
+        double depOffset = stop.getDepartureOffset().or(stop.getArrivalOffset()).seconds();
         TransitStopFacility f = stop.getStopFacility();
 
         Assert.assertEquals(stop, driver.getNextRouteStop());

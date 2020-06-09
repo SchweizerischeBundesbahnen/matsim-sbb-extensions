@@ -86,15 +86,11 @@ public class CalculateSkimMatrices {
 
     private final static GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
-    private final Collection<SimpleFeature> zones;
-    private final Map<String, SimpleFeature> zonesById;
-    private final String zonesIdAttributeName;
-    private final SpatialIndex zonesQt;
     private final String outputDirectory;
     private final int numberOfThreads;
     private Map<String, Coord[]> coordsPerZone = null;
 
-    public CalculateSkimMatrices(String zonesShapeFilename, String zonesIdAttributeName, String outputDirectory, int numberOfThreads) {
+    public CalculateSkimMatrices(String outputDirectory, int numberOfThreads) {
         this.outputDirectory = outputDirectory;
         File outputDir = new File(outputDirectory);
         if (!outputDir.exists()) {
@@ -110,21 +106,9 @@ public class CalculateSkimMatrices {
         }
 
         this.numberOfThreads = numberOfThreads;
-
-        log.info("loading zones from " + zonesShapeFilename);
-        this.zones = new ShapeFileReader().readFileAndInitialize(zonesShapeFilename);
-        this.zonesIdAttributeName = zonesIdAttributeName;
-        this.zonesById = new HashMap<>();
-        this.zonesQt = new Quadtree();
-        for (SimpleFeature zone : this.zones) {
-            String zoneId = zone.getAttribute(zonesIdAttributeName).toString();
-            this.zonesById.put(zoneId, zone);
-            Envelope envelope = ((Geometry) (zone.getDefaultGeometry())).getEnvelopeInternal();
-            this.zonesQt.insert(envelope, zone);
-        }
     }
 
-    public final void calculateSamplingPointsPerZoneFromFacilities(String facilitiesFilename, int numberOfPointsPerZone, Random r, ToDoubleFunction<ActivityFacility> weightFunction) throws IOException {
+    public final void calculateSamplingPointsPerZoneFromFacilities(String facilitiesFilename, int numberOfPointsPerZone, String zonesShapeFilename, String zonesIdAttributeName, Random r, ToDoubleFunction<ActivityFacility> weightFunction) throws IOException {
         // load facilities
         log.info("loading facilities from " + facilitiesFilename);
 
@@ -140,10 +124,10 @@ public class CalculateSkimMatrices {
         )).readFile(facilitiesFilename);
         facCounter.printCounter();
 
-        selectSamplingPoints(facilities, numberOfPointsPerZone, r);
+        selectSamplingPoints(facilities, numberOfPointsPerZone, zonesShapeFilename, zonesIdAttributeName, r);
     }
 
-    public final void calculateSamplingPointsPerZoneFromNetwork(String networkFilename, int numberOfPointsPerZone, Random r) throws IOException {
+    public final void calculateSamplingPointsPerZoneFromNetwork(String networkFilename, int numberOfPointsPerZone, String zonesShapeFilename, String zonesIdAttributeName, Random r) throws IOException {
         Scenario scenario = ScenarioUtils.createScenario(ConfigUtils.createConfig());
         log.info("loading network from " + networkFilename);
         new MatsimNetworkReader(scenario.getNetwork()).readFile(networkFilename);
@@ -152,16 +136,24 @@ public class CalculateSkimMatrices {
             weightedNodes.add(new WeightedCoord(node.getCoord(), 1));
         }
 
-        selectSamplingPoints(weightedNodes, numberOfPointsPerZone, r);
+        selectSamplingPoints(weightedNodes, numberOfPointsPerZone, zonesShapeFilename, zonesIdAttributeName, r);
     }
 
-    public final void selectSamplingPoints(List<WeightedCoord> locations, int numberOfPointsPerZone, Random r) throws IOException {
+    public final void selectSamplingPoints(List<WeightedCoord> locations, int numberOfPointsPerZone, String zonesShapeFilename, String zonesIdAttributeName, Random r) throws IOException {
+        log.info("loading zones from " + zonesShapeFilename);
+        Collection<SimpleFeature> zones = new ShapeFileReader().readFileAndInitialize(zonesShapeFilename);
+        SpatialIndex zonesQt = new Quadtree();
+        for (SimpleFeature zone : zones) {
+            Envelope envelope = ((Geometry) (zone.getDefaultGeometry())).getEnvelopeInternal();
+            zonesQt.insert(envelope, zone);
+        }
+
         log.info("assign locations to zones...");
         Map<String, List<WeightedCoord>> allCoordsPerZone = new HashMap<>();
         Counter counter = new Counter("# ");
         for (WeightedCoord loc : locations) {
             counter.incCounter();
-            String zoneId = findZone(loc.coord);
+            String zoneId = findZone(loc.coord, zonesQt, zonesIdAttributeName);
             if (zoneId != null) {
                 allCoordsPerZone.computeIfAbsent(zoneId, k -> new ArrayList<>()).add(loc);
             }
@@ -196,11 +188,9 @@ public class CalculateSkimMatrices {
             }
             this.coordsPerZone.put(zoneId, coords);
         }
-        File coordFile = new File(this.outputDirectory, ZONE_LOCATIONS_FILENAME);
-        writeSamplingPointsToFile(coordFile);
     }
 
-    private void writeSamplingPointsToFile(File file) throws IOException {
+    public void writeSamplingPointsToFile(File file) throws IOException {
         log.info("write chosen coordinates to file " + file.getAbsolutePath());
         try (BufferedWriter writer = IOUtils.getBufferedWriter(file.getAbsolutePath())) {
             writer.write("ZONE;POINT_INDEX;X;Y\n");
@@ -253,7 +243,7 @@ public class CalculateSkimMatrices {
 
     public final void calculateBeelineMatrix() throws IOException {
         log.info("calc beeline distance matrix");
-        FloatMatrix<String> beelineMatrix = BeelineDistanceMatrix.calculateBeelineDistanceMatrix(zonesById, coordsPerZone, numberOfThreads);
+        FloatMatrix<String> beelineMatrix = BeelineDistanceMatrix.calculateBeelineDistanceMatrix(this.coordsPerZone.keySet(), coordsPerZone, numberOfThreads);
 
         log.info("write beeline distance matrix to " + outputDirectory);
         FloatMatrixIO.writeAsCSV(beelineMatrix, outputDirectory + "/" + BEELINE_DISTANCE_FILENAME);
@@ -289,7 +279,7 @@ public class CalculateSkimMatrices {
 
         log.info("calc CAR matrix for " + Time.writeTime(times[0]));
         NetworkIndicators<String> netIndicators = NetworkSkimMatrices.calculateSkimMatrices(
-                xy2linksNetwork, carNetwork, zonesById, coordsPerZone, times[0], tt, td, this.numberOfThreads);
+                xy2linksNetwork, carNetwork, coordsPerZone, times[0], tt, td, this.numberOfThreads);
 
         if (tt instanceof FreeSpeedTravelTime) {
             log.info("Do not calculate CAR matrices for other times as only freespeed is being used");
@@ -297,7 +287,7 @@ public class CalculateSkimMatrices {
             for (int i = 1; i < times.length; i++) {
                 log.info("calc CAR matrices for " + Time.writeTime(times[i]));
                 NetworkIndicators<String> indicators2 = NetworkSkimMatrices.calculateSkimMatrices(
-                        xy2linksNetwork, carNetwork, zonesById, coordsPerZone, times[i], tt, td, this.numberOfThreads);
+                        xy2linksNetwork, carNetwork, coordsPerZone, times[i], tt, td, this.numberOfThreads);
                 log.info("merge CAR matrices for " + Time.writeTime(times[i]));
                 combineMatrices(netIndicators.travelTimeMatrix, indicators2.travelTimeMatrix);
                 combineMatrices(netIndicators.distanceMatrix, indicators2.distanceMatrix);
@@ -357,7 +347,7 @@ public class CalculateSkimMatrices {
 
         log.info("calc PT matrices for " + Time.writeTime(startTime) + " - " + Time.writeTime(endTime));
         PTSkimMatrices.PtIndicators<String> matrices = PTSkimMatrices.calculateSkimMatrices(
-                raptorData, this.zonesById, this.coordsPerZone, startTime, endTime, 120, raptorParameters, this.numberOfThreads, trainDetector);
+                raptorData, this.coordsPerZone, startTime, endTime, 120, raptorParameters, this.numberOfThreads, trainDetector);
 
         log.info("write PT matrices to " + outputDirectory + (prefix.isEmpty() ? "" : (" with prefix " + prefix)));
         FloatMatrixIO.writeAsCSV(matrices.adaptionTimeMatrix, outputDirectory + "/" + prefix + PT_ADAPTIONTIMES_FILENAME);
@@ -381,13 +371,13 @@ public class CalculateSkimMatrices {
         }
     }
 
-    private String findZone(Coord coord) {
+    private String findZone(Coord coord, SpatialIndex zonesQt, String zonesIdAttributeName) {
         Point pt = GEOMETRY_FACTORY.createPoint(new Coordinate(coord.getX(), coord.getY()));
-        List elements = this.zonesQt.query(pt.getEnvelopeInternal());
+        List elements = zonesQt.query(pt.getEnvelopeInternal());
         for (Object o : elements) {
             SimpleFeature z = (SimpleFeature) o;
             if (((Geometry) z.getDefaultGeometry()).intersects(pt)) {
-                return z.getAttribute(this.zonesIdAttributeName).toString();
+                return z.getAttribute(zonesIdAttributeName).toString();
             }
         }
         return null;
@@ -411,8 +401,8 @@ public class CalculateSkimMatrices {
         String transitScheduleFilename = args[4];
         String eventsFilename = args[5];
         String outputDirectory = args[6];
-        int numberOfPointsPerZone = Integer.valueOf(args[7]);
-        int numberOfThreads = Integer.valueOf(args[8]);
+        int numberOfPointsPerZone = Integer.parseInt(args[7]);
+        int numberOfThreads = Integer.parseInt(args[8]);
         String[] timesCarStr = args[9].split(";");
         String[] timesPtStr = args[10].split(";");
         Set<String> modes = CollectionUtils.stringToSet(args[11]);
@@ -428,10 +418,16 @@ public class CalculateSkimMatrices {
         Config config = ConfigUtils.createConfig();
         Random r = new Random(4711);
 
-        CalculateSkimMatrices skims = new CalculateSkimMatrices(zonesShapeFilename, zonesIdAttributeName, outputDirectory, numberOfThreads);
-        skims.calculateSamplingPointsPerZoneFromFacilities(facilitiesFilename, numberOfPointsPerZone, r, f -> 1);
+        CalculateSkimMatrices skims = new CalculateSkimMatrices(outputDirectory, numberOfThreads);
+
+        skims.calculateSamplingPointsPerZoneFromFacilities(facilitiesFilename, numberOfPointsPerZone, zonesShapeFilename, zonesIdAttributeName, r, f -> 1);
+        skims.writeSamplingPointsToFile(new File(outputDirectory, ZONE_LOCATIONS_FILENAME));
+
         // alternative if you don't have facilities, use the network:
-        // skims.calculateSamplingPointsPerZoneFromNetwork(networkFilename, numberOfPointsPerZone, r);
+        // skims.calculateSamplingPointsPerZoneFromNetwork(networkFilename, numberOfPointsPerZone, zonesShapeFilename, zonesIdAttributeName, r);
+
+        // or load pre-calculated sampling points from an existing file:
+        // skims.loadSamplingPointsFromFile("coordinates.csv");
 
         if (modes.contains(TransportMode.car)) {
             skims.calculateNetworkMatrices(networkFilename, eventsFilename, timesCar, config, null, l -> true);
