@@ -14,7 +14,6 @@ import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
-import org.opengis.feature.simple.SimpleFeature;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -63,18 +62,19 @@ public class PTSkimMatrices {
     private PTSkimMatrices() {
     }
 
-    public static <T> PTSkimMatrices.PtIndicators<T> calculateSkimMatrices(SwissRailRaptorData raptorData, Map<T, SimpleFeature> zones, Map<T, Coord[]> coordsPerZone, double minDepartureTime, double maxDepartureTime, double stepSize_seconds, RaptorParameters parameters, int numberOfThreads, BiPredicate<TransitLine, TransitRoute> trainDetector) {
+    public static <T> PTSkimMatrices.PtIndicators<T> calculateSkimMatrices(SwissRailRaptorData raptorData, Map<T, Coord[]> coordsPerZone, double minDepartureTime, double maxDepartureTime, double stepSize_seconds, RaptorParameters parameters, int numberOfThreads, BiPredicate<TransitLine, TransitRoute> trainDetector) {
         // prepare calculation
-        PtIndicators<T> pti = new PtIndicators<>(zones.keySet());
+        Set<T> zoneIds = coordsPerZone.keySet();
+        PtIndicators<T> pti = new PtIndicators<>(zoneIds);
 
         // do calculation
-        ConcurrentLinkedQueue<T> originZones = new ConcurrentLinkedQueue<>(zones.keySet());
+        ConcurrentLinkedQueue<T> originZones = new ConcurrentLinkedQueue<>(zoneIds);
 
-        Counter counter = new Counter("PT-FrequencyMatrix-" + Time.writeTime(minDepartureTime) + "-" + Time.writeTime(maxDepartureTime) + " zone ", " / " + zones.size());
+        Counter counter = new Counter("PT-FrequencyMatrix-" + Time.writeTime(minDepartureTime) + "-" + Time.writeTime(maxDepartureTime) + " zone ", " / " + coordsPerZone.size());
         Thread[] threads = new Thread[numberOfThreads];
         for (int i = 0; i < numberOfThreads; i++) {
             SwissRailRaptor raptor = new SwissRailRaptor(raptorData, null, null, null);
-            RowWorker<T> worker = new RowWorker<>(originZones, zones.keySet(), coordsPerZone, pti, raptor, parameters, minDepartureTime, maxDepartureTime, stepSize_seconds, counter, trainDetector);
+            RowWorker<T> worker = new RowWorker<>(originZones, zoneIds, coordsPerZone, pti, raptor, parameters, minDepartureTime, maxDepartureTime, stepSize_seconds, counter, trainDetector);
             threads[i] = new Thread(worker, "PT-FrequencyMatrix-" + Time.writeTime(minDepartureTime) + "-" + Time.writeTime(maxDepartureTime) + "-" + i);
             threads[i].start();
         }
@@ -88,8 +88,8 @@ public class PTSkimMatrices {
             }
         }
 
-        for (T fromZoneId : zones.keySet()) {
-            for (T toZoneId : zones.keySet()) {
+        for (T fromZoneId : zoneIds) {
+            for (T toZoneId : zoneIds) {
                 float count = pti.dataCountMatrix.get(fromZoneId, toZoneId);
                 if (count == 0) {
                     pti.adaptionTimeMatrix.set(fromZoneId, toZoneId, Float.POSITIVE_INFINITY);
@@ -187,13 +187,13 @@ public class PTSkimMatrices {
                 Coord[] toCoords = this.coordsPerZone.get(toZoneId);
                 if (toCoords != null) {
                     for (Coord toCoord : toCoords) {
-                        calcForOD(fromZoneId, fromCoord, toZoneId, toCoord, accessTimes, trees);
+                        calcForOD(fromZoneId, toZoneId, toCoord, accessTimes, trees);
                     }
                 }
             }
         }
 
-        private void calcForOD(T fromZoneId, Coord fromCoord, T toZoneId, Coord toCoord, Map<Id<TransitStopFacility>, Double> accessTimes, List<Map<Id<TransitStopFacility>, TravelInfo>> trees) {
+        private void calcForOD(T fromZoneId, T toZoneId, Coord toCoord, Map<Id<TransitStopFacility>, Double> accessTimes, List<Map<Id<TransitStopFacility>, TravelInfo>> trees) {
             double walkSpeed = this.parameters.getBeelineWalkSpeed();
 
             Collection<TransitStopFacility> toStops = findStopCandidates(toCoord, this.raptor, this.parameters);

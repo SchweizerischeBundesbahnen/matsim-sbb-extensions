@@ -29,19 +29,19 @@ public final class BeelineDistanceMatrix {
     private BeelineDistanceMatrix() {
     }
 
-    public static <T> FloatMatrix<T> calculateBeelineDistanceMatrix(Map<T, SimpleFeature> zones, Map<T, Coord[]> coordsPerZone, int numberOfThreads) {
+    public static <T> FloatMatrix<T> calculateBeelineDistanceMatrix(Set<T> zoneIds, Map<T, Coord[]> coordsPerZone, int numberOfThreads) {
         // prepare calculation
-        FloatMatrix<T> matrix = new FloatMatrix<>(zones.keySet(), 0.0f);
+        FloatMatrix<T> matrix = new FloatMatrix<>(zoneIds, 0.0f);
 
         int numberOfPointsPerZone = coordsPerZone.values().iterator().next().length;
 
         // do calculation
-        ConcurrentLinkedQueue<T> originZones = new ConcurrentLinkedQueue<>(zones.keySet());
+        ConcurrentLinkedQueue<T> originZones = new ConcurrentLinkedQueue<>(zoneIds);
 
-        Counter counter = new Counter("BeelineDistanceMatrix zone ", " / " + zones.size());
+        Counter counter = new Counter("BeelineDistanceMatrix zone ", " / " + zoneIds.size());
         Thread[] threads = new Thread[numberOfThreads];
         for (int i = 0; i < numberOfThreads; i++) {
-            BeelineDistanceMatrix.RowWorker<T> worker = new BeelineDistanceMatrix.RowWorker<>(originZones, zones.keySet(), coordsPerZone, matrix, counter);
+            BeelineDistanceMatrix.RowWorker<T> worker = new BeelineDistanceMatrix.RowWorker<>(originZones, zoneIds, coordsPerZone, matrix, counter);
             threads[i] = new Thread(worker, "BeelineDistanceMatrix-" + i);
             threads[i].start();
         }

@@ -6,6 +6,10 @@ package ch.sbb.matsim.analysis.skims;
 
 import ch.sbb.matsim.routing.graph.Graph;
 import ch.sbb.matsim.routing.graph.LeastCostPathTree;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Network;
@@ -16,15 +20,11 @@ import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.router.util.TravelDisutility;
 import org.matsim.core.router.util.TravelTime;
 import org.matsim.core.utils.misc.Counter;
+import org.matsim.core.utils.misc.OptionalTime;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.vehicles.Vehicle;
 import org.matsim.vehicles.VehicleUtils;
 import org.opengis.feature.simple.SimpleFeature;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Calculates zone-to-zone matrices containing a number of performance indicators related to modes routed on a network.
@@ -46,7 +46,7 @@ public final class NetworkSkimMatrices {
     private NetworkSkimMatrices() {
     }
 
-    public static <T> NetworkIndicators<T> calculateSkimMatrices(Network xy2lNetwork, Network routingNetwork, Map<T, SimpleFeature> zones, Map<T, Coord[]> coordsPerZone, double departureTime, TravelTime travelTime, TravelDisutility travelDisutility, int numberOfThreads) {
+    public static <T> NetworkIndicators<T> calculateSkimMatrices(Network xy2lNetwork, Network routingNetwork, Map<T, Coord[]> coordsPerZone, double departureTime, TravelTime travelTime, TravelDisutility travelDisutility, int numberOfThreads) {
         Graph routingGraph = new Graph(routingNetwork);
         Map<T, Node[]> nodesPerZone = new HashMap<>();
         for (Map.Entry<T, Coord[]> e : coordsPerZone.entrySet()) {
@@ -62,18 +62,18 @@ public final class NetworkSkimMatrices {
         }
 
         // prepare calculation
-        NetworkIndicators<T> networkIndicators = new NetworkIndicators<>(zones.keySet());
+        NetworkIndicators<T> networkIndicators = new NetworkIndicators<>(coordsPerZone.keySet());
 
         int numberOfPointsPerZone = coordsPerZone.values().iterator().next().length;
         float avgFactor = (float) (1.0 / numberOfPointsPerZone / numberOfPointsPerZone);
 
         // do calculation
-        ConcurrentLinkedQueue<T> originZones = new ConcurrentLinkedQueue<>(zones.keySet());
+        ConcurrentLinkedQueue<T> originZones = new ConcurrentLinkedQueue<>(coordsPerZone.keySet());
 
-        Counter counter = new Counter("CAR-TravelTimeMatrix-" + Time.writeTime(departureTime) + " zone ", " / " + zones.size());
+        Counter counter = new Counter("CAR-TravelTimeMatrix-" + Time.writeTime(departureTime) + " zone ", " / " + coordsPerZone.size());
         Thread[] threads = new Thread[numberOfThreads];
         for (int i = 0; i < numberOfThreads; i++) {
-            RowWorker<T> worker = new RowWorker<>(originZones, zones.keySet(), routingGraph, nodesPerZone, networkIndicators, departureTime, travelTime, travelDisutility, counter);
+            RowWorker<T> worker = new RowWorker<>(originZones, coordsPerZone.keySet(), routingGraph, nodesPerZone, networkIndicators, departureTime, travelTime, travelDisutility, counter);
             threads[i] = new Thread(worker, "CAR-TravelTimeMatrix-" + Time.writeTime(departureTime) + "-" + i);
             threads[i].start();
         }
@@ -138,7 +138,9 @@ public final class NetworkSkimMatrices {
                             if (toNodes != null) {
                                 for (Node toNode : toNodes) {
                                     int nodeIndex = toNode.getId().index();
-                                    double tt = lcpTree.getTime(nodeIndex) - this.departureTime;
+                                    OptionalTime currOptionalTime = lcpTree.getTime(nodeIndex);
+                                    double currTime = currOptionalTime.orElseThrow(() -> new RuntimeException("Undefined Time"));
+                                    double tt = currTime - this.departureTime;
                                     double dist = lcpTree.getDistance(nodeIndex);
                                     this.networkIndicators.travelTimeMatrix.add(fromZoneId, toZoneId, (float) tt);
                                     this.networkIndicators.distanceMatrix.add(fromZoneId, toZoneId, (float) dist);
