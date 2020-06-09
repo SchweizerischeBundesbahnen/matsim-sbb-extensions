@@ -23,7 +23,7 @@ To use the extensions along your MATSim code, follow these two steps:
 	<dependency>
 	    <groupId>ch.sbb</groupId>
 	    <artifactId>matsim-sbb-extensions</artifactId>
-	    <version>0.12.x</version> <!-- replace this with latest available version -->
+	    <version>12.x</version> <!-- replace this with latest available version -->
 	</dependency>
   ``` 
 
