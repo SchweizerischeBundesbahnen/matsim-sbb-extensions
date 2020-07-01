@@ -14,7 +14,7 @@ To use the extensions along your MATSim code, follow these two steps:
 	<repositories>
 		<repository>
 		    <id>SBB</id>
-		    <url>https://bintray.com/schweizerischebundesbahnen/simba.mvn/matsim-sbb-extensions</url>
+		    <url>https://schweizerischebundesbahnen.bintray.com/simba.mvn</url>
 		</repository>
 	</repositories>
   ```
