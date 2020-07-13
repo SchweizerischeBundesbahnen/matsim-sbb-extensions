@@ -10,6 +10,7 @@
 	<groupId>ch.sbb</groupId>
 	<artifactId>matsim-sbb-extensions</artifactId>
 	<version>12.5</version>
+
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
 	<properties>
