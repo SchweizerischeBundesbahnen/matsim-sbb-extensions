@@ -181,6 +181,14 @@ public class RooftopUtils {
                     shares.compute(prevConnection, (c, oldVal) -> (oldVal == null ? fShare1 : (oldVal + fShare1)));
                     shares.compute(connection, (c, oldVal) -> (oldVal == null ? fShare2 : (oldVal + fShare2)));
                 }
+            } else {
+                // there is no previous connection
+                double depTime = connection.departureTime - connection.accessTime;
+                if (depTime >= minDepartureTime && depTime < maxDepartureTime) {
+                    // calculate the first triangle
+                    double share = (depTime - minDepartureTime) / 3600;
+                    shares.compute(connection, (c, oldVal) -> (oldVal == null ? share : (oldVal + share)));
+                }
             }
             prevConnection = connection;
         }
