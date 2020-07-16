@@ -107,6 +107,107 @@ public class RooftopUtilsTest {
     }
 
     @Test
+    public void testCalcAverageAdaptionTime_noEarlierDeparture() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("07:46:00"), 16080, 360, 125, 5, null));
+        connections.add(c1 = new ODConnection(Time.parseTime("08:46:00"), 16080, 360, 125, 5, null));
+
+        double adaptionTime = RooftopUtils.calcAverageAdaptionTime(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // important: there is no earlier connection, esp. no connection before the start time of 7am.
+
+        // actual departure time is 7:40 and 8:40
+        // average adaption time should be: 20min between 7:00 and 7:40, and 10min between 7:40 and 8:00
+        // ==> 40*20 + 20*10 = 800 + 200 = 1000 --> 1000 / 60 = 16.666min = 1000 seconds
+
+        Assert.assertEquals(1000.0, adaptionTime, 1e-7);
+    }
+
+    @Test
+    public void testCalcAverageAdaptionTime_noLaterDeparture() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("06:45:00"), 16080, 300, 125, 5, null));
+        connections.add(c1 = new ODConnection(Time.parseTime("07:45:00"), 16080, 300, 125, 5, null));
+
+        double adaptionTime = RooftopUtils.calcAverageAdaptionTime(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // actual departure time is 6:40 and 7:40, zenith is 7:10
+        // average adaption time should be: 25min between 7:00 and 7:10, 15min between 7:10 and 7:40, 10min between 7:40 and 8:00
+        // ==> 25*10 + 15*30 + 10*20 = 250 + 450 + 200 = 900 --> 900 seconds
+
+        Assert.assertEquals(900.0, adaptionTime, 1e-7);
+    }
+
+    @Test
+    public void testCalcAverageAdaptionTime_noDepartureInRange() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("06:45:00"), 16080, 300, 125, 5, null));
+        connections.add(c1 = new ODConnection(Time.parseTime("08:45:00"), 16080, 300, 125, 5, null));
+
+        double adaptionTime = RooftopUtils.calcAverageAdaptionTime(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // actual departure time is 6:40 and 8:40, zenith is 7:40
+        // average adaption time should be: 40min between 7:00 and 7:40, 50min between 7:40 and 8:00
+        // ==> 40*40 + 50*20 = 1600 + 1000 = 2600 --> 2600 seconds
+
+        Assert.assertEquals(2600.0, adaptionTime, 1e-7);
+    }
+
+    @Test
+    public void testCalcAverageAdaptionTime_singleDepartureEarly() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("06:15:00"), 16080, 300, 125, 5, null));
+
+        double adaptionTime = RooftopUtils.calcAverageAdaptionTime(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // actual departure time is 6:10
+        // average adaption time should be: 80min between 7:00 and 8:00
+        // ==> 80*60 = 4800 --> 4800 seconds
+
+        Assert.assertEquals(4800.0, adaptionTime, 1e-7);
+    }
+
+    @Test
+    public void testCalcAverageAdaptionTime_singleDepartureInRange() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0;
+        connections.add(c0 = new ODConnection(Time.parseTime("07:15:00"), 16080, 300, 125, 5, null));
+
+        double adaptionTime = RooftopUtils.calcAverageAdaptionTime(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // actual departure time is 7:10
+        // average adaption time should be: 5min between 7:00 and 7:10, 25min between 7:10 and 8:00
+        // ==> 5*10 + 25*50 = 50 + 1250 = 1300 --> 1300 seconds
+
+        Assert.assertEquals(1300.0, adaptionTime, 1e-7);
+    }
+
+    @Test
+    public void testCalcAverageAdaptionTime_singleDepartureLate() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0;
+        connections.add(c0 = new ODConnection(Time.parseTime("08:15:00"), 16080, 300, 125, 5, null));
+
+        double adaptionTime = RooftopUtils.calcAverageAdaptionTime(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // actual departure time is 8:10
+        // average adaption time should be: 40min between 7:00 and 8:00
+        // ==> 40*60 = 2400 --> 2400 seconds
+
+        Assert.assertEquals(2400.0, adaptionTime, 1e-7);
+    }
+
+    @Test
     public void testCalcConnectionShares() {
         List<ODConnection> connections = new ArrayList<>();
 
@@ -163,5 +264,152 @@ public class RooftopUtilsTest {
         Assert.assertEquals(8.0/60.0, shares.get(c3), 1e-7);
         Assert.assertEquals(20.0/60.0, shares.get(c7), 1e-7);
         Assert.assertEquals(2.0/60.0, shares.get(c5), 1e-7);
+    }
+
+    @Test
+    public void testCalculationShares_noEarlierDeparture() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("07:46:00"), 16080, 360, 125, 5, null));
+        connections.add(c1 = new ODConnection(Time.parseTime("08:46:00"), 16080, 360, 125, 5, null));
+
+        Map<ODConnection, Double> shares = RooftopUtils.calcConnectionShares(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // important: there is no earlier connection, esp. no connection before the start time of 7am.
+
+        double sum = 0;
+        for (Map.Entry<ODConnection, Double> e : shares.entrySet()) {
+            ODConnection c = e.getKey();
+            Double share = e.getValue();
+            sum += share;
+
+            System.out.println(Time.writeTime(c.departureTime) + " --> " + share);
+        }
+
+        Assert.assertEquals(1.0, sum, 1e-7);
+
+        Assert.assertEquals(1.0, shares.get(c0), 1e-7);
+        Assert.assertEquals(0.0, shares.get(c1), 1e-7);
+    }
+
+    @Test
+    public void testCalculationShares_noEarlierDeparture2() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("07:15:00"), 16080, 300, 125, 5, null));
+        connections.add(c1 = new ODConnection(Time.parseTime("08:15:00"), 16080, 300, 125, 5, null));
+
+        Map<ODConnection, Double> shares = RooftopUtils.calcConnectionShares(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // important: there is no earlier connection, esp. no connection before the start time of 7am.
+
+        // access time is 5 min, so actual departure time is 7:10 and 8:10, and the zenith at 7:40, which results in the share 40:20 = 2:1
+
+        double sum = 0;
+        for (Map.Entry<ODConnection, Double> e : shares.entrySet()) {
+            ODConnection c = e.getKey();
+            Double share = e.getValue();
+            sum += share;
+
+            System.out.println(Time.writeTime(c.departureTime) + " --> " + share);
+        }
+
+        Assert.assertEquals(1.0, sum, 1e-7);
+
+        Assert.assertEquals(2.0/3.0, shares.get(c0), 1e-7);
+        Assert.assertEquals(1.0/3.0, shares.get(c1), 1e-7);
+    }
+
+    @Test
+    public void testCalculationShares_noLaterDeparture() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("06:45:00"), 16080, 300, 125, 5, null));
+        connections.add(c1 = new ODConnection(Time.parseTime("07:45:00"), 16080, 300, 125, 5, null));
+
+        Map<ODConnection, Double> shares = RooftopUtils.calcConnectionShares(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // important: there is no earlier connection, esp. no connection before the start time of 7am.
+
+        // access time is 5 min, so actual departure time is 6:40 and 7:40, and the zenith at 7:10, resulting in the share 10:50 = 1:5
+
+        double sum = 0;
+        for (Map.Entry<ODConnection, Double> e : shares.entrySet()) {
+            ODConnection c = e.getKey();
+            Double share = e.getValue();
+            sum += share;
+
+            System.out.println(Time.writeTime(c.departureTime) + " --> " + share);
+        }
+
+        Assert.assertEquals(1.0, sum, 1e-7);
+
+        Assert.assertEquals(1.0/6.0, shares.get(c0), 1e-7);
+        Assert.assertEquals(5.0/6.0, shares.get(c1), 1e-7);
+    }
+
+    @Test
+    public void testCalculationShares_noDepartureInRange() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("06:45:00"), 16080, 300, 125, 5, null));
+        connections.add(c1 = new ODConnection(Time.parseTime("08:45:00"), 16080, 300, 125, 5, null));
+
+        Map<ODConnection, Double> shares = RooftopUtils.calcConnectionShares(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+
+        // important: there is no earlier connection, esp. no connection before the start time of 7am.
+
+        // access time is 5 min, so actual departure time is 6:40 and 8:40, and the zenith at 7:40, which results in the share 40:20 = 2:1
+
+        double sum = 0;
+        for (Map.Entry<ODConnection, Double> e : shares.entrySet()) {
+            ODConnection c = e.getKey();
+            Double share = e.getValue();
+            sum += share;
+
+            System.out.println(Time.writeTime(c.departureTime) + " --> " + share);
+        }
+
+        Assert.assertEquals(1.0, sum, 1e-7);
+
+        Assert.assertEquals(2.0/3.0, shares.get(c0), 1e-7);
+        Assert.assertEquals(1.0/3.0, shares.get(c1), 1e-7);
+    }
+
+    @Test
+    public void testCalculationShares_singleDepartureEarly() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("06:15:00"), 16080, 245, 125, 5, null));
+
+        Map<ODConnection, Double> shares = RooftopUtils.calcConnectionShares(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+        Assert.assertEquals(1.0, shares.get(c0), 1e-7);
+    }
+
+    @Test
+    public void testCalculationShares_singleDepartureInRange() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("07:15:00"), 16080, 245, 125, 5, null));
+
+        Map<ODConnection, Double> shares = RooftopUtils.calcConnectionShares(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+        Assert.assertEquals(1.0, shares.get(c0), 1e-7);
+    }
+
+    @Test
+    public void testCalculationShares_singleDepartureLate() {
+        List<ODConnection> connections = new ArrayList<>();
+
+        ODConnection c0, c1;
+        connections.add(c0 = new ODConnection(Time.parseTime("08:15:00"), 16080, 245, 125, 5, null));
+
+        Map<ODConnection, Double> shares = RooftopUtils.calcConnectionShares(connections, Time.parseTime("07:00:00"), Time.parseTime("08:00:00"));
+        Assert.assertEquals(1.0, shares.get(c0), 1e-7);
     }
 }
