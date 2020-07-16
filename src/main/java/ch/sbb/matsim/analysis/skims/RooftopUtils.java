@@ -107,6 +107,13 @@ public class RooftopUtils {
                         sum += deltaEnd * (depTime2 - zenith);
                     }
                 }
+            } else {
+                // there is no previous connection
+                double depTime = connection.departureTime - connection.accessTime;
+                if (depTime >= minDepartureTime && depTime < maxDepartureTime) {
+                    // calculate the first triangle
+                    sum += (depTime - minDepartureTime) * (depTime - minDepartureTime) / 2;
+                }
             }
             prevConnection = connection;
         }
@@ -120,7 +127,6 @@ public class RooftopUtils {
                 double delta = depTime - maxDepartureTime;
                 sum = (3600 + delta) * (3600 + delta) / 2 - (delta * delta / 2);
             } else {
-                sum += (depTime - minDepartureTime) * (depTime - minDepartureTime) / 2;
                 sum += (maxDepartureTime - depTime) * (maxDepartureTime - depTime) / 2;
             }
         } else if (prevConnection != null) {
