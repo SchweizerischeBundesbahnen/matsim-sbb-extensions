@@ -13,7 +13,7 @@ import java.util.Set;
  * A simple m x m matrix storing float values, using arbitrary objects to identify rows and columns.
  * The list of identifying objects must be known before-hand when instantiating a matrix.
  *
- * @param <T> identifier type for matrix entries
+ * @param &lt;T&gt; identifier type for matrix entries
  *
  * @author mrieser / SBB
  *
@@ -22,12 +22,12 @@ import java.util.Set;
  * Row/Column identifiers are indexed once at initialization in order to compute the indices in the
  * array. Thus, each entry/cell uses 4 bytes. A 1000x1000 matrix would thus consume 4 MB of RAM.
  *
- * Alternative implementations like Map<T, Map<T, Float>> or Map<Tuple<T, T>, Float> would be far
+ * Alternative implementations like Map&lt;T, Map&lt;T, Float&gt;&gt; or Map&lt;Tuple&lt;T, T&gt;, Float&gt; would be far
  * less efficient, even for sparse arrays.
- * Map<T, Map<T, Float>> requires 48 bytes for each Map.Entry (16 bytes object header, 2 * 8 bytes
+ * Map&lt;T, Map&lt;T, Float&gt;&gt; requires 48 bytes for each Map.Entry (16 bytes object header, 2 * 8 bytes
  * for Key and Value object reference, next pointer (8 bytes), int hash). Each stored Float consumes
  * 24 Bytes, so a 1000x1000 matrix would consume 1000*48 + 1000*1000*(48+24) = ca 70 MB (factor 16.5).
- * Map<Tuple<T, T>, Float> requires 48 bytes for each Map.Entry, each Tuple would use 32 bytes (16 object
+ * Map&lt;Tuple&lt;T, T&gt;, Float&gt; requires 48 bytes for each Map.Entry, each Tuple would use 32 bytes (16 object
  * header + 2 * 8 object pointers), Float object 24 bytes, so in total 1000x1000 would consume
  * 1000*1000*(48+32+24) = ca 100 MB (factor 25).
  *

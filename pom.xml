@@ -9,11 +9,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.sbb</groupId>
 	<artifactId>matsim-sbb-extensions</artifactId>
-	<version>12.7</version>
+	<version>12.9</version>
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
 	<properties>
-		<matsim.version>13.0-2020w29-20200720.013337-1</matsim.version>
+		<matsim.version>13.0-2020w31-20200803.013733-1</matsim.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>11</maven.compiler.source>
@@ -114,6 +114,7 @@
 						<configuration>
 							<doclint>none</doclint>
 							<source>8</source>
+							<detectJavaApiLink>false</detectJavaApiLink>
 						</configuration>
 					</execution>
 				</executions>
