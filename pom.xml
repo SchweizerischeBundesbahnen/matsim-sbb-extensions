@@ -9,7 +9,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.sbb</groupId>
 	<artifactId>matsim-sbb-extensions</artifactId>
-	<version>12.9-SNAPSHOT</version>
+	<version>12.9</version>
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
 	<properties>
@@ -114,6 +114,7 @@
 						<configuration>
 							<doclint>none</doclint>
 							<source>8</source>
+							<detectJavaApiLink>false</detectJavaApiLink>
 						</configuration>
 					</execution>
 				</executions>
