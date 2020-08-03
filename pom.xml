@@ -114,6 +114,7 @@
 						<configuration>
 							<doclint>none</doclint>
 							<source>8</source>
+							<detectJavaApiLink>false</detectJavaApiLink>
 						</configuration>
 					</execution>
 				</executions>
