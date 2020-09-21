@@ -9,10 +9,29 @@ import ch.sbb.matsim.routing.pt.raptor.RaptorParameters;
 import ch.sbb.matsim.routing.pt.raptor.RaptorStaticConfig;
 import ch.sbb.matsim.routing.pt.raptor.RaptorUtils;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData;
-import org.locationtech.jts.geom.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
+import org.apache.log4j.Logger;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.index.SpatialIndex;
 import org.locationtech.jts.index.quadtree.Quadtree;
-import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.TransportMode;
@@ -23,7 +42,7 @@ import org.matsim.api.core.v01.network.Node;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
-import org.matsim.core.events.EventsUtils;
+import org.matsim.core.events.EventsManagerImpl;
 import org.matsim.core.events.MatsimEventsReader;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.network.algorithms.TransportModeNetworkFilter;
@@ -46,15 +65,6 @@ import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitScheduleReader;
 import org.opengis.feature.simple.SimpleFeature;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
-import java.util.function.ToDoubleFunction;
 
 /**
  * Main class to calculate skim matrices.
@@ -258,9 +268,10 @@ public class CalculateSkimMatrices {
         TravelTime tt;
         if (eventsFilename != null) {
             log.info("extracting actual travel times from " + eventsFilename);
-            TravelTimeCalculator ttc = TravelTimeCalculator.create(scenario.getNetwork(),config.travelTimeCalculator());
-            EventsManager events = EventsUtils.createEventsManager();
+            TravelTimeCalculator ttc = TravelTimeCalculator.create(scenario.getNetwork(), config.travelTimeCalculator());
+            EventsManager events = new EventsManagerImpl();
             events.addHandler(ttc);
+            events.initProcessing();
             new MatsimEventsReader(events).readFile(eventsFilename);
             tt = ttc.getLinkTravelTimes();
         } else {
