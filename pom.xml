@@ -9,7 +9,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.sbb</groupId>
 	<artifactId>matsim-sbb-extensions</artifactId>
-	<version>12.12</version>
+	<version>12.13</version>
+
 
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
@@ -72,7 +73,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.13</version>
+			<version>4.13.1</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
