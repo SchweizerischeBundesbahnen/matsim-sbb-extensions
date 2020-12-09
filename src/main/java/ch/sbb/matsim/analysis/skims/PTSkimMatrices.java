@@ -6,6 +6,14 @@ import ch.sbb.matsim.routing.pt.raptor.RaptorRoute;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptor;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorCore.TravelInfo;
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorData;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiPredicate;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.core.utils.geometry.CoordUtils;
@@ -14,10 +22,6 @@ import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiPredicate;
 
 /**
  * Calculates zone-to-zone matrices containing a number of performance indicators related to public transport.
@@ -73,7 +77,7 @@ public class PTSkimMatrices {
         Counter counter = new Counter("PT-FrequencyMatrix-" + Time.writeTime(minDepartureTime) + "-" + Time.writeTime(maxDepartureTime) + " zone ", " / " + coordsPerZone.size());
         Thread[] threads = new Thread[numberOfThreads];
         for (int i = 0; i < numberOfThreads; i++) {
-            SwissRailRaptor raptor = new SwissRailRaptor(raptorData, null, null, null);
+            SwissRailRaptor raptor = new SwissRailRaptor(raptorData, null, null, null, null);
             RowWorker<T> worker = new RowWorker<>(originZones, zoneIds, coordsPerZone, pti, raptor, parameters, minDepartureTime, maxDepartureTime, stepSize_seconds, counter, trainDetector);
             threads[i] = new Thread(worker, "PT-FrequencyMatrix-" + Time.writeTime(minDepartureTime) + "-" + Time.writeTime(maxDepartureTime) + "-" + i);
             threads[i].start();
@@ -179,7 +183,7 @@ public class PTSkimMatrices {
             double timeWindow = this.maxDepartureTime - this.minDepartureTime;
             double endTime = this.maxDepartureTime + timeWindow;
             for (double time = this.minDepartureTime - timeWindow; time < endTime; time += this.stepSize) {
-                Map<Id<TransitStopFacility>, TravelInfo> tree = this.raptor.calcTree(fromStops, time, this.parameters);
+                Map<Id<TransitStopFacility>, TravelInfo> tree = this.raptor.calcTree(fromStops, time, this.parameters, null);
                 trees.add(tree);
             }
 
