@@ -353,7 +353,7 @@ public class CalculateSkimMatrices {
         log.info("prepare PT Matrix calculation");
         RaptorStaticConfig raptorConfig = RaptorUtils.createStaticConfig(config);
         raptorConfig.setOptimization(RaptorStaticConfig.RaptorOptimization.OneToAllRouting);
-        SwissRailRaptorData raptorData = SwissRailRaptorData.create(scenario.getTransitSchedule(), raptorConfig, scenario.getNetwork());
+        SwissRailRaptorData raptorData = SwissRailRaptorData.create(scenario.getTransitSchedule(), scenario.getTransitVehicles(), raptorConfig, scenario.getNetwork(), null);
         RaptorParameters raptorParameters = RaptorUtils.createParameters(config);
 
         log.info("calc PT matrices for " + Time.writeTime(startTime) + " - " + Time.writeTime(endTime));
