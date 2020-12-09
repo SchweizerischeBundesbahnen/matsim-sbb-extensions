@@ -15,7 +15,7 @@
 	<name>MATSim-Extensions by SBB</name>
 	<description></description>
 	<properties>
-		<matsim.version>13.0-2020w35-20200831.014018-1</matsim.version>
+		<matsim.version>13.0-2020w49-20201207.024323-1</matsim.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<maven.compiler.source>11</maven.compiler.source>
