@@ -1,8 +1,0 @@
-target
-.metadata
-.settings
-.classpath
-.project
-.idea
-*.iml
-test/output
