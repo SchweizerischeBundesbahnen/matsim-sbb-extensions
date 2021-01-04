@@ -7,8 +7,8 @@ the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahn
 - [Deterministic PT Simulation](#detPTSim)
 - [Skim Matrices](#skim-matrices)
 
-As of January 2021, the extensions have moved into a regular MATSim contribution.
-The instructions will remain here for the time being.
+**As of January 2021, the extensions have moved into a regular MATSim contribution.
+The instructions will remain here for the time being.**
 
 
  
