@@ -1,4 +1,4 @@
-# MATSim-Extensions by SBB [![](https://jitpack.io/v/SchweizerischeBundesbahnen/matsim-sbb-extensions.svg)](https://jitpack.io/#SchweizerischeBundesbahnen/matsim-sbb-extensions)
+# MATSim-Extensions by SBB 
 
 The following extensions for [MATSim](http://www.matsim.org/) are provided by
 the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahnen):
@@ -7,24 +7,21 @@ the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahn
 - [Deterministic PT Simulation](#detPTSim)
 - [Skim Matrices](#skim-matrices)
 
-To use the extensions along your MATSim code, follow these two steps:
+As of January 2021, the extensions have moved into a regular MATSim contribution.
+The instructions will remain here for the time being.
 
- **Step 1**. Add the Bintray repository to your `pom.xml`.
-  ```$xml
-	<repositories>
-		<repository>
-		    <id>SBB</id>
-		    <url>https://schweizerischebundesbahnen.bintray.com/simba.mvn</url>
-		</repository>
-	</repositories>
-  ```
-  **Step 2**. Add the dependency
+
+ 
+ **Setup** 
+ 
+ Add the dependency
    ```$xml
-	<dependency>
-	    <groupId>ch.sbb</groupId>
-	    <artifactId>matsim-sbb-extensions</artifactId>
-	    <version>12.x</version> <!-- replace this with latest available version -->
-	</dependency>
+			<dependency>
+    			<groupId>org.matsim.contrib</groupId>
+    			<artifactId>sbb-extensions</artifactId>
+    			<version>13.0-SNAPSHOT</version> 
+            <!-- (replace this with the version of MATSim you are using, such as the current weekly) -->
+    		</dependency>
   ``` 
 
 <a id="swissRailRaptor" />
@@ -32,7 +29,6 @@ To use the extensions along your MATSim code, follow these two steps:
 ## SwissRailRaptor 
 
 **The SwissRailRaptor is now available directly in MATSim, starting with MATSim 12.0-SNAPSHOT.
-The code for SwissRailRaptor was thus removed from matsim-sbb-extensions.
 The documentation below still applies and is kept here for the moment.**
 
 
