@@ -8,7 +8,7 @@ the [Swiss Federal Railways](http://www.sbb.ch/) (SBB, Schweizerische Bundesbahn
 - [Skim Matrices](#skim-matrices)
 
 **As of January 2021, the extensions have moved into a regular MATSim contribution.
-The instructions will remain here for the time being.**
+The documentation below still applies and is kept here for the moment. For support, please us the [MATSim FAQ](https://github.com/matsim-org/matsim-code-examples/issues), to report issues, please use the [MATSim issue tracker](https://github.com/matsim-org/matsim-libs/issues). The instructions will remain here for the time being.**
 
 
  
@@ -28,8 +28,7 @@ The instructions will remain here for the time being.**
 
 ## SwissRailRaptor 
 
-**The SwissRailRaptor is now available directly in MATSim, starting with MATSim 12.0-SNAPSHOT.
-The documentation below still applies and is kept here for the moment. For support, please us the [MATSim FAQ](https://github.com/matsim-org/matsim-code-examples/issues), to report issues, please use the [MATSim issue tracker](https://github.com/matsim-org/matsim-libs/issues) **
+
 
 
 
