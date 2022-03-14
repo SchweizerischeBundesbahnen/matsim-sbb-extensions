@@ -19,8 +19,8 @@ The documentation below still applies and is kept here for the moment. For suppo
 			<dependency>
     			<groupId>org.matsim.contrib</groupId>
     			<artifactId>sbb-extensions</artifactId>
-    			<version>13.0-SNAPSHOT</version> 
-            <!-- (replace this with the version of MATSim you are using, such as the current weekly) -->
+    			<version>13.0</version> 
+            <!-- (replace this with the version of MATSim you are using, such as the current snapshot) -->
     		</dependency>
   ``` 
 
